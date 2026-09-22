@@ -35,9 +35,9 @@ function readBody(req, callback) {
 }
 
 
-/*
-  Gemini Streaming
-*/
+/* =========================
+   GEMINI STREAMING
+========================= */
 
 function streamAI(message, res) {
 
@@ -57,65 +57,72 @@ function streamAI(message, res) {
       "أنت Aizen AI، مساعد ذكي داخل منصة Aizen AI Builder. " +
       "أجب بالعربية بشكل واضح ومباشر. " +
       "ساعد المستخدم في البرمجة وبناء المواقع والتطبيقات والبوتات. " +
-      "إذا طلب المستخدم بناء مشروع، ساعده في التخطيط والكود. " +
-      "لا تكرر السؤال، وابدأ بالإجابة مباشرة.",
+      "إذا طلب المستخدم بناء مشروع، ساعده في التخطيط والكود.",
 
     stream: true,
 
     generation_config: {
-      max_output_tokens: 1024,
-      thinking_summaries: "none"
+      max_output_tokens: 1024
     }
   });
+
 
   const options = {
     hostname: "generativelanguage.googleapis.com",
 
-    path:
-      "/v1beta/interactions?key=" +
-      encodeURIComponent(GEMINI_API_KEY),
+    path: "/v1beta/interactions",
 
     method: "POST",
 
     headers: {
       "Content-Type": "application/json",
       "Accept": "text/event-stream",
+      "x-goog-api-key": GEMINI_API_KEY,
       "Content-Length": Buffer.byteLength(requestData)
     },
 
     timeout: 60000
   };
 
+
   const request = https.request(options, response => {
+
+    let rawData = "";
 
     if (
       response.statusCode < 200 ||
       response.statusCode >= 300
     ) {
 
-      let errorData = "";
-
       response.on("data", chunk => {
-        errorData += chunk;
+        rawData += chunk.toString();
       });
 
       response.on("end", () => {
 
-        let message = "حدث خطأ من Gemini";
+        let errorMessage = "حدث خطأ من Gemini";
 
         try {
-          const parsed = JSON.parse(errorData);
 
-          message =
-            parsed?.error?.message ||
-            parsed?.errors?.[0]?.message ||
-            message;
+          const result =
+            JSON.parse(rawData);
+
+          errorMessage =
+            result?.error?.message ||
+            result?.errors?.[0]?.message ||
+            errorMessage;
 
         } catch {}
 
+        console.error(
+          "Gemini HTTP Error:",
+          response.statusCode,
+          rawData
+        );
+
         sendJSON(res, response.statusCode, {
           success: false,
-          error: message
+          error: errorMessage
         });
 
       });
@@ -125,14 +132,21 @@ function streamAI(message, res) {
 
 
     /*
-      SSE Headers
+      Streaming response
     */
 
     res.writeHead(200, {
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
-      "Connection": "keep-alive",
-      "X-Accel-Buffering": "no"
+      "Content-Type":
+        "text/event-stream; charset=utf-8",
+
+      "Cache-Control":
+        "no-cache, no-transform",
+
+      "Connection":
+        "keep-alive",
+
+      "X-Accel-Buffering":
+        "no"
     });
 
     res.flushHeaders();
@@ -143,84 +157,122 @@ function streamAI(message, res) {
 
     response.on("data", chunk => {
 
-      buffer += chunk.toString("utf8");
+      buffer +=
+        chunk.toString("utf8");
 
-      const events = buffer.split("\n\n");
 
-      buffer = events.pop() || "";
+      /*
+        توحيد CRLF و LF
+      */
+
+      buffer =
+        buffer.replace(/\r\n/g, "\n");
+
+
+      /*
+        SSE events تفصل بينها سطرين
+      */
+
+      const events =
+        buffer.split("\n\n");
+
+
+      buffer =
+        events.pop() || "";
 
 
       for (const eventBlock of events) {
 
-        const lines = eventBlock.split("\n");
+        const lines =
+          eventBlock.split("\n");
 
-        let eventType = "";
-        let jsonData = "";
+
+        let jsonText = "";
 
 
         for (const line of lines) {
 
-          if (line.startsWith("event:")) {
-            eventType =
-              line.substring(6).trim();
-          }
+          if (
+            line.startsWith("data:")
+          ) {
 
-          if (line.startsWith("data:")) {
-            jsonData +=
-              line.substring(5).trim();
+            const value =
+              line
+                .substring(5)
+                .trim();
+
+            if (value) {
+              jsonText += value;
+            }
+
           }
 
         }
 
 
-        if (!jsonData) {
+        if (!jsonText) {
+          continue;
+        }
+
+
+        /*
+          نهاية Streaming
+        */
+
+        if (jsonText === "[DONE]") {
+
+          res.write(
+            "data: " +
+            JSON.stringify({
+              type: "done"
+            }) +
+            "\n\n"
+          );
+
           continue;
         }
 
 
         try {
 
-          const event = JSON.parse(jsonData);
+          const event =
+            JSON.parse(jsonText);
 
 
           /*
-            النص الذي يصل تدريجيًا
+            Google:
+            event_type = step.delta
+            delta.type = text
           */
 
           if (
-            eventType === "step.delta" ||
-            event.event_type === "step.delta"
+            event.event_type ===
+              "step.delta" &&
+            event.delta &&
+            event.delta.type ===
+              "text" &&
+            event.delta.text
           ) {
 
-            const delta = event.delta;
-
-            if (
-              delta &&
-              delta.type === "text" &&
-              delta.text
-            ) {
-
-              res.write(
-                "data: " +
-                JSON.stringify({
-                  type: "text",
-                  text: delta.text
-                }) +
-                "\n\n"
-              );
-
-            }
+            res.write(
+              "data: " +
+              JSON.stringify({
+                type: "text",
+                text: event.delta.text
+              }) +
+              "\n\n"
+            );
 
           }
 
 
           /*
-            انتهاء التفاعل
+            اكتمل الرد
           */
 
           if (
-            eventType === "interaction.completed" ||
-            event.event_type === "interaction.completed"
+            event.event_type ===
+              "interaction.completed"
           ) {
 
             res.write(
@@ -235,12 +287,12 @@ function streamAI(message, res) {
 
 
           /*
-            خطأ
+            خطأ من Gemini
           */
 
           if (
-            eventType === "error" ||
-            event.event_type === "error"
+            event.event_type ===
+              "error"
           ) {
 
             res.write(
@@ -258,9 +310,9 @@ function streamAI(message, res) {
 
         } catch (error) {
 
-          console.error(
-            "SSE Parse Error:",
-            error
+          console.log(
+            "SSE JSON parse skipped:",
+            jsonText
           );
 
         }
@@ -271,6 +323,69 @@ function streamAI(message, res) {
 
 
     response.on("end", () => {
+
+      /*
+        محاولة معالجة آخر event
+      */
+
+      if (buffer.trim()) {
+
+        const lines =
+          buffer
+            .replace(/\r\n/g, "\n")
+            .split("\n");
+
+        let jsonText = "";
+
+        for (const line of lines) {
+
+          if (line.startsWith("data:")) {
+
+            const value =
+              line
+                .substring(5)
+                .trim();
+
+            if (value) {
+              jsonText += value;
+            }
+
+          }
+
+        }
+
+        if (jsonText) {
+
+          try {
+
+            const event =
+              JSON.parse(jsonText);
+
+            if (
+              event.event_type ===
+                "step.delta" &&
+              event.delta?.type ===
+                "text" &&
+              event.delta.text
+            ) {
+
+              res.write(
+                "data: " +
+                JSON.stringify({
+                  type: "text",
+                  text: event.delta.text
+                }) +
+                "\n\n"
+              );
+
+            }
+
+          } catch {}
+
+        }
+
+      }
+
 
       if (!res.writableEnded) {
 
@@ -361,16 +476,14 @@ function streamAI(message, res) {
 }
 
 
-/*
-  Server
-*/
+/* =========================
+   SERVER
+========================= */
 
 const server = http.createServer((req, res) => {
 
 
-  /*
-    الصفحة الرئيسية
-  */
+  /* الصفحة الرئيسية */
 
   if (
     req.method === "GET" &&
@@ -411,9 +524,7 @@ const server = http.createServer((req, res) => {
   }
 
 
-  /*
-    Health
-  */
+  /* Health */
 
   if (
     req.method === "GET" &&
@@ -430,9 +541,7 @@ const server = http.createServer((req, res) => {
   }
 
 
-  /*
-    AI Chat Streaming
-  */
+  /* AI Chat */
 
   if (
     req.method === "POST" &&
@@ -451,6 +560,7 @@ const server = http.createServer((req, res) => {
           });
 
         }
+
 
         const message =
           String(
@@ -479,9 +589,7 @@ const server = http.createServer((req, res) => {
   }
 
 
-  /*
-    إنشاء مشروع
-  */
+  /* إنشاء مشروع */
 
   if (
     req.method === "POST" &&
@@ -500,6 +608,7 @@ const server = http.createServer((req, res) => {
           });
 
         }
+
 
         sendJSON(res, 200, {
 
@@ -522,9 +631,7 @@ const server = http.createServer((req, res) => {
   }
 
 
-  /*
-    404
-  */
+  /* 404 */
 
   sendJSON(res, 404, {
     success: false,
