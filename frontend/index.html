@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aizen AI Builder</title>
+
   <style>
     * {
       box-sizing: border-box;
@@ -70,8 +71,9 @@
       cursor: pointer;
     }
 
-    .type:hover {
+    .type.selected {
       border-color: #7c3aed;
+      background: #1b1233;
     }
 
     button {
@@ -110,16 +112,15 @@
 
     <textarea
       id="idea"
-      placeholder="اكتب فكرتك هنا...&#10;&#10;مثال: أريد بوت Discord لإدارة السيرفر مع نظام تذاكر وتحذيرات...">
-    </textarea>
+      placeholder="اكتب فكرة المشروع هنا..."></textarea>
 
     <div class="types">
-      <div class="type" onclick="selectType('Telegram Bot')">🤖 Telegram</div>
-      <div class="type" onclick="selectType('Discord Bot')">💬 Discord</div>
-      <div class="type" onclick="selectType('Website')">🌐 Website</div>
-      <div class="type" onclick="selectType('Android App')">📱 Android</div>
-      <div class="type" onclick="selectType('Python')">🐍 Python</div>
-      <div class="type" onclick="selectType('Node.js')">🟢 Node.js</div>
+      <div class="type selected" onclick="selectType(this, 'Website')">🌐 Website</div>
+      <div class="type" onclick="selectType(this, 'Telegram Bot')">🤖 Telegram</div>
+      <div class="type" onclick="selectType(this, 'Discord Bot')">💬 Discord</div>
+      <div class="type" onclick="selectType(this, 'Android App')">📱 Android</div>
+      <div class="type" onclick="selectType(this, 'Python')">🐍 Python</div>
+      <div class="type" onclick="selectType(this, 'Node.js')">🟢 Node.js</div>
     </div>
 
     <button onclick="createProject()">
@@ -133,23 +134,56 @@
   <script>
     let projectType = "Website";
 
-    function selectType(type) {
+    function selectType(element, type) {
       projectType = type;
+
+      document.querySelectorAll(".type").forEach(el => {
+        el.classList.remove("selected");
+      });
+
+      element.classList.add("selected");
+
       document.getElementById("status").textContent =
         "تم اختيار: " + type;
     }
 
-    function createProject() {
+    async function createProject() {
       const idea = document.getElementById("idea").value.trim();
+      const status = document.getElementById("status");
 
       if (!idea) {
-        document.getElementById("status").textContent =
-          "❌ اكتب فكرة المشروع أولاً";
+        status.textContent = "❌ اكتب فكرة المشروع أولاً";
         return;
       }
 
-      document.getElementById("status").textContent =
-        "🧠 سيتم إرسال فكرتك إلى AI Agent...";
+      status.textContent = "🔄 جاري إرسال المشروع...";
+
+      try {
+        const response = await fetch(
+          "https://aizen-ai-builder.onrender.com/api/create",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              idea: idea,
+              type: projectType
+            })
+          }
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+          status.textContent = "✅ تم إرسال المشروع بنجاح";
+        } else {
+          status.textContent = "❌ " + (data.error || "حدث خطأ");
+        }
+
+      } catch (error) {
+        status.textContent = "❌ تعذر الاتصال بالسيرفر";
+      }
     }
   </script>
 
