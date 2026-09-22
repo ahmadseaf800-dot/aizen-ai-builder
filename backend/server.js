@@ -62,7 +62,7 @@ function askAI(message, callback) {
   const options = {
     hostname: "generativelanguage.googleapis.com",
     path:
-      "/v1beta/models/gemini-2.5-flash:generateContent?key=" +
+      "/v1beta/models/gemini-3.6-flash:generateContent?key=" +
       encodeURIComponent(GEMINI_API_KEY),
     method: "POST",
     headers: {
@@ -131,7 +131,6 @@ function askAI(message, callback) {
 
 const server = http.createServer((req, res) => {
 
-  // الصفحة الرئيسية
   if (req.method === "GET" && req.url === "/") {
 
     const filePath =
@@ -158,7 +157,6 @@ const server = http.createServer((req, res) => {
   }
 
 
-  // فحص السيرفر
   if (req.method === "GET" && req.url === "/api/health") {
 
     return sendJSON(res, 200, {
@@ -170,7 +168,6 @@ const server = http.createServer((req, res) => {
   }
 
 
-  // المحادثة مع Gemini
   if (req.method === "POST" && req.url === "/api/chat") {
 
     return readBody(req, (error, data) => {
@@ -217,7 +214,6 @@ const server = http.createServer((req, res) => {
   }
 
 
-  // إنشاء مشروع
   if (req.method === "POST" && req.url === "/api/create") {
 
     return readBody(req, (error, data) => {
@@ -241,7 +237,6 @@ const server = http.createServer((req, res) => {
   }
 
 
-  // غير موجود
   sendJSON(res, 404, {
     success: false,
     error: "Not Found"
