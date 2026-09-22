@@ -1,10 +1,10 @@
 {
-  "name": "aizen-ai-builder-backend",
+  "name": "aizen-ai-builder",
   "version": "1.0.0",
-  "description": "Aizen AI Builder Backend",
-  "main": "server.js",
+  "description": "Aizen AI Builder",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node backend/server.js"
   },
   "engines": {
     "node": "22.x"
