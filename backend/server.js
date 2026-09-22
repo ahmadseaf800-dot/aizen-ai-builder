@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const PORT = process.env.PORT || 3000;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 function sendJSON(res, status, data) {
   res.writeHead(status, {
@@ -32,34 +32,41 @@ function readBody(req, callback) {
 
 function askAI(message, callback) {
 
-  if (!OPENAI_API_KEY) {
+  if (!GEMINI_API_KEY) {
     return callback(
-      new Error("OPENAI_API_KEY غير موجود في Environment Variables")
+      new Error("GEMINI_API_KEY غير موجود في Render")
     );
   }
 
   const requestData = JSON.stringify({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content:
-          "أنت Aizen AI، مساعد ذكي داخل منصة Aizen AI Builder. أجب بالعربية بشكل واضح ومفيد. إذا طلب المستخدم بناء مشروع، ساعده في تخطيط المشروع والكود."
-      },
+    system_instruction: {
+      parts: [
+        {
+          text:
+            "أنت Aizen AI، مساعد ذكي داخل منصة Aizen AI Builder. أجب بالعربية بشكل واضح ومفيد. ساعد المستخدم في البرمجة وبناء المواقع والتطبيقات والبوتات. إذا طلب المستخدم مشروعاً، ساعده في التخطيط والكود."
+        }
+      ]
+    },
+    contents: [
       {
         role: "user",
-        content: message
+        parts: [
+          {
+            text: message
+          }
+        ]
       }
     ]
   });
 
   const options = {
-    hostname: "api.openai.com",
-    path: "/v1/chat/completions",
+    hostname: "generativelanguage.googleapis.com",
+    path:
+      "/v1beta/models/gemini-2.5-flash:generateContent?key=" +
+      encodeURIComponent(GEMINI_API_KEY),
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": "Bearer " + OPENAI_API_KEY,
       "Content-Length": Buffer.byteLength(requestData)
     }
   };
@@ -78,30 +85,35 @@ function askAI(message, callback) {
 
         const result = JSON.parse(data);
 
-        if (response.statusCode < 200 || response.statusCode >= 300) {
+        if (
+          response.statusCode < 200 ||
+          response.statusCode >= 300
+        ) {
           return callback(
             new Error(
               result?.error?.message ||
-              "حدث خطأ أثناء الاتصال بالذكاء الاصطناعي"
+              "حدث خطأ من Gemini"
             )
           );
         }
 
         const reply =
-          result?.choices?.[0]?.message?.content;
+          result?.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!reply) {
           return callback(
-            new Error("لم يتم الحصول على رد من الذكاء الاصطناعي")
+            new Error("Gemini لم يرجع أي رد")
           );
         }
 
         callback(null, reply);
 
       } catch (error) {
+
         callback(
-          new Error("استجابة غير صحيحة من الذكاء الاصطناعي")
+          new Error("استجابة غير صحيحة من Gemini")
         );
+
       }
 
     });
@@ -158,7 +170,7 @@ const server = http.createServer((req, res) => {
   }
 
 
-  // المحادثة مع AI
+  // المحادثة مع Gemini
   if (req.method === "POST" && req.url === "/api/chat") {
 
     return readBody(req, (error, data) => {
