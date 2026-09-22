@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const PORT = process.env.PORT || 3000;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 const server = http.createServer((req, res) => {
 
@@ -39,7 +40,8 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify({
       success: true,
       name: "Aizen AI Builder",
-      status: "healthy"
+      status: "healthy",
+      ai_key: !!OPENAI_API_KEY
     }));
   }
 
@@ -63,7 +65,8 @@ const server = http.createServer((req, res) => {
           success: true,
           message: "تم استلام المشروع",
           idea: data.idea,
-          type: data.type
+          type: data.type,
+          ai_ready: !!OPENAI_API_KEY
         }));
 
       } catch (error) {
@@ -81,7 +84,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // أي رابط غير معروف
+  // رابط غير موجود
   res.writeHead(404, {
     "Content-Type": "application/json; charset=utf-8"
   });
