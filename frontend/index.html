@@ -3,30 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Aizen AI</title>
+  <title>Aizen AI Builder</title>
 
   <style>
     * {
       box-sizing: border-box;
     }
 
-    html,
     body {
       margin: 0;
-      width: 100%;
-      height: 100%;
+      background: #0b0d10;
+      color: #f1f3f5;
       font-family: Arial, sans-serif;
-      background: #0b0d12;
-      color: #fff;
-    }
-
-    body {
+      height: 100vh;
       overflow: hidden;
     }
 
     .app {
-      width: 100%;
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -34,148 +27,110 @@
 
     .header {
       height: 60px;
-      min-height: 60px;
-      border-bottom: 1px solid #20242d;
+      border-bottom: 1px solid #24272d;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 18px;
-      background: #0b0d12;
+      padding: 0 14px;
+      background: #0d0f12;
     }
 
     .brand {
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 18px;
       font-weight: bold;
+      font-size: 18px;
     }
 
     .logo {
       width: 34px;
       height: 34px;
       border-radius: 10px;
-      background: #7c3aed;
       display: flex;
       align-items: center;
       justify-content: center;
+      background: #181b21;
+      border: 1px solid #30343b;
+    }
+
+    button {
+      cursor: pointer;
     }
 
     .new-chat {
-      border: 1px solid #292e39;
-      background: #151820;
-      color: #ddd;
-      border-radius: 10px;
-      padding: 9px 13px;
-      cursor: pointer;
+      border: 1px solid #30343b;
+      background: #17191e;
+      color: white;
+      border-radius: 9px;
+      padding: 8px 12px;
     }
 
     .chat {
       flex: 1;
       overflow-y: auto;
-      padding: 30px 15px 150px;
-      scroll-behavior: smooth;
-    }
-
-    .messages {
-      width: 100%;
-      max-width: 850px;
-      margin: auto;
+      padding: 25px 12px 145px;
     }
 
     .welcome {
-      min-height: 55vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      max-width: 700px;
+      margin: 80px auto 0;
       text-align: center;
-      flex-direction: column;
     }
 
-    .welcome-logo {
-      width: 65px;
-      height: 65px;
-      border-radius: 20px;
-      background: #7c3aed;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      margin-bottom: 20px;
+    .welcome-icon {
+      font-size: 45px;
     }
 
     .welcome h1 {
-      margin: 0 0 10px;
-      font-size: 32px;
+      font-size: 28px;
+      margin: 15px 0 10px;
     }
 
     .welcome p {
-      margin: 0;
-      color: #858b98;
-      font-size: 15px;
+      color: #999da5;
     }
 
     .message {
+      max-width: 850px;
+      margin: 0 auto 18px;
       display: flex;
-      margin: 22px 0;
-      gap: 12px;
+      gap: 10px;
       align-items: flex-start;
     }
 
+    .message.user {
+      flex-direction: row-reverse;
+    }
+
     .avatar {
-      width: 34px;
-      height: 34px;
       min-width: 34px;
+      height: 34px;
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    .user .avatar {
-      background: #252a35;
-    }
-
-    .ai .avatar {
-      background: #7c3aed;
+      background: #181b21;
+      border: 1px solid #2d3138;
     }
 
     .bubble {
       max-width: calc(100% - 50px);
-      line-height: 1.7;
-      font-size: 15px;
+      padding: 11px 14px;
+      border-radius: 14px;
+      background: #15181d;
+      border: 1px solid #252930;
       white-space: pre-wrap;
       word-break: break-word;
+      line-height: 1.6;
     }
 
     .user .bubble {
-      background: #1b1f27;
-      padding: 11px 15px;
-      border-radius: 16px;
-    }
-
-    .ai .bubble {
-      padding-top: 4px;
+      background: #20242b;
     }
 
     .typing {
-      color: #8b93a3;
-    }
-
-    .cursor {
-      display: inline-block;
-      width: 7px;
-      height: 17px;
-      background: #8b5cf6;
-      margin-right: 3px;
-      vertical-align: middle;
-      animation: blink 0.8s infinite;
-    }
-
-    @keyframes blink {
-      50% {
-        opacity: 0;
-      }
+      color: #999da5;
     }
 
     .bottom {
@@ -183,145 +138,84 @@
       bottom: 0;
       left: 0;
       right: 0;
+      padding: 20px 12px 14px;
       background: linear-gradient(
         to top,
-        #0b0d12 70%,
+        #0b0d10 75%,
         transparent
       );
-      padding: 20px 15px 18px;
+    }
+
+    .composer-wrap {
+      max-width: 850px;
+      margin: auto;
     }
 
     .composer {
-      width: 100%;
-      max-width: 850px;
-      margin: auto;
-      background: #151820;
-      border: 1px solid #2a2f39;
-      border-radius: 18px;
-      padding: 10px;
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
-    }
-
-    .textarea-row {
       display: flex;
       align-items: flex-end;
       gap: 8px;
+      padding: 8px;
+      border: 1px solid #30343b;
+      background: #14171b;
+      border-radius: 15px;
     }
 
     textarea {
       flex: 1;
-      min-height: 44px;
-      max-height: 180px;
       resize: none;
-      border: 0;
-      outline: 0;
+      min-height: 42px;
+      max-height: 150px;
       background: transparent;
+      border: 0;
+      outline: none;
       color: white;
-      font-size: 15px;
-      line-height: 1.5;
       padding: 10px;
+      font-family: inherit;
+      font-size: 15px;
     }
 
     textarea::placeholder {
-      color: #727887;
+      color: #777c85;
     }
 
-    .icon-button,
-    .send-button {
-      width: 40px;
-      height: 40px;
-      min-width: 40px;
-      border: 0;
+    .icon-btn {
+      width: 42px;
+      height: 42px;
       border-radius: 11px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .icon-button {
-      background: transparent;
-      color: #9ca3af;
-      font-size: 20px;
-    }
-
-    .icon-button:hover {
-      background: #222631;
-    }
-
-    .send-button {
-      background: #7c3aed;
+      border: 1px solid #30343b;
+      background: #1b1e23;
       color: white;
       font-size: 18px;
     }
 
-    .send-button:hover {
-      background: #6d28d9;
+    .send {
+      background: white;
+      color: #111;
     }
 
-    .send-button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .tools {
+    .actions {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 6px;
-      padding: 3px 4px 0;
-    }
-
-    .build-button {
-      background: transparent;
-      border: 1px solid #292e39;
-      color: #aeb4c0;
-      border-radius: 9px;
-      padding: 7px 10px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
-    .build-button:hover {
-      background: #20242d;
-      color: white;
-    }
-
-    .disclaimer {
-      text-align: center;
-      color: #626875;
-      font-size: 11px;
       margin-top: 8px;
     }
 
-    #fileInput {
-      display: none;
+    .build {
+      border: 1px solid #30343b;
+      background: #15181d;
+      color: white;
+      padding: 8px 13px;
+      border-radius: 9px;
     }
 
-    @media (max-width: 600px) {
+    .warning {
+      color: #686d76;
+      font-size: 11px;
+    }
 
-      .header {
-        padding: 0 12px;
-      }
-
-      .chat {
-        padding-top: 20px;
-      }
-
-      .welcome h1 {
-        font-size: 27px;
-      }
-
-      .bubble {
-        font-size: 14px;
-      }
-
-      .bottom {
-        padding: 12px 10px;
-      }
-
-      .new-chat {
-        font-size: 12px;
-      }
+    input[type="file"] {
+      display: none;
     }
   </style>
 </head>
@@ -353,26 +247,19 @@
   >
 
     <div
-      class="messages"
-      id="messages"
+      class="welcome"
+      id="welcome"
     >
 
-      <div
-        class="welcome"
-        id="welcome"
-      >
-
-        <div class="welcome-logo">
-          🤖
-        </div>
-
-        <h1>كيف يمكنني مساعدتك؟</h1>
-
-        <p>
-          تحدث مع Aizen أو اطلب منه بناء مشروعك.
-        </p>
-
+      <div class="welcome-icon">
+        🤖
       </div>
+
+      <h1>Aizen AI</h1>
+
+      <p>
+        اسأل Aizen عن البرمجة أو بناء المواقع والتطبيقات والبوتات.
+      </p>
 
     </div>
 
@@ -381,35 +268,32 @@
 
   <div class="bottom">
 
-    <div class="composer">
+    <div class="composer-wrap">
 
-      <div class="textarea-row">
-
-        <input
-          type="file"
-          id="fileInput"
-          onchange="fileSelected()"
-        >
+      <div class="composer">
 
         <button
-          class="icon-button"
-          onclick="openFile()"
-          title="إرفاق ملف"
+          class="icon-btn"
+          onclick="document.getElementById('fileInput').click()"
         >
           ＋
         </button>
 
+        <input
+          id="fileInput"
+          type="file"
+          onchange="fileSelected(this)"
+        >
+
         <textarea
-          id="message"
-          rows="1"
+          id="messageInput"
           placeholder="اسأل Aizen أي شيء..."
+          rows="1"
           onkeydown="handleKey(event)"
-          oninput="autoResize(this)"
         ></textarea>
 
         <button
-          class="send-button"
-          id="sendButton"
+          class="icon-btn send"
           onclick="sendMessage()"
         >
           ↑
@@ -418,22 +302,21 @@
       </div>
 
 
-      <div class="tools">
+      <div class="actions">
 
         <button
-          class="build-button"
+          class="build"
           onclick="buildProject()"
         >
           🛠️ Build
         </button>
 
+        <div class="warning">
+          Aizen AI يمكن أن يخطئ. تحقق من المعلومات المهمة.
+        </div>
+
       </div>
 
-    </div>
-
-
-    <div class="disclaimer">
-      Aizen AI يمكن أن يخطئ. تحقق من المعلومات المهمة.
     </div>
 
   </div>
@@ -443,388 +326,62 @@
 
 <script>
 
-let isGenerating = false;
+const input =
+  document.getElementById("messageInput");
+
+const chat =
+  document.getElementById("chat");
 
 
 /*
-  إضافة رسالة
+  رابط Render الحقيقي.
+
+  في الموقع المنشور:
+  سيتم استخدام /api/chat.
+
+  في Preview:
+  سيتم استخدام Render مباشرة.
 */
 
-function addMessage(text, type) {
+const RENDER_URL =
+  "https://aizen-ai-builder.onrender.com";
 
-  const messages =
-    document.getElementById("messages");
 
-  const welcome =
-    document.getElementById("welcome");
+function getApiUrl() {
 
-  if (welcome) {
-    welcome.remove();
+  const hostname =
+    window.location.hostname;
+
+  /*
+    إذا كانت الصفحة على Render
+    أو على الموقع نفسه
+  */
+
+  if (
+    hostname ===
+      "aizen-ai-builder.onrender.com"
+  ) {
+
+    return "/api/chat";
+
   }
-
-  const message =
-    document.createElement("div");
-
-  message.className =
-    "message " + type;
-
-  const avatar =
-    document.createElement("div");
-
-  avatar.className =
-    "avatar";
-
-  avatar.textContent =
-    type === "user"
-      ? "👤"
-      : "🤖";
-
-  const bubble =
-    document.createElement("div");
-
-  bubble.className =
-    "bubble";
-
-  bubble.textContent =
-    text;
-
-  message.appendChild(avatar);
-  message.appendChild(bubble);
-
-  messages.appendChild(message);
-
-  scrollToBottom();
-
-  return bubble;
-}
-
-
-/*
-  تمرير لأسفل
-*/
-
-function scrollToBottom() {
-
-  const chat =
-    document.getElementById("chat");
-
-  chat.scrollTop =
-    chat.scrollHeight;
-
-}
-
-
-/*
-  إرسال الرسالة
-*/
-
-async function sendMessage() {
-
-  if (isGenerating) {
-    return;
-  }
-
-  const input =
-    document.getElementById("message");
-
-  const button =
-    document.getElementById("sendButton");
-
-  const message =
-    input.value.trim();
-
-  if (!message) {
-    return;
-  }
-
-  isGenerating = true;
-
-  button.disabled = true;
-
-  addMessage(
-    message,
-    "user"
-  );
-
-  input.value = "";
-
-  autoResize(input);
 
 
   /*
-    إنشاء رسالة AI فارغة
+    Preview أو أي بيئة أخرى
   */
 
-  const aiBubble =
-    addMessage(
-      "",
-      "ai"
-    );
-
-  aiBubble.classList.add(
-    "typing"
+  return (
+    RENDER_URL +
+    "/api/chat"
   );
-
-  aiBubble.innerHTML =
-    'جاري التفكير<span class="cursor"></span>';
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/chat",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            message: message
-          })
-        }
-      );
-
-
-    /*
-      إذا رجع السيرفر خطأ
-    */
-
-    if (!response.ok) {
-
-      let errorText =
-        "حدث خطأ من السيرفر";
-
-      try {
-
-        const errorData =
-          await response.json();
-
-        errorText =
-          errorData.error ||
-          errorText;
-
-      } catch {}
-
-      aiBubble.classList.remove(
-        "typing"
-      );
-
-      aiBubble.textContent =
-        "❌ " + errorText;
-
-      return;
-    }
-
-
-    /*
-      قراءة Streaming
-    */
-
-    if (!response.body) {
-
-      throw new Error(
-        "المتصفح لا يدعم Streaming"
-      );
-
-    }
-
-
-    const reader =
-      response.body.getReader();
-
-    const decoder =
-      new TextDecoder("utf-8");
-
-    let buffer = "";
-
-    let fullText = "";
-
-    let started = false;
-
-
-    while (true) {
-
-      const {
-        value,
-        done
-      } =
-        await reader.read();
-
-      if (done) {
-        break;
-      }
-
-      buffer +=
-        decoder.decode(
-          value,
-          {
-            stream: true
-          }
-        );
-
-
-      const events =
-        buffer.split("\n\n");
-
-      buffer =
-        events.pop() || "";
-
-
-      for (
-        const eventBlock
-        of events
-      ) {
-
-        const lines =
-          eventBlock.split("\n");
-
-        let dataLine = "";
-
-
-        for (
-          const line
-          of lines
-        ) {
-
-          if (
-            line.startsWith("data:")
-          ) {
-
-            dataLine +=
-              line
-                .substring(5)
-                .trim();
-
-          }
-
-        }
-
-
-        if (!dataLine) {
-          continue;
-        }
-
-
-        try {
-
-          const event =
-            JSON.parse(
-              dataLine
-            );
-
-
-          /*
-            وصول جزء جديد
-          */
-
-          if (
-            event.type === "text"
-          ) {
-
-            if (!started) {
-
-              started = true;
-
-              aiBubble.classList.remove(
-                "typing"
-              );
-
-              aiBubble.textContent =
-                "";
-
-            }
-
-            fullText +=
-              event.text;
-
-            aiBubble.textContent =
-              fullText;
-
-            scrollToBottom();
-
-          }
-
-
-          /*
-            خطأ
-          */
-
-          if (
-            event.type === "error"
-          ) {
-
-            aiBubble.classList.remove(
-              "typing"
-            );
-
-            aiBubble.textContent =
-              "❌ " +
-              event.error;
-
-          }
-
-        } catch (error) {
-
-          console.log(
-            "Stream event parse error",
-            error
-          );
-
-        }
-
-      }
-
-    }
-
-
-    /*
-      إذا انتهى بدون نص
-    */
-
-    if (!fullText) {
-
-      aiBubble.classList.remove(
-        "typing"
-      );
-
-      aiBubble.textContent =
-        "❌ لم يصل أي رد من Aizen.";
-
-    }
-
-
-  } catch (error) {
-
-    console.error(error);
-
-    aiBubble.classList.remove(
-      "typing"
-    );
-
-    aiBubble.textContent =
-      "❌ تعذر الاتصال بالسيرفر.";
-
-  }
-
-
-  isGenerating = false;
-
-  button.disabled = false;
-
-  input.focus();
-
-  scrollToBottom();
 
 }
 
 
-/*
-  Enter للإرسال
-*/
+/* =========================
+   ENTER
+========================= */
 
 function handleKey(event) {
 
@@ -842,49 +399,266 @@ function handleKey(event) {
 }
 
 
-/*
-  تكبير مربع الكتابة
-*/
+/* =========================
+   MESSAGE
+========================= */
 
-function autoResize(element) {
+function addMessage(
+  text,
+  type
+) {
 
-  element.style.height =
-    "auto";
+  const welcome =
+    document.getElementById("welcome");
 
-  element.style.height =
-    Math.min(
-      element.scrollHeight,
-      180
-    ) + "px";
+  if (welcome) {
+    welcome.style.display = "none";
+  }
+
+
+  const message =
+    document.createElement("div");
+
+  message.className =
+    "message " + type;
+
+
+  const avatar =
+    document.createElement("div");
+
+  avatar.className =
+    "avatar";
+
+  avatar.textContent =
+    type === "user"
+      ? "👤"
+      : "🤖";
+
+
+  const bubble =
+    document.createElement("div");
+
+  bubble.className =
+    "bubble";
+
+  bubble.textContent =
+    text;
+
+
+  message.appendChild(
+    avatar
+  );
+
+  message.appendChild(
+    bubble
+  );
+
+  chat.appendChild(
+    message
+  );
+
+
+  chat.scrollTop =
+    chat.scrollHeight;
+
+
+  return bubble;
 
 }
 
 
-/*
-  محادثة جديدة
-*/
+/* =========================
+   SEND
+========================= */
+
+async function sendMessage() {
+
+  const message =
+    input.value.trim();
+
+
+  if (!message) {
+    return;
+  }
+
+
+  input.value = "";
+
+
+  addMessage(
+    message,
+    "user"
+  );
+
+
+  const aiBubble =
+    addMessage(
+      "جاري التفكير...",
+      "ai"
+    );
+
+
+  aiBubble.classList.add(
+    "typing"
+  );
+
+
+  try {
+
+    const apiUrl =
+      getApiUrl();
+
+
+    console.log(
+      "Aizen API:",
+      apiUrl
+    );
+
+
+    const response =
+      await fetch(
+        apiUrl,
+        {
+
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              message:
+                message
+            })
+
+        }
+      );
+
+
+    const raw =
+      await response.text();
+
+
+    console.log(
+      "Aizen response:",
+      raw
+    );
+
+
+    let data;
+
+
+    try {
+
+      data =
+        JSON.parse(raw);
+
+    } catch {
+
+      aiBubble.classList.remove(
+        "typing"
+      );
+
+      aiBubble.textContent =
+        "❌ السيرفر لم يرجع JSON.\n\n" +
+        raw.substring(
+          0,
+          500
+        );
+
+      return;
+
+    }
+
+
+    aiBubble.classList.remove(
+      "typing"
+    );
+
+
+    if (!response.ok) {
+
+      aiBubble.textContent =
+        "❌ " +
+        (
+          data.error ||
+          "حدث خطأ في Aizen."
+        );
+
+      return;
+
+    }
+
+
+    if (
+      data.success === true &&
+      data.text
+    ) {
+
+      aiBubble.textContent =
+        data.text;
+
+    } else {
+
+      aiBubble.textContent =
+        "❌ " +
+        (
+          data.error ||
+          "لم يصل أي رد من Aizen."
+        );
+
+    }
+
+
+    chat.scrollTop =
+      chat.scrollHeight;
+
+
+  } catch (error) {
+
+    console.error(
+      error
+    );
+
+
+    aiBubble.classList.remove(
+      "typing"
+    );
+
+
+    aiBubble.textContent =
+      "❌ تعذر الاتصال بـ Aizen.\n\n" +
+      "Error: " +
+      error.message;
+
+  }
+
+}
+
+
+/* =========================
+   NEW CHAT
+========================= */
 
 function newChat() {
 
-  document.getElementById(
-    "messages"
-  ).innerHTML = `
+  chat.innerHTML = `
 
     <div
       class="welcome"
       id="welcome"
     >
 
-      <div class="welcome-logo">
+      <div class="welcome-icon">
         🤖
       </div>
 
-      <h1>
-        كيف يمكنني مساعدتك؟
-      </h1>
+      <h1>Aizen AI</h1>
 
       <p>
-        تحدث مع Aizen أو اطلب منه بناء مشروعك.
+        اسأل Aizen عن البرمجة أو بناء المواقع والتطبيقات والبوتات.
       </p>
 
     </div>
@@ -894,53 +668,52 @@ function newChat() {
 }
 
 
-/*
-  إرفاق ملف
-*/
+/* =========================
+   FILE
+========================= */
 
-function openFile() {
+function fileSelected(file) {
 
-  document
-    .getElementById("fileInput")
-    .click();
+  if (
+    file &&
+    file.files &&
+    file.files[0]
+  ) {
 
-}
+    addMessage(
+      "📎 تم اختيار الملف: " +
+      file.files[0].name,
+      "user"
+    );
 
-
-function fileSelected() {
-
-  const file =
-    document
-      .getElementById("fileInput")
-      .files[0];
-
-  if (!file) {
-    return;
   }
 
-  addMessage(
-    "📎 " + file.name,
-    "user"
-  );
-
 }
 
 
-/*
-  زر Build
-*/
+/* =========================
+   BUILD
+========================= */
 
 function buildProject() {
 
-  const input =
-    document.getElementById("message");
+  const idea =
+    prompt(
+      "ماذا تريد أن أبني لك؟"
+    );
+
+
+  if (!idea) {
+    return;
+  }
+
 
   input.value =
-    "أريد بناء مشروع: ";
+    "أريد بناء مشروع: " +
+    idea;
 
-  input.focus();
 
-  autoResize(input);
+  sendMessage();
 
 }
 
