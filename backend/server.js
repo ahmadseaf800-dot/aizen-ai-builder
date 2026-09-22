@@ -1,3 +1,4 @@
+const https = require("https");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -15,6 +16,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(500, {
           "Content-Type": "text/plain; charset=utf-8"
         });
+
         return res.end("Frontend Error");
       }
 
@@ -79,6 +81,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // أي رابط غير معروف
   res.writeHead(404, {
     "Content-Type": "application/json; charset=utf-8"
   });
