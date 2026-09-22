@@ -6,7 +6,7 @@ const path = require("path");
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-const MODEL = "gemini-3.8-flash";
+const MODEL = "gemini-3.6-flash";
 
 function sendJSON(res, status, data) {
   res.writeHead(status, {
