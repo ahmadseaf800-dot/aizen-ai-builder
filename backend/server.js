@@ -4,20 +4,13 @@ const PORT = process.env.PORT || 3000;
 
 const server = http.createServer((req, res) => {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
 
-  if (req.method === "GET" && req.url === "/") {
+  if (req.url === "/" || req.url === "/api/health") {
     res.writeHead(200);
     return res.end(JSON.stringify({
       success: true,
       name: "Aizen AI Builder",
-      status: "online"
-    }));
-  }
-
-  if (req.method === "GET" && req.url === "/api/health") {
-    res.writeHead(200);
-    return res.end(JSON.stringify({
-      success: true,
       status: "healthy"
     }));
   }
