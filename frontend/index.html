@@ -3,189 +3,601 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aizen AI Builder</title>
+  <title>Aizen AI</title>
 
   <style>
     * {
       box-sizing: border-box;
     }
 
+    html,
     body {
       margin: 0;
-      min-height: 100vh;
-      font-family: Arial, sans-serif;
-      background: #080b14;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-
-    .container {
       width: 100%;
-      max-width: 700px;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background: #0b0d12;
+      color: #fff;
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    .app {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+
+    .header {
+      height: 60px;
+      min-height: 60px;
+      border-bottom: 1px solid #20242d;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      background: #0b0d12;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: #7c3aed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 19px;
+    }
+
+    .new-chat {
+      border: 1px solid #292e39;
+      background: #151820;
+      color: #ddd;
+      border-radius: 10px;
+      padding: 9px 13px;
+      cursor: pointer;
+    }
+
+    .new-chat:hover {
+      background: #1c202a;
+    }
+
+    /* Chat */
+
+    .chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 30px 15px 150px;
+      scroll-behavior: smooth;
+    }
+
+    .messages {
+      width: 100%;
+      max-width: 850px;
+      margin: auto;
+    }
+
+    .welcome {
+      min-height: 55vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       text-align: center;
+      flex-direction: column;
     }
 
-    h1 {
-      font-size: 42px;
-      margin-bottom: 10px;
+    .welcome-logo {
+      width: 65px;
+      height: 65px;
+      border-radius: 20px;
+      background: #7c3aed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin-bottom: 20px;
     }
 
-    .subtitle {
-      color: #9ca3af;
-      margin-bottom: 30px;
+    .welcome h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+    }
+
+    .welcome p {
+      margin: 0;
+      color: #858b98;
+      font-size: 15px;
+    }
+
+    .message {
+      display: flex;
+      margin: 22px 0;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .message.user {
+      justify-content: flex-start;
+    }
+
+    .message.ai {
+      justify-content: flex-start;
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .user .avatar {
+      background: #252a35;
+    }
+
+    .ai .avatar {
+      background: #7c3aed;
+    }
+
+    .bubble {
+      max-width: calc(100% - 50px);
+      line-height: 1.7;
+      font-size: 15px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .user .bubble {
+      background: #1b1f27;
+      padding: 11px 15px;
+      border-radius: 16px;
+    }
+
+    .ai .bubble {
+      padding-top: 4px;
+    }
+
+    /* Bottom */
+
+    .bottom {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(
+        to top,
+        #0b0d12 70%,
+        transparent
+      );
+      padding: 20px 15px 18px;
+    }
+
+    .composer {
+      width: 100%;
+      max-width: 850px;
+      margin: auto;
+      background: #151820;
+      border: 1px solid #2a2f39;
+      border-radius: 18px;
+      padding: 10px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+    }
+
+    .textarea-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
     }
 
     textarea {
-      width: 100%;
-      min-height: 180px;
-      resize: vertical;
-      padding: 18px;
-      border-radius: 16px;
-      border: 1px solid #252b3a;
-      background: #111625;
-      color: white;
-      font-size: 16px;
-      outline: none;
-    }
-
-    textarea:focus {
-      border-color: #7c3aed;
-    }
-
-    .types {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin: 18px 0;
-    }
-
-    .type {
-      padding: 14px;
-      border: 1px solid #252b3a;
-      border-radius: 12px;
-      background: #111625;
-      color: white;
-      cursor: pointer;
-    }
-
-    .type.selected {
-      border-color: #7c3aed;
-      background: #1b1233;
-    }
-
-    button {
-      width: 100%;
-      padding: 16px;
+      flex: 1;
+      min-height: 44px;
+      max-height: 180px;
+      resize: none;
       border: 0;
-      border-radius: 14px;
+      outline: 0;
+      background: transparent;
+      color: white;
+      font-size: 15px;
+      line-height: 1.5;
+      padding: 10px;
+    }
+
+    textarea::placeholder {
+      color: #727887;
+    }
+
+    .icon-button,
+    .send-button {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border: 0;
+      border-radius: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-button {
+      background: transparent;
+      color: #9ca3af;
+      font-size: 20px;
+    }
+
+    .icon-button:hover {
+      background: #222631;
+    }
+
+    .send-button {
       background: #7c3aed;
       color: white;
       font-size: 18px;
-      font-weight: bold;
-      cursor: pointer;
     }
 
-    button:hover {
+    .send-button:hover {
       background: #6d28d9;
     }
 
-    #status {
-      margin-top: 20px;
-      color: #a78bfa;
-      min-height: 25px;
+    .tools {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 4px 0;
+    }
+
+    .build-button {
+      background: transparent;
+      border: 1px solid #292e39;
+      color: #aeb4c0;
+      border-radius: 9px;
+      padding: 7px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .build-button:hover {
+      background: #20242d;
+      color: white;
+    }
+
+    .disclaimer {
+      text-align: center;
+      color: #626875;
+      font-size: 11px;
+      margin-top: 8px;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .typing {
+      color: #8b93a3;
+      font-size: 14px;
+    }
+
+    @media (max-width: 600px) {
+      .header {
+        padding: 0 12px;
+      }
+
+      .chat {
+        padding-top: 20px;
+      }
+
+      .welcome h1 {
+        font-size: 27px;
+      }
+
+      .bubble {
+        font-size: 14px;
+      }
+
+      .bottom {
+        padding: 12px 10px 12px;
+      }
+
+      .new-chat {
+        font-size: 12px;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <div class="container">
+<div class="app">
 
-    <h1>🤖 AIZEN AI</h1>
+  <header class="header">
 
-    <div class="subtitle">
-      ابنِ تطبيقك أو بوتك باستخدام الذكاء الاصطناعي
+    <div class="brand">
+      <div class="logo">🤖</div>
+      <span>Aizen AI</span>
     </div>
 
-    <textarea
-      id="idea"
-      placeholder="اكتب فكرة المشروع هنا..."></textarea>
-
-    <div class="types">
-      <div class="type selected" onclick="selectType(this, 'Website')">🌐 Website</div>
-      <div class="type" onclick="selectType(this, 'Telegram Bot')">🤖 Telegram</div>
-      <div class="type" onclick="selectType(this, 'Discord Bot')">💬 Discord</div>
-      <div class="type" onclick="selectType(this, 'Android App')">📱 Android</div>
-      <div class="type" onclick="selectType(this, 'Python')">🐍 Python</div>
-      <div class="type" onclick="selectType(this, 'Node.js')">🟢 Node.js</div>
-    </div>
-
-    <button onclick="createProject()">
-      🚀 إنشاء المشروع
+    <button class="new-chat" onclick="newChat()">
+      ＋ محادثة جديدة
     </button>
 
-    <div id="status"></div>
+  </header>
+
+
+  <main class="chat" id="chat">
+
+    <div class="messages" id="messages">
+
+      <div class="welcome" id="welcome">
+
+        <div class="welcome-logo">
+          🤖
+        </div>
+
+        <h1>كيف يمكنني مساعدتك؟</h1>
+
+        <p>
+          تحدث مع Aizen أو اطلب منه بناء مشروعك.
+        </p>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <div class="bottom">
+
+    <div class="composer">
+
+      <div class="textarea-row">
+
+        <input
+          type="file"
+          id="fileInput"
+          onchange="fileSelected()"
+        >
+
+        <button
+          class="icon-button"
+          onclick="document.getElementById('fileInput').click()"
+          title="إرفاق ملف"
+        >
+          ＋
+        </button>
+
+        <textarea
+          id="message"
+          rows="1"
+          placeholder="اسأل Aizen أي شيء..."
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+
+        <button
+          class="send-button"
+          onclick="sendMessage()"
+          title="إرسال"
+        >
+          ↑
+        </button>
+
+      </div>
+
+
+      <div class="tools">
+
+        <button
+          class="build-button"
+          onclick="buildProject()"
+        >
+          🛠️ Build
+        </button>
+
+      </div>
+
+    </div>
+
+    <div class="disclaimer">
+      Aizen AI يمكن أن يخطئ. تحقق من المعلومات المهمة.
+    </div>
 
   </div>
 
-  <script>
-    let projectType = "Website";
+</div>
 
-    function selectType(element, type) {
-      projectType = type;
 
-      document.querySelectorAll(".type").forEach(el => {
-        el.classList.remove("selected");
+<script>
+
+  function addMessage(text, type) {
+
+    const messages = document.getElementById("messages");
+
+    const welcome = document.getElementById("welcome");
+
+    if (welcome) {
+      welcome.remove();
+    }
+
+    const message = document.createElement("div");
+
+    message.className = "message " + type;
+
+    const avatar = document.createElement("div");
+
+    avatar.className = "avatar";
+
+    avatar.textContent =
+      type === "user" ? "👤" : "🤖";
+
+    const bubble = document.createElement("div");
+
+    bubble.className = "bubble";
+
+    bubble.textContent = text;
+
+    message.appendChild(avatar);
+
+    message.appendChild(bubble);
+
+    messages.appendChild(message);
+
+    const chat = document.getElementById("chat");
+
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+
+  async function sendMessage() {
+
+    const input = document.getElementById("message");
+
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    addMessage(message, "user");
+
+    input.value = "";
+
+    autoResize(input);
+
+    addMessage("جاري التفكير...", "ai");
+
+    try {
+
+      const response = await fetch("/api/chat", {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          message: message
+        })
+
       });
 
-      element.classList.add("selected");
+      const data = await response.json();
 
-      document.getElementById("status").textContent =
-        "تم اختيار: " + type;
-    }
+      const aiMessages =
+        document.querySelectorAll(".message.ai");
 
-    async function createProject() {
-      const idea = document.getElementById("idea").value.trim();
-      const status = document.getElementById("status");
+      const last =
+        aiMessages[aiMessages.length - 1];
 
-      if (!idea) {
-        status.textContent = "❌ اكتب فكرة المشروع أولاً";
-        return;
+      if (data.success) {
+
+        last.querySelector(".bubble").textContent =
+          data.reply;
+
+      } else {
+
+        last.querySelector(".bubble").textContent =
+          "❌ " + (data.error || "حدث خطأ");
+
       }
 
-      status.textContent = "🔄 جاري إرسال المشروع...";
+    } catch (error) {
 
-      try {
-        const response = await fetch(
-          "https://aizen-ai-builder.onrender.com/api/create",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              idea: idea,
-              type: projectType
-            })
-          }
-        );
+      const aiMessages =
+        document.querySelectorAll(".message.ai");
 
-        const data = await response.json();
+      const last =
+        aiMessages[aiMessages.length - 1];
 
-        if (data.success) {
-          status.textContent = "✅ تم إرسال المشروع بنجاح";
-        } else {
-          status.textContent = "❌ " + (data.error || "حدث خطأ");
-        }
+      last.querySelector(".bubble").textContent =
+        "❌ تعذر الاتصال بالسيرفر.";
 
-      } catch (error) {
-        status.textContent = "❌ تعذر الاتصال بالسيرفر";
-      }
     }
-  </script>
+
+  }
+
+
+  function handleKey(event) {
+
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
+
+      event.preventDefault();
+
+      sendMessage();
+
+    }
+
+  }
+
+
+  function autoResize(element) {
+
+    element.style.height = "auto";
+
+    element.style.height =
+      Math.min(element.scrollHeight, 180) + "px";
+
+  }
+
+
+  function newChat() {
+
+    location.reload();
+
+  }
+
+
+  function buildProject() {
+
+    const input =
+      document.getElementById("message");
+
+    input.value =
+      "أريد بناء مشروع: ";
+
+    input.focus();
+
+    autoResize(input);
+
+  }
+
+
+  function fileSelected() {
+
+    const file =
+      document.getElementById("fileInput").files[0];
+
+    if (!file) return;
+
+    addMessage(
+      "📎 تم اختيار الملف: " + file.name,
+      "user"
+    );
+
+  }
+
+</script>
 
 </body>
 </html>
