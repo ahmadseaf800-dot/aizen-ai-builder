@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aizen AI Builder</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #080b14;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 700px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 42px;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #9ca3af;
+      margin-bottom: 30px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      resize: vertical;
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid #252b3a;
+      background: #111625;
+      color: white;
+      font-size: 16px;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: #7c3aed;
+    }
+
+    .types {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .type {
+      padding: 14px;
+      border: 1px solid #252b3a;
+      border-radius: 12px;
+      background: #111625;
+      color: white;
+      cursor: pointer;
+    }
+
+    .type:hover {
+      border-color: #7c3aed;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      border: 0;
+      border-radius: 14px;
+      background: #7c3aed;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #6d28d9;
+    }
+
+    #status {
+      margin-top: 20px;
+      color: #a78bfa;
+      min-height: 25px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h1>🤖 AIZEN AI</h1>
+
+    <div class="subtitle">
+      ابنِ تطبيقك أو بوتك باستخدام الذكاء الاصطناعي
+    </div>
+
+    <textarea
+      id="idea"
+      placeholder="اكتب فكرتك هنا...&#10;&#10;مثال: أريد بوت Discord لإدارة السيرفر مع نظام تذاكر وتحذيرات...">
+    </textarea>
+
+    <div class="types">
+      <div class="type" onclick="selectType('Telegram Bot')">🤖 Telegram</div>
+      <div class="type" onclick="selectType('Discord Bot')">💬 Discord</div>
+      <div class="type" onclick="selectType('Website')">🌐 Website</div>
+      <div class="type" onclick="selectType('Android App')">📱 Android</div>
+      <div class="type" onclick="selectType('Python')">🐍 Python</div>
+      <div class="type" onclick="selectType('Node.js')">🟢 Node.js</div>
+    </div>
+
+    <button onclick="createProject()">
+      🚀 إنشاء المشروع
+    </button>
+
+    <div id="status"></div>
+
+  </div>
+
+  <script>
+    let projectType = "Website";
+
+    function selectType(type) {
+      projectType = type;
+      document.getElementById("status").textContent =
+        "تم اختيار: " + type;
+    }
+
+    function createProject() {
+      const idea = document.getElementById("idea").value.trim();
+
+      if (!idea) {
+        document.getElementById("status").textContent =
+          "❌ اكتب فكرة المشروع أولاً";
+        return;
+      }
+
+      document.getElementById("status").textContent =
+        "🧠 سيتم إرسال فكرتك إلى AI Agent...";
+    }
+  </script>
+
+</body>
+</html>
