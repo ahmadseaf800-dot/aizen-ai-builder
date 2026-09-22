@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Aizen AI</title>
 
   <style>
@@ -31,8 +32,6 @@
       flex-direction: column;
     }
 
-    /* Header */
-
     .header {
       height: 60px;
       min-height: 60px;
@@ -60,7 +59,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 19px;
     }
 
     .new-chat {
@@ -71,12 +69,6 @@
       padding: 9px 13px;
       cursor: pointer;
     }
-
-    .new-chat:hover {
-      background: #1c202a;
-    }
-
-    /* Chat */
 
     .chat {
       flex: 1;
@@ -130,14 +122,6 @@
       align-items: flex-start;
     }
 
-    .message.user {
-      justify-content: flex-start;
-    }
-
-    .message.ai {
-      justify-content: flex-start;
-    }
-
     .avatar {
       width: 34px;
       height: 34px;
@@ -146,7 +130,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
     }
 
     .user .avatar {
@@ -175,7 +158,25 @@
       padding-top: 4px;
     }
 
-    /* Bottom */
+    .typing {
+      color: #8b93a3;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 7px;
+      height: 17px;
+      background: #8b5cf6;
+      margin-right: 3px;
+      vertical-align: middle;
+      animation: blink 0.8s infinite;
+    }
+
+    @keyframes blink {
+      50% {
+        opacity: 0;
+      }
+    }
 
     .bottom {
       position: fixed;
@@ -258,6 +259,11 @@
       background: #6d28d9;
     }
 
+    .send-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .tools {
       display: flex;
       align-items: center;
@@ -291,12 +297,8 @@
       display: none;
     }
 
-    .typing {
-      color: #8b93a3;
-      font-size: 14px;
-    }
-
     @media (max-width: 600px) {
+
       .header {
         padding: 0 12px;
       }
@@ -314,7 +316,7 @@
       }
 
       .bottom {
-        padding: 12px 10px 12px;
+        padding: 12px 10px;
       }
 
       .new-chat {
@@ -335,18 +337,30 @@
       <span>Aizen AI</span>
     </div>
 
-    <button class="new-chat" onclick="newChat()">
+    <button
+      class="new-chat"
+      onclick="newChat()"
+    >
       ＋ محادثة جديدة
     </button>
 
   </header>
 
 
-  <main class="chat" id="chat">
+  <main
+    class="chat"
+    id="chat"
+  >
 
-    <div class="messages" id="messages">
+    <div
+      class="messages"
+      id="messages"
+    >
 
-      <div class="welcome" id="welcome">
+      <div
+        class="welcome"
+        id="welcome"
+      >
 
         <div class="welcome-logo">
           🤖
@@ -379,7 +393,7 @@
 
         <button
           class="icon-button"
-          onclick="document.getElementById('fileInput').click()"
+          onclick="openFile()"
           title="إرفاق ملف"
         >
           ＋
@@ -395,8 +409,8 @@
 
         <button
           class="send-button"
+          id="sendButton"
           onclick="sendMessage()"
-          title="إرسال"
         >
           ↑
         </button>
@@ -417,6 +431,7 @@
 
     </div>
 
+
     <div class="disclaimer">
       Aizen AI يمكن أن يخطئ. تحقق من المعلومات المهمة.
     </div>
@@ -428,174 +443,506 @@
 
 <script>
 
-  function addMessage(text, type) {
+let isGenerating = false;
 
-    const messages = document.getElementById("messages");
 
-    const welcome = document.getElementById("welcome");
+/*
+  إضافة رسالة
+*/
 
-    if (welcome) {
-      welcome.remove();
-    }
+function addMessage(text, type) {
 
-    const message = document.createElement("div");
+  const messages =
+    document.getElementById("messages");
 
-    message.className = "message " + type;
+  const welcome =
+    document.getElementById("welcome");
 
-    const avatar = document.createElement("div");
-
-    avatar.className = "avatar";
-
-    avatar.textContent =
-      type === "user" ? "👤" : "🤖";
-
-    const bubble = document.createElement("div");
-
-    bubble.className = "bubble";
-
-    bubble.textContent = text;
-
-    message.appendChild(avatar);
-
-    message.appendChild(bubble);
-
-    messages.appendChild(message);
-
-    const chat = document.getElementById("chat");
-
-    chat.scrollTop = chat.scrollHeight;
+  if (welcome) {
+    welcome.remove();
   }
 
+  const message =
+    document.createElement("div");
 
-  async function sendMessage() {
+  message.className =
+    "message " + type;
 
-    const input = document.getElementById("message");
+  const avatar =
+    document.createElement("div");
 
-    const message = input.value.trim();
+  avatar.className =
+    "avatar";
 
-    if (!message) return;
+  avatar.textContent =
+    type === "user"
+      ? "👤"
+      : "🤖";
 
-    addMessage(message, "user");
+  const bubble =
+    document.createElement("div");
 
-    input.value = "";
+  bubble.className =
+    "bubble";
 
-    autoResize(input);
+  bubble.textContent =
+    text;
 
-    addMessage("جاري التفكير...", "ai");
+  message.appendChild(avatar);
+  message.appendChild(bubble);
 
-    try {
+  messages.appendChild(message);
 
-      const response = await fetch("/api/chat", {
+  scrollToBottom();
 
-        method: "POST",
+  return bubble;
+}
 
-        headers: {
-          "Content-Type": "application/json"
-        },
 
-        body: JSON.stringify({
-          message: message
-        })
+/*
+  تمرير لأسفل
+*/
 
-      });
+function scrollToBottom() {
 
-      const data = await response.json();
+  const chat =
+    document.getElementById("chat");
 
-      const aiMessages =
-        document.querySelectorAll(".message.ai");
+  chat.scrollTop =
+    chat.scrollHeight;
 
-      const last =
-        aiMessages[aiMessages.length - 1];
+}
 
-      if (data.success) {
 
-        last.querySelector(".bubble").textContent =
-          data.reply;
+/*
+  إرسال الرسالة
+*/
 
-      } else {
+async function sendMessage() {
 
-        last.querySelector(".bubble").textContent =
-          "❌ " + (data.error || "حدث خطأ");
+  if (isGenerating) {
+    return;
+  }
+
+  const input =
+    document.getElementById("message");
+
+  const button =
+    document.getElementById("sendButton");
+
+  const message =
+    input.value.trim();
+
+  if (!message) {
+    return;
+  }
+
+  isGenerating = true;
+
+  button.disabled = true;
+
+  addMessage(
+    message,
+    "user"
+  );
+
+  input.value = "";
+
+  autoResize(input);
+
+
+  /*
+    إنشاء رسالة AI فارغة
+  */
+
+  const aiBubble =
+    addMessage(
+      "",
+      "ai"
+    );
+
+  aiBubble.classList.add(
+    "typing"
+  );
+
+  aiBubble.innerHTML =
+    'جاري التفكير<span class="cursor"></span>';
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/chat",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            message: message
+          })
+        }
+      );
+
+
+    /*
+      إذا رجع السيرفر خطأ
+    */
+
+    if (!response.ok) {
+
+      let errorText =
+        "حدث خطأ من السيرفر";
+
+      try {
+
+        const errorData =
+          await response.json();
+
+        errorText =
+          errorData.error ||
+          errorText;
+
+      } catch {}
+
+      aiBubble.classList.remove(
+        "typing"
+      );
+
+      aiBubble.textContent =
+        "❌ " + errorText;
+
+      return;
+    }
+
+
+    /*
+      قراءة Streaming
+    */
+
+    if (!response.body) {
+
+      throw new Error(
+        "المتصفح لا يدعم Streaming"
+      );
+
+    }
+
+
+    const reader =
+      response.body.getReader();
+
+    const decoder =
+      new TextDecoder("utf-8");
+
+    let buffer = "";
+
+    let fullText = "";
+
+    let started = false;
+
+
+    while (true) {
+
+      const {
+        value,
+        done
+      } =
+        await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      buffer +=
+        decoder.decode(
+          value,
+          {
+            stream: true
+          }
+        );
+
+
+      const events =
+        buffer.split("\n\n");
+
+      buffer =
+        events.pop() || "";
+
+
+      for (
+        const eventBlock
+        of events
+      ) {
+
+        const lines =
+          eventBlock.split("\n");
+
+        let dataLine = "";
+
+
+        for (
+          const line
+          of lines
+        ) {
+
+          if (
+            line.startsWith("data:")
+          ) {
+
+            dataLine +=
+              line
+                .substring(5)
+                .trim();
+
+          }
+
+        }
+
+
+        if (!dataLine) {
+          continue;
+        }
+
+
+        try {
+
+          const event =
+            JSON.parse(
+              dataLine
+            );
+
+
+          /*
+            وصول جزء جديد
+          */
+
+          if (
+            event.type === "text"
+          ) {
+
+            if (!started) {
+
+              started = true;
+
+              aiBubble.classList.remove(
+                "typing"
+              );
+
+              aiBubble.textContent =
+                "";
+
+            }
+
+            fullText +=
+              event.text;
+
+            aiBubble.textContent =
+              fullText;
+
+            scrollToBottom();
+
+          }
+
+
+          /*
+            خطأ
+          */
+
+          if (
+            event.type === "error"
+          ) {
+
+            aiBubble.classList.remove(
+              "typing"
+            );
+
+            aiBubble.textContent =
+              "❌ " +
+              event.error;
+
+          }
+
+        } catch (error) {
+
+          console.log(
+            "Stream event parse error",
+            error
+          );
+
+        }
 
       }
 
-    } catch (error) {
+    }
 
-      const aiMessages =
-        document.querySelectorAll(".message.ai");
 
-      const last =
-        aiMessages[aiMessages.length - 1];
+    /*
+      إذا انتهى بدون نص
+    */
 
-      last.querySelector(".bubble").textContent =
-        "❌ تعذر الاتصال بالسيرفر.";
+    if (!fullText) {
+
+      aiBubble.classList.remove(
+        "typing"
+      );
+
+      aiBubble.textContent =
+        "❌ لم يصل أي رد من Aizen.";
 
     }
 
-  }
 
+  } catch (error) {
 
-  function handleKey(event) {
+    console.error(error);
 
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
-
-      event.preventDefault();
-
-      sendMessage();
-
-    }
-
-  }
-
-
-  function autoResize(element) {
-
-    element.style.height = "auto";
-
-    element.style.height =
-      Math.min(element.scrollHeight, 180) + "px";
-
-  }
-
-
-  function newChat() {
-
-    location.reload();
-
-  }
-
-
-  function buildProject() {
-
-    const input =
-      document.getElementById("message");
-
-    input.value =
-      "أريد بناء مشروع: ";
-
-    input.focus();
-
-    autoResize(input);
-
-  }
-
-
-  function fileSelected() {
-
-    const file =
-      document.getElementById("fileInput").files[0];
-
-    if (!file) return;
-
-    addMessage(
-      "📎 تم اختيار الملف: " + file.name,
-      "user"
+    aiBubble.classList.remove(
+      "typing"
     );
 
+    aiBubble.textContent =
+      "❌ تعذر الاتصال بالسيرفر.";
+
   }
+
+
+  isGenerating = false;
+
+  button.disabled = false;
+
+  input.focus();
+
+  scrollToBottom();
+
+}
+
+
+/*
+  Enter للإرسال
+*/
+
+function handleKey(event) {
+
+  if (
+    event.key === "Enter" &&
+    !event.shiftKey
+  ) {
+
+    event.preventDefault();
+
+    sendMessage();
+
+  }
+
+}
+
+
+/*
+  تكبير مربع الكتابة
+*/
+
+function autoResize(element) {
+
+  element.style.height =
+    "auto";
+
+  element.style.height =
+    Math.min(
+      element.scrollHeight,
+      180
+    ) + "px";
+
+}
+
+
+/*
+  محادثة جديدة
+*/
+
+function newChat() {
+
+  document.getElementById(
+    "messages"
+  ).innerHTML = `
+
+    <div
+      class="welcome"
+      id="welcome"
+    >
+
+      <div class="welcome-logo">
+        🤖
+      </div>
+
+      <h1>
+        كيف يمكنني مساعدتك؟
+      </h1>
+
+      <p>
+        تحدث مع Aizen أو اطلب منه بناء مشروعك.
+      </p>
+
+    </div>
+
+  `;
+
+}
+
+
+/*
+  إرفاق ملف
+*/
+
+function openFile() {
+
+  document
+    .getElementById("fileInput")
+    .click();
+
+}
+
+
+function fileSelected() {
+
+  const file =
+    document
+      .getElementById("fileInput")
+      .files[0];
+
+  if (!file) {
+    return;
+  }
+
+  addMessage(
+    "📎 " + file.name,
+    "user"
+  );
+
+}
+
+
+/*
+  زر Build
+*/
+
+function buildProject() {
+
+  const input =
+    document.getElementById("message");
+
+  input.value =
+    "أريد بناء مشروع: ";
+
+  input.focus();
+
+  autoResize(input);
+
+}
 
 </script>
 
