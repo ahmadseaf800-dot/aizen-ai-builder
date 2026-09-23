@@ -753,6 +753,9 @@ button{cursor:pointer}
 .build-type-card:hover{border-color:#6d5dfc;background:#211e35;transform:translateY(-1px)}
 .build-type-icon{font-size:25px;margin-bottom:7px}.build-type-title{font-weight:700;font-size:13px}.build-type-desc{margin-top:4px;color:#858b97;font-size:11px;line-height:1.45}
 @media(max-width:520px){.build-type-grid{grid-template-columns:1fr}}
+.ai-avatar-small{width:34px;height:34px;min-width:34px;border-radius:10px;object-fit:cover;background:#171a22;border:1px solid #30343e}
+.profile-card{width:min(520px,100%);padding:0;overflow:hidden;border:1px solid #30343e;border-radius:20px;background:linear-gradient(180deg,#171a22,#101218);box-shadow:0 25px 70px rgba(0,0,0,.55)}
+.profile-head{padding:24px 22px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #292d36}.profile-head-avatar{width:64px;height:64px;border-radius:18px;object-fit:cover;background:#181b22;border:1px solid #3b3f4b}.profile-head h3{margin:0;font-size:20px}.profile-head p{margin:5px 0 0;color:#858b97;font-size:12px}.profile-body{padding:20px 22px}.profile-label{display:block;margin:0 0 7px;color:#aeb3bf;font-size:12px}.profile-footer{padding:14px 22px 20px;display:flex;gap:8px}.profile-footer button{flex:1}.build-description{min-height:130px;resize:vertical}
 </style>
 </head>
 
@@ -1095,47 +1098,12 @@ button{cursor:pointer}
 
 
 <!-- PROFILE -->
-
-<div
-  id="profileModal"
-  class="modal hidden"
->
-
-  <div class="modal-box">
-
-    <h3>الحساب</h3>
-
-    <input
-      id="profileName"
-      class="auth-input"
-      placeholder="اسم العرض"
-    >
-
-    <input
-      id="profileAvatar"
-      class="auth-input"
-      placeholder="رابط الصورة"
-    >
-
-    <div class="modal-buttons">
-
-      <button
-        class="primary"
-        onclick="saveProfile()"
-      >
-        حفظ
-      </button>
-
-      <button onclick="closeProfile()">
-        إلغاء
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
+<div id="profileModal" class="modal hidden" onclick="if(event.target===this) closeProfile()">
+<div class="profile-card">
+<div class="profile-head"><img id="profilePreview" class="profile-head-avatar" src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AizenAI&backgroundColor=0b0d12" alt="الحساب"><div><h3>الحساب</h3><p>إدارة اسمك وصورة حسابك في Aizen AI Builder</p></div></div>
+<div class="profile-body"><label class="profile-label" for="profileName">اسم العرض</label><input id="profileName" class="auth-input" placeholder="اسم العرض"><label class="profile-label" for="profileAvatar">رابط صورة الحساب</label><input id="profileAvatar" class="auth-input" placeholder="https://..."></div>
+<div class="profile-footer"><button class="primary" onclick="saveProfile()">حفظ التغييرات</button><button onclick="closeProfile()">إلغاء</button></div>
+</div></div>
 
 <!-- PROJECT -->
 
@@ -1203,7 +1171,7 @@ button{cursor:pointer}
     <div class="modal-buttons"><button type="button" onclick="closeBuildTypeModal()">إلغاء</button></div>
   </div>
 </div>
-<div id="toast" class="toast"></div>
+<div id="buildDescriptionModal" class="modal hidden" onclick="if(event.target===this) closeBuildDescriptionModal()"><div class="modal-box"><h3 id="buildDescriptionTitle">وصف المشروع</h3><div id="buildDescriptionHint" class="auth-subtitle">اكتب فكرة المشروع بالتفصيل.</div><textarea id="buildDescriptionInput" class="auth-input build-description" rows="6" placeholder="مثال: أريد موقع متجر حديث مع تسجيل دخول وسلة شراء ولوحة تحكم..."></textarea><div class="modal-buttons"><button class="primary" onclick="submitBuildDescription()">بدء البناء</button><button onclick="closeBuildDescriptionModal()">إلغاء</button></div></div></div><div id="toast" class="toast"></div>
 
 
 <script>
@@ -1312,6 +1280,10 @@ function toggleSidebar(){
 function closeSidebar(){
   $("sidebar").classList.remove("open");
 }
+document.addEventListener("click",event=>{
+  const sidebar=$("sidebar"),menuButton=document.querySelector(".menu-button");
+  if(window.innerWidth<=800 && sidebar.classList.contains("open") && !sidebar.contains(event.target) && !menuButton.contains(event.target)) closeSidebar();
+});
 
 function showSidebarTab(tab){
 
@@ -1707,7 +1679,8 @@ function openProfile(){
 
   $("profileAvatar").value =
     currentUser.user_metadata?.avatar_url || "";
-
+  const preview=$("profilePreview");
+  if(preview) preview.src=currentUser.user_metadata?.avatar_url || "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AizenAI&backgroundColor=0b0d12";
   $("profileModal")
     .classList
     .remove("hidden");
@@ -1750,7 +1723,8 @@ async function saveProfile(){
       });
 
     updateAuthUI();
-
+    const preview=$("profilePreview");
+    if(preview) preview.src=avatar || "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AizenAI&backgroundColor=0b0d12";
     closeProfile();
 
     showToast("تم تحديث الحساب.");
@@ -2001,7 +1975,7 @@ function clearMessages(){
 
   $("messages").innerHTML = `
     <div class="welcome">
-      <div class="welcome-logo">A</div>
+      <img class="ai-avatar" src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AizenAI&backgroundColor=0b0d12" alt="Aizen AI" onerror="this.onerror=null;this.style.display='block'">
       <h1>مرحباً بك في Aizen AI Builder</h1>
       <p>
         اكتب فكرتك وسيساعدك Aizen في بناء مشروعك.
@@ -2036,7 +2010,7 @@ function messageHTML(message){
     <div class="message ${user ? "user" : "assistant"}">
 
       <div class="message-avatar">
-        ${user ? "أنت" : "A"}
+        ${user ? "أنت" : '<img class="ai-avatar-small" src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AizenAI&backgroundColor=0b0d12" alt="Aizen AI">'}
       </div>
 
       <div class="message-content">
@@ -2062,7 +2036,7 @@ function addMessageToUI(role,content){
 
   div.innerHTML = `
     <div class="message-avatar">
-      ${role === "user" ? "أنت" : "A"}
+      ${role === "user" ? "أنت" : '<img class="ai-avatar-small" src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AizenAI&backgroundColor=0b0d12" alt="Aizen AI">'}
     </div>
 
     <div class="message-content"></div>
@@ -2239,7 +2213,7 @@ async function sendMessage(){
     $("messageInput");
 
   const text =
-    input.value.trim();
+    String(description || input.value || "").trim();
 
   const attachmentPrompt =
     pendingAttachments.length
@@ -2653,12 +2627,24 @@ function openBuildTypeModal(){
   $("buildTypeModal").classList.remove("hidden");
 }
 function closeBuildTypeModal(){ $("buildTypeModal").classList.add("hidden"); }
+let selectedBuildType=null,selectedBuildLabel=null;
 function confirmBuildType(type){
   const labels={website:"موقع ويب",telegram_bot:"بوت Telegram",game:"لعبة",app:"تطبيق",api:"API / Backend",other:"مشروع مخصص"};
+  selectedBuildType=type;selectedBuildLabel=labels[type]||"مشروع مخصص";
   closeBuildTypeModal();
-  runBuild(type,labels[type] || "مشروع مخصص");
+  $("buildDescriptionTitle").textContent="وصف "+selectedBuildLabel;
+  $("buildDescriptionHint").textContent="اكتب فكرة المشروع الآن، وسيستخدمها Aizen لبناء "+selectedBuildLabel+".";
+  $("buildDescriptionInput").value="";
+  $("buildDescriptionModal").classList.remove("hidden");
+  setTimeout(()=>$("buildDescriptionInput").focus(),50);
 }
-async function runBuild(type,typeLabel){
+function closeBuildDescriptionModal(){$("buildDescriptionModal").classList.add("hidden");}
+function submitBuildDescription(){
+  const description=$("buildDescriptionInput").value.trim();
+  if(!description){showToast("اكتب فكرة المشروع أولاً.");$("buildDescriptionInput").focus();return;}
+  closeBuildDescriptionModal();runBuild(selectedBuildType,selectedBuildLabel,description);
+}
+async function runBuild(type,typeLabel,description){
 
   if(generating) return;
 
