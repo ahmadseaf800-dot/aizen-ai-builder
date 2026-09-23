@@ -2346,46 +2346,66 @@ async function requestAI(
       buffer =
         parts.pop() || "";
 
-      for(
-        const line of parts
-      ){
+      const events =
+        parts
+          .map(part => part.trim())
+          .filter(Boolean);
 
-        if(!line.startsWith("data:"))
-          continue;
+      for(const rawEvent of events){
 
-        const raw =
-          line.slice(5).trim();
+        const lines =
+          rawEvent.split("\n");
 
-        if(!raw) continue;
+        let eventName = "";
+        let dataText = "";
 
-        if(raw === "[DONE]")
-          continue;
+        for(const line of lines){
 
-        try{
-
-          const data =
-            JSON.parse(raw);
-
-          const delta =
-            data.text ??
-            data.delta ??
-            data.content ??
-            "";
-
-          if(delta){
-
-            fullText += delta;
-
-            contentElement.textContent =
-              fullText;
-
-            scrollMessages();
+          if(line.startsWith("event:")){
+            eventName =
+              line.slice(6).trim();
+          }else if(line.startsWith("data:")){
+            dataText +=
+              line.slice(5).trim();
           }
 
+        }
+
+        if(!dataText) continue;
+
+        if(dataText === "[DONE]") continue;
+
+        let data = null;
+
+        try{
+          data = JSON.parse(dataText);
         }catch{
+          data = null;
+        }
+
+        if(eventName === "error"){
+
+          throw new Error(
+            data?.message ||
+            "حدث خطأ أثناء توليد الرد."
+          );
+        }
+
+        if(eventName === "done" ||
+           eventName === "complete"){
+          continue;
+        }
+
+        const delta =
+          data?.text ??
+          data?.delta ??
+          data?.content ??
+          "";
+
+        if(delta){
 
           fullText +=
-            raw;
+            String(delta);
 
           contentElement.textContent =
             fullText;
