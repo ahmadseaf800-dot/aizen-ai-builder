@@ -509,11 +509,13 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
               message = parsed?.error?.message || message;
             } catch {}
 
-            if (
-              response.statusCode === 429 &&
-              retryCount === 0 &&
-              GEMINI_API_KEY
-            ) {
+            if (retryCount === 0 && GEMINI_API_KEY) {
+              console.error(
+                "OPENROUTER API ERROR:",
+                response.statusCode,
+                "model=" + OPENROUTER_MODEL,
+                message
+              );
               askGeminiStream(currentMessage, res, isBuild, history).then(resolve);
               return;
             }
@@ -523,9 +525,7 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
               sendJson(res, 502, {
                 success: false,
                 error: "OPENROUTER_API_ERROR",
-                message: response.statusCode === 429
-                  ? "الخدمة مشغولة حالياً. حاول مرة أخرى بعد قليل."
-                  : message,
+                message: "تعذر تشغيل نموذج OpenRouter حالياً، وتمت محاولة البديل إن كان مفعلاً.",
                 upstream_status: response.statusCode || 0,
               });
             }
@@ -1390,6 +1390,11 @@ const server = http.createServer(async (req, res) => {
       gemini_configured: Boolean(
         GEMINI_API_KEY
       ),
+      openrouter_configured: Boolean(
+        OPENROUTER_API_KEY
+      ),
+      ai_provider: AI_PROVIDER,
+      openrouter_model: OPENROUTER_API_KEY ? OPENROUTER_MODEL : null,
     });
 
     return;
@@ -1510,6 +1515,9 @@ server.listen(PORT, () => {
   console.log(`Port: ${PORT}`);
   console.log(`Supabase: ${SUPABASE_URL ? "configured" : "missing"}`);
   console.log(`Gemini: ${GEMINI_API_KEY ? "configured" : "missing"}`);
+  console.log(`OpenRouter: ${OPENROUTER_API_KEY ? "configured" : "missing"}`);
+  console.log(`OpenRouter model: ${OPENROUTER_API_KEY ? OPENROUTER_MODEL : "not configured"}`);
+  console.log(`AI provider: ${AI_PROVIDER}`);
   console.log(`Frontend: ${FRONTEND_PATH}`);
   console.log("====================================");
 });
