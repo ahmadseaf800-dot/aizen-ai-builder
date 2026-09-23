@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Aizen AI Builder</title>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{box-sizing:border-box}
 
@@ -24,8 +26,6 @@ button,input,textarea{font-family:inherit}
   display:flex;
   flex-direction:column
 }
-
-/* HEADER */
 
 header{
   height:64px;
@@ -80,8 +80,6 @@ header{
 .header-btn{
   display:none
 }
-
-/* SIDEBAR */
 
 .sidebar{
   position:fixed;
@@ -226,8 +224,6 @@ header{
   font-size:13px
 }
 
-/* MAIN */
-
 .main-layout{
   flex:1;
   min-height:0;
@@ -268,8 +264,6 @@ main{
   color:#9699a3;
   margin:0
 }
-
-/* MESSAGES */
 
 .message{
   display:flex;
@@ -314,11 +308,6 @@ main{
   border:1px solid #242731
 }
 
-.message.ai .bubble code{
-  direction:ltr;
-  text-align:left
-}
-
 .code-block{
   direction:ltr;
   text-align:left;
@@ -356,8 +345,6 @@ main{
   overflow:auto
 }
 
-/* THINKING */
-
 .thinking{
   color:#9296a2;
   display:flex;
@@ -385,8 +372,6 @@ main{
   0%,70%,100%{opacity:.25}
   35%{opacity:1}
 }
-
-/* COMPOSER */
 
 .composer-wrap{
   position:fixed;
@@ -485,11 +470,7 @@ textarea::placeholder{
   text-align:center;
   font-size:11px;
   color:#686c77
-}
-
-/* MODAL */
-
-.modal-overlay{
+}.modal-overlay{
   position:fixed;
   inset:0;
   background:rgba(0,0,0,.72);
@@ -506,7 +487,8 @@ textarea::placeholder{
 }
 
 .build-modal,
-.projects-modal{
+.projects-modal,
+.auth-modal{
   width:min(650px,100%);
   max-height:90vh;
   overflow:auto;
@@ -518,9 +500,19 @@ textarea::placeholder{
   animation:modalIn .18s ease
 }
 
+.auth-modal{
+  width:min(440px,100%)
+}
+
 @keyframes modalIn{
-  from{transform:translateY(15px) scale(.97);opacity:0}
-  to{transform:translateY(0) scale(1);opacity:1}
+  from{
+    transform:translateY(15px) scale(.97);
+    opacity:0
+  }
+  to{
+    transform:translateY(0) scale(1);
+    opacity:1
+  }
 }
 
 .modal-header{
@@ -551,8 +543,6 @@ textarea::placeholder{
   font-size:14px;
   margin-bottom:18px
 }
-
-/* BUILD TYPES */
 
 .project-types{
   display:grid;
@@ -644,8 +634,6 @@ textarea::placeholder{
   cursor:not-allowed
 }
 
-/* PROJECTS */
-
 .project-card{
   border:1px solid #30333d;
   background:#191c24;
@@ -664,8 +652,6 @@ textarea::placeholder{
   font-size:12px
 }
 
-/* OVERLAY SIDEBAR */
-
 .sidebar-overlay{
   display:none;
   position:fixed;
@@ -675,6 +661,264 @@ textarea::placeholder{
 }
 
 .sidebar-overlay.show{
+  display:block
+}
+
+/* AUTH */
+
+.auth-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(5,7,12,.88);
+  backdrop-filter:blur(12px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  z-index:5000
+}
+
+.auth-overlay.hidden{
+  display:none
+}
+
+.auth-brand{
+  text-align:center;
+  margin-bottom:22px
+}
+
+.auth-logo{
+  width:64px;
+  height:64px;
+  border-radius:19px;
+  margin:0 auto 12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:29px;
+  background:linear-gradient(135deg,#8b5cf6,#4f46e5);
+  box-shadow:0 12px 40px rgba(90,70,255,.28)
+}
+
+.auth-brand h2{
+  margin:0 0 6px;
+  font-size:24px
+}
+
+.auth-brand p{
+  margin:0;
+  color:#858a96;
+  font-size:13px
+}
+
+.auth-tabs{
+  display:flex;
+  gap:7px;
+  margin-bottom:16px
+}
+
+.auth-tab{
+  flex:1;
+  border:1px solid #30333d;
+  background:#191c24;
+  color:#aaa;
+  padding:10px;
+  border-radius:9px;
+  cursor:pointer
+}
+
+.auth-tab.active{
+  background:#292040;
+  border-color:#7657db;
+  color:#fff
+}
+
+.auth-field{
+  margin-bottom:12px
+}
+
+.auth-field label{
+  display:block;
+  color:#c9cbd2;
+  font-size:13px;
+  margin-bottom:6px
+}
+
+.auth-field input{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #30333d;
+  background:#0d1016;
+  color:#fff;
+  outline:none
+}
+
+.auth-field input:focus{
+  border-color:#7657db
+}
+
+.auth-main-btn{
+  width:100%;
+  border:0;
+  border-radius:10px;
+  padding:12px;
+  margin-top:3px;
+  background:linear-gradient(135deg,#8b5cf6,#4f46e5);
+  color:#fff;
+  font-weight:bold;
+  cursor:pointer
+}
+
+.auth-main-btn:disabled{
+  opacity:.45;
+  cursor:not-allowed
+}
+
+.auth-forgot{
+  width:100%;
+  margin-top:10px;
+  border:0;
+  background:transparent;
+  color:#9b83ee;
+  cursor:pointer;
+  font-size:12px
+}
+
+.auth-divider{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:#666b76;
+  font-size:11px;
+  margin:17px 0
+}
+
+.auth-divider::before,
+.auth-divider::after{
+  content:"";
+  height:1px;
+  background:#2b2e37;
+  flex:1
+}
+
+.oauth-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px
+}
+
+.oauth-btn{
+  border:1px solid #30333d;
+  background:#191c24;
+  color:#ddd;
+  border-radius:9px;
+  padding:10px 7px;
+  cursor:pointer
+}
+
+.oauth-btn:hover{
+  background:#222631
+}
+
+.auth-message{
+  min-height:20px;
+  text-align:center;
+  margin-top:12px;
+  color:#e2a8a8;
+  font-size:12px;
+  white-space:pre-wrap
+}
+
+.auth-message.success{
+  color:#9dd7b1
+}
+
+/* ACCOUNT */
+
+.account-area{
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+
+.account-btn{
+  border:1px solid #30333d;
+  background:#151821;
+  color:#ddd;
+  border-radius:9px;
+  padding:8px 10px;
+  cursor:pointer
+}
+
+.account-menu{
+  position:fixed;
+  top:58px;
+  left:12px;
+  width:250px;
+  background:#151820;
+  border:1px solid #30333d;
+  border-radius:13px;
+  padding:12px;
+  z-index:2000;
+  display:none;
+  box-shadow:0 15px 50px rgba(0,0,0,.45)
+}
+
+.account-menu.show{
+  display:block
+}
+
+.account-user{
+  padding:8px;
+  border-bottom:1px solid #292c35;
+  margin-bottom:8px
+}
+
+.account-name{
+  font-weight:bold;
+  margin-bottom:4px
+}
+
+.account-email{
+  color:#858a96;
+  font-size:11px;
+  direction:ltr;
+  text-align:right;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+
+.account-id{
+  color:#666b76;
+  font-size:9px;
+  margin-top:5px;
+  direction:ltr;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+
+.account-action{
+  width:100%;
+  border:1px solid #30333d;
+  background:#1a1d25;
+  color:#ddd;
+  border-radius:8px;
+  padding:9px;
+  margin-top:6px;
+  cursor:pointer;
+  text-align:right
+}
+
+.account-action.danger{
+  color:#ff9b9b
+}
+
+.auth-required{
+  display:none
+}
+
+.auth-required.show{
   display:block
 }
 
@@ -688,17 +932,13 @@ textarea::placeholder{
     display:block
   }
 
-  .new-chat{
-    font-size:12px;
-    padding:8px
-  }
-
   .project-types{
     grid-template-columns:1fr
   }
 
   .build-modal,
-  .projects-modal{
+  .projects-modal,
+  .auth-modal{
     padding:17px
   }
 
@@ -722,11 +962,180 @@ textarea::placeholder{
     width:88%;
     max-width:320px
   }
+
+  .oauth-grid{
+    grid-template-columns:1fr 1fr
+  }
+
+  .account-btn{
+    font-size:11px;
+    padding:7px
+  }
 }
 </style>
 </head>
 
 <body>
+
+<div id="authOverlay" class="auth-overlay">
+
+  <div class="auth-modal">
+
+    <div class="auth-brand">
+
+      <div class="auth-logo">
+        🤖
+      </div>
+
+      <h2>
+        Aizen AI
+      </h2>
+
+      <p>
+        سجّل الدخول للمتابعة إلى Aizen AI Builder
+      </p>
+
+    </div>
+
+    <div class="auth-tabs">
+
+      <button
+        id="loginTab"
+        class="auth-tab active"
+        onclick="switchAuthMode('login')"
+      >
+        تسجيل الدخول
+      </button>
+
+      <button
+        id="signupTab"
+        class="auth-tab"
+        onclick="switchAuthMode('signup')"
+      >
+        إنشاء حساب
+      </button>
+
+    </div>
+
+    <form
+      id="authForm"
+      onsubmit="submitAuth(event)"
+    >
+
+      <div
+        id="displayNameField"
+        class="auth-field"
+        style="display:none"
+      >
+
+        <label>
+          اسم العرض
+        </label>
+
+        <input
+          id="displayNameInput"
+          type="text"
+          autocomplete="name"
+          placeholder="مثال: أحمد"
+        >
+
+      </div>
+
+      <div class="auth-field">
+
+        <label>
+          البريد الإلكتروني
+        </label>
+
+        <input
+          id="emailInput"
+          type="email"
+          autocomplete="email"
+          placeholder="name@example.com"
+          required
+        >
+
+      </div>
+
+      <div class="auth-field">
+
+        <label>
+          كلمة المرور
+        </label>
+
+        <input
+          id="passwordInput"
+          type="password"
+          autocomplete="current-password"
+          placeholder="••••••••"
+          minlength="6"
+          required
+        >
+
+      </div>
+
+      <button
+        id="authSubmit"
+        class="auth-main-btn"
+        type="submit"
+      >
+        تسجيل الدخول
+      </button>
+
+    </form>
+
+    <button
+      id="forgotBtn"
+      class="auth-forgot"
+      onclick="resetPassword()"
+    >
+      نسيت كلمة المرور؟
+    </button>
+
+    <div class="auth-divider">
+      أو تابع باستخدام
+    </div>
+
+    <div class="oauth-grid">
+
+      <button
+        class="oauth-btn"
+        onclick="oauthLogin('google')"
+      >
+        🔵 Google
+      </button>
+
+      <button
+        class="oauth-btn"
+        onclick="oauthLogin('github')"
+      >
+        ⚫ GitHub
+      </button>
+
+      <button
+        class="oauth-btn"
+        onclick="oauthLogin('discord')"
+      >
+        🟣 Discord
+      </button>
+
+      <button
+        class="oauth-btn"
+        onclick="oauthLogin('apple')"
+      >
+         Apple
+      </button>
+
+    </div>
+
+    <div
+      id="authMessage"
+      class="auth-message"
+    ></div>
+
+  </div>
+
+</div>
 
 <div class="app">
 
@@ -748,22 +1157,78 @@ textarea::placeholder{
 
   </div>
 
-  <button
-    class="new-chat"
-    onclick="newChat()"
-  >
-    ＋ محادثة جديدة
-  </button>
+  <div class="header-left">
+
+    <div class="account-area">
+
+      <button
+        id="accountBtn"
+        class="account-btn"
+        onclick="toggleAccountMenu()"
+      >
+        👤 الحساب
+      </button>
+
+    </div>
+
+    <button
+      class="new-chat"
+      onclick="newChat()"
+    >
+      ＋ محادثة جديدة
+    </button>
+
+  </div>
 
 </header>
+
+<div
+  id="accountMenu"
+  class="account-menu"
+>
+
+  <div class="account-user">
+
+    <div
+      id="accountName"
+      class="account-name"
+    >
+      المستخدم
+    </div>
+
+    <div
+      id="accountEmail"
+      class="account-email"
+    ></div>
+
+    <div
+      id="accountId"
+      class="account-id"
+    ></div>
+
+  </div>
+
+  <button
+    class="account-action"
+    onclick="closeAccountMenu();newChat()"
+  >
+    💬 محادثة جديدة
+  </button>
+
+  <button
+    class="account-action danger"
+    onclick="logout()"
+  >
+    🚪 تسجيل الخروج
+  </button>
+
+</div>
 
 <div
   id="sidebarOverlay"
   class="sidebar-overlay"
   onclick="closeSidebar()"
 ></div>
-
-<!-- SIDEBAR -->
 
 <aside
   id="sidebar"
@@ -805,9 +1270,7 @@ textarea::placeholder{
 
   </div>
 
-  <div
-    id="chatSidebar"
-  >
+  <div id="chatSidebar">
 
     <div class="search-box">
 
@@ -846,226 +1309,337 @@ textarea::placeholder{
 
   </div>
 
-</aside>
+</aside><main class="main">
+
+  <section
+    id="welcomeScreen"
+    class="welcome"
+  >
+
+    <div class="welcome-icon">
+      ✨
+    </div>
+
+    <h1>
+      مرحباً بك في Aizen AI
+    </h1>
+
+    <p>
+      ماذا تريد أن نبني اليوم؟
+    </p>
+
+    <div class="suggestions">
+
+      <button onclick="useSuggestion('أنشئ لي موقع متجر إلكتروني حديث')">
+        🛒 متجر إلكتروني
+      </button>
+
+      <button onclick="useSuggestion('أنشئ لي لوحة تحكم إدارية كاملة')">
+        📊 لوحة تحكم
+      </button>
+
+      <button onclick="useSuggestion('أنشئ لي تطبيق دردشة حديث')">
+        💬 تطبيق دردشة
+      </button>
+
+      <button onclick="useSuggestion('أنشئ لي موقع شخصي احترافي')">
+        👤 موقع شخصي
+      </button>
+
+    </div>
+
+  </section>
 
 
-<div class="main-layout">
-
-<main id="main">
-
-  <div
-    class="chat"
-    id="chat"
+  <section
+    id="chatScreen"
+    class="chat-screen"
+    style="display:none"
   >
 
     <div
-      class="welcome"
-      id="welcome"
-    >
+      id="messages"
+      class="messages"
+    ></div>
 
-      <div class="welcome-logo">
-        🤖
+    <div
+      id="typingIndicator"
+      class="typing"
+      style="display:none"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+      <label>
+        Aizen يفكر...
+      </label>
+    </div>
+
+  </section>
+
+
+  <div class="composer-wrap">
+
+    <div class="composer">
+
+      <textarea
+        id="messageInput"
+        rows="1"
+        placeholder="اكتب فكرتك لـ Aizen..."
+        onkeydown="handleInputKey(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+
+      <div class="composer-bottom">
+
+        <div class="composer-tools">
+
+          <button
+            class="tool-btn"
+            onclick="openBuildModal()"
+            title="إنشاء مشروع"
+          >
+            ＋ مشروع
+          </button>
+
+          <button
+            class="tool-btn"
+            onclick="triggerFileUpload()"
+            title="إرفاق ملف"
+          >
+            📎
+          </button>
+
+          <input
+            id="fileInput"
+            type="file"
+            hidden
+            onchange="handleFileUpload(event)"
+          >
+
+        </div>
+
+        <div class="send-area">
+
+          <button
+            id="stopBtn"
+            class="stop-btn"
+            onclick="stopGeneration()"
+            style="display:none"
+          >
+            ■ إيقاف
+          </button>
+
+          <button
+            id="sendBtn"
+            class="send-btn"
+            onclick="sendMessage()"
+          >
+            ➤
+          </button>
+
+        </div>
+
       </div>
 
-      <h1>
-        مرحباً بك في Aizen AI
-      </h1>
+    </div>
 
-      <p>
-        ابنِ المواقع والتطبيقات والبوتات بمساعدة الذكاء الاصطناعي.
-      </p>
-
+    <div class="status">
+      Aizen AI يمكنه مساعدتك في البرمجة وبناء المشاريع.
     </div>
 
   </div>
 
 </main>
 
-</div>
-
-
-<!-- COMPOSER -->
-
-<div class="composer-wrap">
-
-  <div class="composer">
-
-    <textarea
-      id="messageInput"
-      placeholder="اسأل Aizen أي شيء..."
-      rows="1"
-      onkeydown="handleKey(event)"
-      oninput="autoResize(this)"
-    ></textarea>
-
-    <div class="composer-bottom">
-
-      <div class="left-buttons">
-
-        <button
-          class="icon-btn"
-          onclick="document.getElementById('fileInput').click()"
-        >
-          ＋
-        </button>
-
-        <input
-          id="fileInput"
-          type="file"
-          style="display:none"
-          onchange="fileSelected(this)"
-        >
-
-      </div>
-
-      <div class="right-buttons">
-
-        <button
-          id="buildBtn"
-          class="build-btn"
-          onclick="openBuildModal()"
-        >
-          🛠️ Build
-        </button>
-
-        <button
-          id="sendBtn"
-          class="send-btn"
-          onclick="sendMessage()"
-        >
-          ↑
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-  <div class="status">
-    Aizen AI يمكن أن يخطئ. تحقق من المعلومات المهمة.
-  </div>
-
-</div>
-
-</div>
-
 
 <!-- BUILD MODAL -->
 
 <div
-  id="buildModal"
+  id="buildOverlay"
   class="modal-overlay"
-  onclick="closeBuildOnOverlay(event)"
+  onclick="closeBuildOutside(event)"
 >
 
-<div class="build-modal">
+  <div class="build-modal">
 
-  <div class="modal-header">
+    <div class="modal-header">
 
-    <div class="modal-title">
-      🛠️ ماذا تريد أن تبني؟
+      <div class="modal-title">
+        🚀 إنشاء مشروع جديد
+      </div>
+
+      <button
+        class="close-btn"
+        onclick="closeBuildModal()"
+      >
+        ×
+      </button>
+
     </div>
 
-    <button
-      class="close-btn"
-      onclick="closeBuildModal()"
+    <div class="build-subtitle">
+      اختر نوع المشروع الذي تريد من Aizen بناءه.
+    </div>
+
+
+    <div class="project-types">
+
+      <button
+        class="project-type"
+        data-type="website"
+        onclick="selectProjectType(this)"
+      >
+
+        <div class="type-icon">
+          🌐
+        </div>
+
+        <div class="type-name">
+          موقع ويب
+        </div>
+
+        <div class="type-description">
+          مواقع وصفحات ويب حديثة ومتجاوبة
+        </div>
+
+      </button>
+
+
+      <button
+        class="project-type"
+        data-type="webapp"
+        onclick="selectProjectType(this)"
+      >
+
+        <div class="type-icon">
+          ⚡
+        </div>
+
+        <div class="type-name">
+          Web App
+        </div>
+
+        <div class="type-description">
+          تطبيق ويب كامل مع وظائف تفاعلية
+        </div>
+
+      </button>
+
+
+      <button
+        class="project-type"
+        data-type="dashboard"
+        onclick="selectProjectType(this)"
+      >
+
+        <div class="type-icon">
+          📊
+        </div>
+
+        <div class="type-name">
+          لوحة تحكم
+        </div>
+
+        <div class="type-description">
+          Dashboard احترافي لإدارة البيانات
+        </div>
+
+      </button>
+
+
+      <button
+        class="project-type"
+        data-type="bot"
+        onclick="selectProjectType(this)"
+      >
+
+        <div class="type-icon">
+          🤖
+        </div>
+
+        <div class="type-name">
+          Bot
+        </div>
+
+        <div class="type-description">
+          بوتات Telegram و Discord وغيرها
+        </div>
+
+      </button>
+
+
+      <button
+        class="project-type"
+        data-type="api"
+        onclick="selectProjectType(this)"
+      >
+
+        <div class="type-icon">
+          🔌
+        </div>
+
+        <div class="type-name">
+          API
+        </div>
+
+        <div class="type-description">
+          Backend وواجهات API
+        </div>
+
+      </button>
+
+
+      <button
+        class="project-type"
+        data-type="other"
+        onclick="selectProjectType(this)"
+      >
+
+        <div class="type-icon">
+          🧩
+        </div>
+
+        <div class="type-name">
+          مشروع آخر
+        </div>
+
+        <div class="type-description">
+          أي فكرة أو مشروع مخصص
+        </div>
+
+      </button>
+
+    </div>
+
+
+    <div
+      id="projectDescription"
+      class="project-description"
     >
-      ×
-    </button>
 
-  </div>
+      <label>
+        وصف المشروع
+      </label>
 
-  <div class="build-subtitle">
-    اختر نوع المشروع الذي تريد من Aizen AI بناءه.
-  </div>
+      <textarea
+        id="buildDescription"
+        placeholder="اشرح بالتفصيل ماذا تريد أن يبني Aizen..."
+      ></textarea>
 
-  <div class="project-types">
+    </div>
 
-    <button
-      class="project-type"
-      onclick="selectProjectType('موقع',this)"
-    >
-      <div class="type-icon">🌐</div>
-      <div class="type-name">موقع</div>
-      <div class="type-description">
-        مواقع وصفحات ويب حديثة
-      </div>
-    </button>
-
-    <button
-      class="project-type"
-      onclick="selectProjectType('تطبيق',this)"
-    >
-      <div class="type-icon">📱</div>
-      <div class="type-name">تطبيق</div>
-      <div class="type-description">
-        تطبيقات الهاتف والويب
-      </div>
-    </button>
-
-    <button
-      class="project-type"
-      onclick="selectProjectType('بوت',this)"
-    >
-      <div class="type-icon">🤖</div>
-      <div class="type-name">بوت</div>
-      <div class="type-description">
-        Telegram و Discord وغيرها
-      </div>
-    </button>
-
-    <button
-      class="project-type"
-      onclick="selectProjectType('لعبة',this)"
-    >
-      <div class="type-icon">🎮</div>
-      <div class="type-name">لعبة</div>
-      <div class="type-description">
-        ألعاب ومشاريع تفاعلية
-      </div>
-    </button>
-
-    <button
-      class="project-type"
-      onclick="selectProjectType('مشروع مخصص',this)"
-    >
-      <div class="type-icon">⚙️</div>
-      <div class="type-name">مشروع مخصص</div>
-      <div class="type-description">
-        أي فكرة أخرى
-      </div>
-    </button>
-
-  </div>
-
-  <div
-    id="projectDescription"
-    class="project-description"
-  >
-
-    <label>
-      اشرح لـ Aizen ماذا تريد أن يبني:
-    </label>
-
-    <textarea
-      id="buildDescription"
-      placeholder="مثال: أريد موقع متجر إلكتروني فيه تسجيل دخول، منتجات، سلة شراء وصفحة دفع..."
-      oninput="updateBuildButton()"
-    ></textarea>
 
     <button
       id="startBuildBtn"
       class="start-build"
-      disabled
       onclick="startBuild()"
+      disabled
     >
-      🚀 ابدأ بناء المشروع
+      🚀 ابدأ البناء
     </button>
 
   </div>
-
-</div>
 
 </div>
 
@@ -1073,216 +1647,1094 @@ textarea::placeholder{
 <!-- PROJECTS MODAL -->
 
 <div
-  id="projectsModal"
+  id="projectsOverlay"
   class="modal-overlay"
-  onclick="closeProjectsOnOverlay(event)"
+  onclick="closeProjectsOutside(event)"
 >
 
-<div class="projects-modal">
+  <div class="projects-modal">
 
-  <div class="modal-header">
+    <div class="modal-header">
 
-    <div class="modal-title">
-      📁 المشاريع
+      <div class="modal-title">
+        📁 مشاريعك
+      </div>
+
+      <button
+        class="close-btn"
+        onclick="closeProjectsModal()"
+      >
+        ×
+      </button>
+
     </div>
 
-    <button
-      class="close-btn"
-      onclick="closeProjectsModal()"
-    >
-      ×
-    </button>
+    <div
+      id="projectsContainer"
+    ></div>
 
   </div>
-
-  <div
-    id="projectsModalList"
-  ></div>
-
-</div>
 
 </div>
 
 
 <script>
 
-const RENDER_URL =
+const BACKEND_URL =
   "https://aizen-ai-builder.onrender.com";
 
+const SUPABASE_URL =
+  "https://krazsdizsiexwrokqwjh.supabase.co";
+
+const SUPABASE_ANON_KEY =
+  "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IkpXVCJ9.eyJzdWIiOiJr...";
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+
+
+let currentUser = null;
+
+let currentSession = null;
+
+let authMode = "login";
+
+let selectedProjectType = null;
+
+let currentConversationId = null;
+
 let isGenerating = false;
-let selectedProjectType = "";
-let currentChatId = null;
+
+let abortController = null;
+
 let buildUsed = false;
 
-let conversations =
-  JSON.parse(
-    localStorage.getItem(
-      "aizen_conversations"
-    ) || "[]"
-  );
+let conversations = [];
 
-let projects =
-  JSON.parse(
-    localStorage.getItem(
-      "aizen_projects"
-    ) || "[]"
-  );
+let projects = [];
+
+let uploadedFiles = [];
 
 
-function saveData(){
+/* =========================
+   AUTH INITIALIZATION
+========================= */
 
-  localStorage.setItem(
-    "aizen_conversations",
-    JSON.stringify(conversations)
-  );
+async function initAuth(){
 
-  localStorage.setItem(
-    "aizen_projects",
-    JSON.stringify(projects)
-  );
-}
+  try{
 
+    const result =
+      await supabaseClient.auth.getSession();
 
-/* API */
+    currentSession =
+      result.data.session;
 
-function getApiUrl(){
+    currentUser =
+      currentSession?.user || null;
 
-  if(
-    window.location.hostname ===
-    "aizen-ai-builder.onrender.com"
-  ){
-    return "/api/chat";
+    if(currentUser){
+
+      showAuthenticated();
+
+    }else{
+
+      showLoggedOut();
+
+    }
+
+    supabaseClient.auth.onAuthStateChange(
+      async (event, session) => {
+
+        currentSession = session;
+
+        currentUser =
+          session?.user || null;
+
+        if(currentUser){
+
+          showAuthenticated();
+
+        }else{
+
+          showLoggedOut();
+
+        }
+
+      }
+    );
+
+  }catch(error){
+
+    console.error(
+      "Auth initialization error:",
+      error
+    );
+
+    showAuthMessage(
+      "تعذر تهيئة تسجيل الدخول"
+    );
+
   }
 
-  return RENDER_URL + "/api/chat";
 }
 
 
-/* CHAT ID */
+/* =========================
+   SHOW AUTHENTICATED
+========================= */
 
-function createChatId(){
+function showAuthenticated(){
 
-  return "chat_" +
-    Date.now() +
-    "_" +
-    Math.random()
-      .toString(36)
-      .slice(2,8);
-}
+  const overlay =
+    document.getElementById(
+      "authOverlay"
+    );
 
+  if(overlay){
 
-/* CHAT TITLE */
+    overlay.classList.add(
+      "hidden"
+    );
 
-function makeTitle(text){
+  }
 
-  let title =
-    text
-      .replace(/\s+/g," ")
-      .trim();
+  updateAccountUI();
 
-  if(title.length > 35)
-    title =
-      title.slice(0,35) + "...";
-
-  return title || "محادثة جديدة";
-}
-
-
-/* CURRENT CHAT */
-
-function ensureChat(){
-
-  if(currentChatId)
-    return;
-
-  currentChatId =
-    createChatId();
-
-  conversations.unshift({
-
-    id:currentChatId,
-    title:"محادثة جديدة",
-    messages:[],
-    buildUsed:false,
-    createdAt:Date.now()
-
-  });
-
-  saveData();
+  loadLocalData();
 
   renderConversations();
+
+  renderProjects();
+
 }
 
 
-function getCurrentChat(){
+/* =========================
+   SHOW LOGGED OUT
+========================= */
 
-  return conversations.find(
-    c => c.id === currentChatId
+function showLoggedOut(){
+
+  const overlay =
+    document.getElementById(
+      "authOverlay"
+    );
+
+  if(overlay){
+
+    overlay.classList.remove(
+      "hidden"
+    );
+
+  }
+
+  currentUser = null;
+
+  currentSession = null;
+
+  conversations = [];
+
+  projects = [];
+
+  currentConversationId = null;
+
+  renderConversations();
+
+  renderProjects();
+
+}
+
+
+/* =========================
+   AUTH MODE
+========================= */
+
+function switchAuthMode(mode){
+
+  authMode = mode;
+
+  const loginTab =
+    document.getElementById(
+      "loginTab"
+    );
+
+  const signupTab =
+    document.getElementById(
+      "signupTab"
+    );
+
+  const displayNameField =
+    document.getElementById(
+      "displayNameField"
+    );
+
+  const submit =
+    document.getElementById(
+      "authSubmit"
+    );
+
+  const forgot =
+    document.getElementById(
+      "forgotBtn"
+    );
+
+  if(mode === "login"){
+
+    loginTab.classList.add(
+      "active"
+    );
+
+    signupTab.classList.remove(
+      "active"
+    );
+
+    displayNameField.style.display =
+      "none";
+
+    submit.textContent =
+      "تسجيل الدخول";
+
+    forgot.style.display =
+      "block";
+
+  }else{
+
+    signupTab.classList.add(
+      "active"
+    );
+
+    loginTab.classList.remove(
+      "active"
+    );
+
+    displayNameField.style.display =
+      "block";
+
+    submit.textContent =
+      "إنشاء الحساب";
+
+    forgot.style.display =
+      "none";
+
+  }
+
+  clearAuthMessage();
+
+}
+
+
+/* =========================
+   AUTH MESSAGE
+========================= */
+
+function showAuthMessage(
+  message,
+  success = false
+){
+
+  const element =
+    document.getElementById(
+      "authMessage"
+    );
+
+  if(!element) return;
+
+  element.textContent =
+    message || "";
+
+  element.className =
+    success
+      ? "auth-message success"
+      : "auth-message";
+
+}
+
+
+function clearAuthMessage(){
+
+  showAuthMessage("");
+
+}
+
+
+/* =========================
+   EMAIL AUTH
+========================= */
+
+async function submitAuth(event){
+
+  event.preventDefault();
+
+  clearAuthMessage();
+
+  const email =
+    document.getElementById(
+      "emailInput"
+    ).value.trim();
+
+  const password =
+    document.getElementById(
+      "passwordInput"
+    ).value;
+
+  const displayName =
+    document.getElementById(
+      "displayNameInput"
+    ).value.trim();
+
+  const button =
+    document.getElementById(
+      "authSubmit"
+    );
+
+  if(!email || !password){
+
+    showAuthMessage(
+      "أدخل البريد الإلكتروني وكلمة المرور"
+    );
+
+    return;
+
+  }
+
+  if(authMode === "signup" && !displayName){
+
+    showAuthMessage(
+      "أدخل اسم العرض"
+    );
+
+    return;
+
+  }
+
+  button.disabled = true;
+
+  button.textContent =
+    authMode === "login"
+      ? "جارٍ تسجيل الدخول..."
+      : "جارٍ إنشاء الحساب...";
+
+
+  try{
+
+    let result;
+
+    if(authMode === "login"){
+
+      result =
+        await supabaseClient.auth.signInWithPassword({
+          email,
+          password
+        });
+
+    }else{
+
+      result =
+        await supabaseClient.auth.signUp({
+
+          email,
+
+          password,
+
+          options:{
+            data:{
+              display_name:
+                displayName
+            }
+          }
+
+        });
+
+    }
+
+
+    if(result.error){
+
+      throw result.error;
+
+    }
+
+
+    if(authMode === "signup"){
+
+      if(!result.data.session){
+
+        showAuthMessage(
+          "تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتأكيد الحساب.",
+          true
+        );
+
+      }else{
+
+        showAuthMessage(
+          "تم إنشاء الحساب بنجاح!",
+          true
+        );
+
+      }
+
+    }else{
+
+      showAuthMessage(
+        "تم تسجيل الدخول بنجاح!",
+        true
+      );
+
+    }
+
+  }catch(error){
+
+    console.error(
+      "Authentication error:",
+      error
+    );
+
+    showAuthMessage(
+      translateAuthError(
+        error.message
+      )
+    );
+
+  }finally{
+
+    button.disabled = false;
+
+    button.textContent =
+      authMode === "login"
+        ? "تسجيل الدخول"
+        : "إنشاء الحساب";
+
+  }
+
+}
+
+
+/* =========================
+   AUTH ERROR TRANSLATION
+========================= */
+
+function translateAuthError(message){
+
+  const text =
+    String(message || "");
+
+  if(
+    text.includes(
+      "Invalid login credentials"
+    )
+  ){
+
+    return "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+
+  }
+
+  if(
+    text.includes(
+      "User already registered"
+    )
+  ){
+
+    return "هذا البريد الإلكتروني مسجل مسبقاً.";
+
+  }
+
+  if(
+    text.includes(
+      "Email not confirmed"
+    )
+  ){
+
+    return "يرجى تأكيد بريدك الإلكتروني أولاً.";
+
+  }
+
+  if(
+    text.includes(
+      "Password should be at least"
+    )
+  ){
+
+    return "كلمة المرور قصيرة جداً.";
+
+  }
+
+  if(
+    text.includes(
+      "Unable to validate email address"
+    )
+  ){
+
+    return "البريد الإلكتروني غير صالح.";
+
+  }
+
+  if(
+    text.includes(
+      "rate limit"
+    )
+  ){
+
+    return "تم تجاوز عدد المحاولات. حاول لاحقاً.";
+
+  }
+
+  return text || "حدث خطأ أثناء تسجيل الدخول.";
+
+}
+
+
+/* =========================
+   OAUTH
+========================= */
+
+async function oauthLogin(provider){
+
+  clearAuthMessage();
+
+  try{
+
+    const result =
+      await supabaseClient.auth.signInWithOAuth({
+
+        provider,
+
+        options:{
+          redirectTo:
+            window.location.origin +
+            window.location.pathname
+        }
+
+      });
+
+    if(result.error){
+
+      throw result.error;
+
+    }
+
+  }catch(error){
+
+    console.error(
+      "OAuth error:",
+      error
+    );
+
+    showAuthMessage(
+      translateAuthError(
+        error.message
+      )
+    );
+
+  }
+
+}
+
+
+/* =========================
+   PASSWORD RESET
+========================= */
+
+async function resetPassword(){
+
+  const email =
+    document.getElementById(
+      "emailInput"
+    ).value.trim();
+
+  if(!email){
+
+    showAuthMessage(
+      "اكتب بريدك الإلكتروني أولاً."
+    );
+
+    return;
+
+  }
+
+  try{
+
+    const result =
+      await supabaseClient.auth.resetPasswordForEmail(
+        email,
+        {
+          redirectTo:
+            window.location.origin +
+            window.location.pathname
+        }
+      );
+
+    if(result.error){
+
+      throw result.error;
+
+    }
+
+    showAuthMessage(
+      "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.",
+      true
+    );
+
+  }catch(error){
+
+    console.error(
+      "Password reset error:",
+      error
+    );
+
+    showAuthMessage(
+      translateAuthError(
+        error.message
+      )
+    );
+
+  }/* =========================
+   ACCOUNT
+========================= */
+
+function updateAccountUI(){
+
+  if(!currentUser) return;
+
+  const metadata =
+    currentUser.user_metadata || {};
+
+  const name =
+    metadata.display_name ||
+    metadata.full_name ||
+    metadata.name ||
+    currentUser.email?.split("@")[0] ||
+    "المستخدم";
+
+  const email =
+    currentUser.email || "";
+
+  const nameEl =
+    document.getElementById("accountName");
+
+  const emailEl =
+    document.getElementById("accountEmail");
+
+  const idEl =
+    document.getElementById("accountId");
+
+  const btn =
+    document.getElementById("accountBtn");
+
+  if(nameEl){
+    nameEl.textContent = name;
+  }
+
+  if(emailEl){
+    emailEl.textContent = email;
+  }
+
+  if(idEl){
+    idEl.textContent =
+      "ID: " + currentUser.id;
+  }
+
+  if(btn){
+    btn.textContent =
+      "👤 " + name;
+  }
+
+}
+
+
+/* =========================
+   ACCOUNT MENU
+========================= */
+
+function toggleAccountMenu(){
+
+  const menu =
+    document.getElementById(
+      "accountMenu"
+    );
+
+  if(!menu) return;
+
+  menu.classList.toggle("show");
+
+}
+
+
+function closeAccountMenu(){
+
+  const menu =
+    document.getElementById(
+      "accountMenu"
+    );
+
+  if(menu){
+    menu.classList.remove("show");
+  }
+
+}
+
+
+/* =========================
+   LOGOUT
+========================= */
+
+async function logout(){
+
+  closeAccountMenu();
+
+  try{
+
+    const result =
+      await supabaseClient.auth.signOut();
+
+    if(result.error){
+
+      throw result.error;
+
+    }
+
+    currentUser = null;
+    currentSession = null;
+
+    conversations = [];
+    projects = [];
+
+    currentConversationId = null;
+
+    localStorage.removeItem(
+      getStorageKey("conversations")
+    );
+
+    localStorage.removeItem(
+      getStorageKey("projects")
+    );
+
+    showLoggedOut();
+
+  }catch(error){
+
+    console.error(
+      "Logout error:",
+      error
+    );
+
+    alert(
+      "تعذر تسجيل الخروج: " +
+      error.message
+    );
+
+  }
+
+}
+
+
+/* =========================
+   ACCESS TOKEN
+========================= */
+
+async function getAccessToken(){
+
+  if(!currentUser){
+
+    return null;
+
+  }
+
+  const result =
+    await supabaseClient.auth.getSession();
+
+  if(result.error){
+
+    console.error(
+      "Session error:",
+      result.error
+    );
+
+    return null;
+
+  }
+
+  const session =
+    result.data.session;
+
+  if(!session){
+
+    currentUser = null;
+    currentSession = null;
+
+    showLoggedOut();
+
+    return null;
+
+  }
+
+  currentSession = session;
+
+  return session.access_token || null;
+
+}
+
+
+/* =========================
+   STORAGE KEY
+========================= */
+
+function getStorageKey(name){
+
+  if(!currentUser){
+
+    return "aizen_" + name;
+
+  }
+
+  return (
+    "aizen_" +
+    currentUser.id +
+    "_" +
+    name
   );
+
 }
 
 
-/* SIDEBAR */
+/* =========================
+   LOCAL DATA
+========================= */
+
+function loadLocalData(){
+
+  if(!currentUser) return;
+
+  try{
+
+    const savedConversations =
+      localStorage.getItem(
+        getStorageKey(
+          "conversations"
+        )
+      );
+
+    const savedProjects =
+      localStorage.getItem(
+        getStorageKey(
+          "projects"
+        )
+      );
+
+    conversations =
+      savedConversations
+        ? JSON.parse(
+            savedConversations
+          )
+        : [];
+
+    projects =
+      savedProjects
+        ? JSON.parse(
+            savedProjects
+          )
+        : [];
+
+  }catch(error){
+
+    console.error(
+      "Local data error:",
+      error
+    );
+
+    conversations = [];
+    projects = [];
+
+  }
+
+}
+
+
+/* =========================
+   SAVE DATA
+========================= */
+
+function saveConversations(){
+
+  if(!currentUser) return;
+
+  try{
+
+    localStorage.setItem(
+      getStorageKey(
+        "conversations"
+      ),
+      JSON.stringify(
+        conversations
+      )
+    );
+
+  }catch(error){
+
+    console.error(
+      "Save conversations error:",
+      error
+    );
+
+  }
+
+}
+
+
+function saveProjects(){
+
+  if(!currentUser) return;
+
+  try{
+
+    localStorage.setItem(
+      getStorageKey(
+        "projects"
+      ),
+      JSON.stringify(
+        projects
+      )
+    );
+
+  }catch(error){
+
+    console.error(
+      "Save projects error:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================
+   SIDEBAR
+========================= */
 
 function toggleSidebar(){
 
-  document
-    .getElementById("sidebar")
-    .classList.toggle("open");
+  const sidebar =
+    document.getElementById(
+      "sidebar"
+    );
 
-  document
-    .getElementById("sidebarOverlay")
-    .classList.toggle("show");
+  const overlay =
+    document.getElementById(
+      "sidebarOverlay"
+    );
+
+  sidebar?.classList.toggle(
+    "open"
+  );
+
+  overlay?.classList.toggle(
+    "show"
+  );
+
 }
 
 
 function closeSidebar(){
 
-  document
-    .getElementById("sidebar")
-    .classList.remove("open");
+  const sidebar =
+    document.getElementById(
+      "sidebar"
+    );
 
-  document
-    .getElementById("sidebarOverlay")
-    .classList.remove("show");
+  const overlay =
+    document.getElementById(
+      "sidebarOverlay"
+    );
+
+  sidebar?.classList.remove(
+    "open"
+  );
+
+  overlay?.classList.remove(
+    "show"
+  );
+
 }
 
+
+/* =========================
+   SIDEBAR TABS
+========================= */
 
 function showSidebarTab(tab){
 
-  const chats =
-    tab === "chats";
-
-  document
-    .getElementById("chatSidebar")
-    .style.display =
-      chats ? "block" : "none";
-
-  document
-    .getElementById("projectSidebar")
-    .style.display =
-      chats ? "none" : "block";
-
-  document
-    .getElementById("chatTab")
-    .classList.toggle(
-      "active",
-      chats
+  const chatTab =
+    document.getElementById(
+      "chatTab"
     );
 
-  document
-    .getElementById("projectTab")
-    .classList.toggle(
-      "active",
-      !chats
+  const projectTab =
+    document.getElementById(
+      "projectTab"
     );
 
-  if(!chats)
-    renderProjects();
+  const chatSidebar =
+    document.getElementById(
+      "chatSidebar"
+    );
+
+  const projectSidebar =
+    document.getElementById(
+      "projectSidebar"
+    );
+
+  if(tab === "chats"){
+
+    chatTab?.classList.add(
+      "active"
+    );
+
+    projectTab?.classList.remove(
+      "active"
+    );
+
+    if(chatSidebar){
+      chatSidebar.style.display =
+        "block";
+    }
+
+    if(projectSidebar){
+      projectSidebar.style.display =
+        "none";
+    }
+
+  }else{
+
+    projectTab?.classList.add(
+      "active"
+    );
+
+    chatTab?.classList.remove(
+      "active"
+    );
+
+    if(chatSidebar){
+      chatSidebar.style.display =
+        "none";
+    }
+
+    if(projectSidebar){
+      projectSidebar.style.display =
+        "block";
+    }
+
+  }
+
 }
 
 
-/* CONVERSATIONS */
+/* =========================
+   CONVERSATIONS
+========================= */
 
 function renderConversations(){
 
@@ -1291,1177 +2743,1816 @@ function renderConversations(){
       "conversationList"
     );
 
-  const search =
-    (
-      document.getElementById(
-        "searchInput"
-      ).value || ""
-    )
-      .toLowerCase()
-      .trim();
-
-  const filtered =
-    conversations.filter(c =>
-      c.title
-        .toLowerCase()
-        .includes(search)
-    );
+  if(!list) return;
 
   list.innerHTML = "";
 
-  if(!filtered.length){
+  if(!currentUser){
 
     list.innerHTML =
-      `<div class="sidebar-empty">
-        لا توجد محادثات
-      </div>`;
+      '<div class="empty-state">سجّل الدخول أولاً</div>';
 
     return;
+
   }
 
-  filtered.forEach(chat => {
+  const search =
+    document.getElementById(
+      "searchInput"
+    )?.value
+      .trim()
+      .toLowerCase() || "";
 
-    const item =
-      document.createElement("div");
+  let filtered =
+    conversations.filter(
+      conversation => {
 
-    item.className =
-      "conversation-item" +
-      (
-        chat.id === currentChatId
-          ? " active"
-          : ""
+        const title =
+          String(
+            conversation.title ||
+            ""
+          ).toLowerCase();
+
+        return title.includes(
+          search
+        );
+
+      }
+    );
+
+
+  filtered.sort(
+    (a,b) => {
+
+      if(
+        Boolean(a.pinned) !==
+        Boolean(b.pinned)
+      ){
+
+        return a.pinned ? -1 : 1;
+
+      }
+
+      return (
+        Number(
+          b.updatedAt || 0
+        ) -
+        Number(
+          a.updatedAt || 0
+        )
       );
 
-    const text =
-      document.createElement("div");
-
-    text.className =
-      "item-text";
-
-    text.textContent =
-      chat.title;
-
-    const deleteBtn =
-      document.createElement("button");
-
-    deleteBtn.className =
-      "item-delete";
-
-    deleteBtn.textContent =
-      "×";
-
-    deleteBtn.onclick =
-      event => {
-
-        event.stopPropagation();
-
-        deleteConversation(
-          chat.id
-        );
-      };
-
-    item.onclick =
-      () => {
-
-        loadConversation(
-          chat.id
-        );
-
-        closeSidebar();
-      };
-
-    item.appendChild(text);
-    item.appendChild(deleteBtn);
-
-    list.appendChild(item);
-
-  });
-}
+    }
+  );
 
 
-function deleteConversation(id){
+  if(filtered.length === 0){
 
-  const chat =
-    conversations.find(
-      c => c.id === id
-    );
+    list.innerHTML =
+      '<div class="empty-state">لا توجد محادثات بعد</div>';
 
-  if(!chat)
     return;
-
-  if(
-    !confirm(
-      "هل تريد حذف هذه المحادثة؟"
-    )
-  )
-    return;
-
-  conversations =
-    conversations.filter(
-      c => c.id !== id
-    );
-
-  if(currentChatId === id){
-
-    currentChatId = null;
-
-    newChat();
 
   }
 
-  saveData();
 
-  renderConversations();
+  filtered.forEach(
+    conversation => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+      item.className =
+        "conversation-item" +
+        (
+          conversation.id ===
+          currentConversationId
+            ? " active"
+            : ""
+        );
+
+
+      item.innerHTML = `
+
+        <div
+          class="conversation-main"
+          onclick="openConversation('${conversation.id}')"
+        >
+
+          <div class="conversation-icon">
+            ${conversation.pinned ? "📌" : "💬"}
+          </div>
+
+          <div class="conversation-info">
+
+            <div class="conversation-title">
+              ${escapeHTML(
+                conversation.title ||
+                "محادثة جديدة"
+              )}
+            </div>
+
+            <div class="conversation-date">
+              ${formatDate(
+                conversation.updatedAt
+              )}
+            </div>
+
+          </div>
+
+        </div>
+
+        <button
+          class="conversation-menu"
+          onclick="showConversationMenu(event,'${conversation.id}')"
+        >
+          ⋮
+        </button>
+
+      `;
+
+      list.appendChild(item);
+
+    }
+  );
+
 }
 
 
-function loadConversation(id){
+/* =========================
+   CONVERSATION MENU
+========================= */
+
+function showConversationMenu(
+  event,
+  id
+){
+
+  event.stopPropagation();
 
   const conversation =
     conversations.find(
-      c => c.id === id
+      item => item.id === id
     );
 
-  if(!conversation)
-    return;
+  if(!conversation) return;
 
-  currentChatId =
-    conversation.id;
-
-  buildUsed =
-    !!conversation.buildUsed;
-
-  const chat =
-    document.getElementById("chat");
-
-  chat.innerHTML = "";
-
-  if(
-    !conversation.messages.length
-  ){
-
-    showWelcome();
-
-  }else{
-
-    conversation.messages.forEach(
-      message => {
-
-        if(
-          message.type === "user"
-        ){
-
-          addMessage(
-            "user",
-            message.text,
-            false
-          );
-
-        }else{
-
-          addMessage(
-            "ai",
-            message.text,
-            false
-          );
-
-        }
-
-      }
+  const action =
+    prompt(
+      "اكتب: rename أو pin أو delete",
+      conversation.pinned
+        ? "unpin"
+        : "pin"
     );
 
-  }
+  if(!action) return;
 
-  updateBuildState();
+  const normalized =
+    action.trim().toLowerCase();
 
-  renderConversations();
+  if(normalized === "rename"){
 
-  document
-    .getElementById("main")
-    .scrollTop = 999999;
-}
+    const title =
+      prompt(
+        "اسم المحادثة الجديد:",
+        conversation.title
+      );
 
+    if(
+      title &&
+      title.trim()
+    ){
 
-/* WELCOME */
+      conversation.title =
+        title.trim();
 
-function showWelcome(){
+      conversation.updatedAt =
+        Date.now();
 
-  document
-    .getElementById("chat")
-    .innerHTML = `
-      <div
-        class="welcome"
-        id="welcome"
-      >
-        <div class="welcome-logo">
-          🤖
-        </div>
+      saveConversations();
 
-        <h1>
-          مرحباً بك في Aizen AI
-        </h1>
-
-        <p>
-          ابنِ المواقع والتطبيقات والبوتات بمساعدة الذكاء الاصطناعي.
-        </p>
-      </div>
-    `;
-}
-
-
-function removeWelcome(){
-
-  const welcome =
-    document.getElementById(
-      "welcome"
-    );
-
-  if(welcome)
-    welcome.remove();
-}
-
-
-/* MESSAGES */
-
-function addMessage(
-  type,
-  text,
-  save = true
-){
-
-  removeWelcome();
-
-  const chat =
-    document.getElementById("chat");
-
-  const message =
-    document.createElement("div");
-
-  message.className =
-    "message " + type;
-
-  const avatar =
-    document.createElement("div");
-
-  avatar.className =
-    "avatar";
-
-  avatar.textContent =
-    type === "user"
-      ? "👤"
-      : "🤖";
-
-  const bubble =
-    document.createElement("div");
-
-  bubble.className =
-    "bubble";
-
-  if(type === "ai"){
-
-    renderAIText(
-      bubble,
-      text
-    );
-
-  }else{
-
-    bubble.textContent =
-      text;
-
-  }
-
-  message.appendChild(avatar);
-  message.appendChild(bubble);
-
-  chat.appendChild(message);
-
-  scrollToBottom();
-
-  if(
-    save &&
-    currentChatId
-  ){
-
-    const current =
-      getCurrentChat();
-
-    if(current){
-
-      current.messages.push({
-        type,
-        text
-      });
-
-      if(
-        type === "user" &&
-        current.title ===
-        "محادثة جديدة"
-      ){
-
-        current.title =
-          makeTitle(text);
-
-      }
-
-      saveData();
       renderConversations();
 
     }
 
+    return;
+
   }
 
-  return bubble;
-}
+
+  if(
+    normalized === "pin" ||
+    normalized === "unpin"
+  ){
+
+    conversation.pinned =
+      normalized === "pin";
+
+    conversation.updatedAt =
+      Date.now();
+
+    saveConversations();
+
+    renderConversations();
+
+    return;
+
+  }
 
 
-/* AI TEXT / CODE */
-
-function renderAIText(
-  element,
-  text
-){
-
-  const parts =
-    text.split(
-      /(```[\s\S]*?```)/g
-    );
-
-  element.innerHTML = "";
-
-  parts.forEach(part => {
+  if(normalized === "delete"){
 
     if(
-      part.startsWith("```")
+      !confirm(
+        "هل تريد حذف هذه المحادثة؟"
+      )
     ){
 
-      const firstLineEnd =
-        part.indexOf("\n");
-
-      let language =
-        "code";
-
-      let code = "";
-
-      if(firstLineEnd !== -1){
-
-        language =
-          part
-            .slice(3,firstLineEnd)
-            .trim() ||
-          "code";
-
-        code =
-          part
-            .slice(firstLineEnd + 1)
-            .replace(/```$/,"");
-
-      }else{
-
-        code =
-          part
-            .slice(3)
-            .replace(/```$/,"");
-
-      }
-
-      const wrapper =
-        document.createElement("div");
-
-      wrapper.className =
-        "code-block";
-
-      const head =
-        document.createElement("div");
-
-      head.className =
-        "code-head";
-
-      const lang =
-        document.createElement("span");
-
-      lang.textContent =
-        language;
-
-      const copy =
-        document.createElement("button");
-
-      copy.className =
-        "copy-code";
-
-      copy.textContent =
-        "نسخ";
-
-      copy.onclick =
-        async () => {
-
-          try{
-
-            await navigator.clipboard
-              .writeText(code);
-
-            copy.textContent =
-              "تم النسخ ✓";
-
-            setTimeout(
-              () =>
-                copy.textContent =
-                  "نسخ",
-              1500
-            );
-
-          }catch{}
-
-        };
-
-      head.appendChild(lang);
-      head.appendChild(copy);
-
-      const content =
-        document.createElement("div");
-
-      content.className =
-        "code-content";
-
-      content.textContent =
-        code;
-
-      wrapper.appendChild(head);
-      wrapper.appendChild(content);
-
-      element.appendChild(wrapper);
-
-    }else{
-
-      if(part){
-
-        const textNode =
-          document.createElement("div");
-
-        textNode.textContent =
-          part;
-
-        element.appendChild(
-          textNode
-        );
-
-      }
+      return;
 
     }
 
-  });
+    conversations =
+      conversations.filter(
+        item =>
+          item.id !== id
+      );
+
+    if(
+      currentConversationId === id
+    ){
+
+      currentConversationId =
+        null;
+
+      showWelcome();
+
+    }
+
+    saveConversations();
+
+    renderConversations();
+
+  }
+
 }
 
 
-/* THINKING */
+/* =========================
+   OPEN CONVERSATION
+========================= */
 
-function addThinking(){
+function openConversation(id){
 
-  removeWelcome();
+  const conversation =
+    conversations.find(
+      item => item.id === id
+    );
+
+  if(!conversation) return;
+
+  currentConversationId = id;
+
+  buildUsed =
+    Boolean(
+      conversation.buildUsed
+    );
+
+  showChat();
+
+  renderMessages(
+    conversation.messages || []
+  );
+
+  renderConversations();
+
+  closeSidebar();
+
+}
+
+
+/* =========================
+   NEW CHAT
+========================= */
+
+function newChat(){
+
+  if(isGenerating){
+
+    stopGeneration();
+
+  }
+
+  currentConversationId = null;
+
+  buildUsed = false;
+
+  uploadedFiles = [];
+
+  clearMessages();
+
+  showWelcome();
+
+  closeAccountMenu();
+
+  closeSidebar();
+
+  document.getElementById(
+    "messageInput"
+  )?.focus();
+
+  }
+
+}/* =========================
+   CHAT UI
+========================= */
+
+function showWelcome(){
+
+  const welcome =
+    document.getElementById(
+      "welcomeScreen"
+    );
 
   const chat =
-    document.getElementById("chat");
+    document.getElementById(
+      "chatScreen"
+    );
 
-  const message =
-    document.createElement("div");
+  if(welcome){
+    welcome.style.display =
+      "flex";
+  }
 
-  message.className =
-    "message ai";
+  if(chat){
+    chat.style.display =
+      "none";
+  }
 
-  message.id =
-    "thinkingMessage";
-
-  const avatar =
-    document.createElement("div");
-
-  avatar.className =
-    "avatar";
-
-  avatar.textContent =
-    "🤖";
-
-  const bubble =
-    document.createElement("div");
-
-  bubble.className =
-    "bubble thinking";
-
-  bubble.innerHTML = `
-    جاري التفكير
-    <span class="dots">
-      <span></span>
-      <span></span>
-      <span></span>
-    </span>
-  `;
-
-  message.appendChild(avatar);
-  message.appendChild(bubble);
-
-  chat.appendChild(message);
-
-  scrollToBottom();
-
-  return message;
 }
 
 
-function replaceThinkingWithStream(){
+function showChat(){
 
-  const thinking =
+  const welcome =
     document.getElementById(
-      "thinkingMessage"
+      "welcomeScreen"
     );
 
-  if(!thinking)
-    return addMessage(
-      "ai",
-      "",
-      false
+  const chat =
+    document.getElementById(
+      "chatScreen"
     );
+
+  if(welcome){
+    welcome.style.display =
+      "none";
+  }
+
+  if(chat){
+    chat.style.display =
+      "flex";
+  }
+
+}
+
+
+function clearMessages(){
+
+  const messages =
+    document.getElementById(
+      "messages"
+    );
+
+  if(messages){
+    messages.innerHTML = "";
+  }
+
+}
+
+
+function renderMessages(
+  messages
+){
+
+  clearMessages();
+
+  if(!messages || !messages.length){
+
+    showWelcome();
+
+    return;
+
+  }
+
+  showChat();
+
+  messages.forEach(
+    message => {
+
+      appendMessage(
+        message.role,
+        message.content,
+        false
+      );
+
+    }
+  );
+
+  scrollMessages();
+
+}
+
+
+/* =========================
+   ADD MESSAGE
+========================= */
+
+function appendMessage(
+  role,
+  content,
+  scroll = true
+){
+
+  const container =
+    document.getElementById(
+      "messages"
+    );
+
+  if(!container) return null;
+
+  showChat();
+
+  const wrapper =
+    document.createElement(
+      "div"
+    );
+
+  wrapper.className =
+    "message " +
+    (
+      role === "user"
+        ? "user-message"
+        : "ai-message"
+    );
+
+
+  const avatar =
+    document.createElement(
+      "div"
+    );
+
+  avatar.className =
+    "message-avatar";
+
+  avatar.textContent =
+    role === "user"
+      ? "👤"
+      : "🤖";
+
 
   const bubble =
-    thinking.querySelector(
-      ".bubble"
+    document.createElement(
+      "div"
     );
 
   bubble.className =
     "bubble";
 
-  bubble.innerHTML = "";
+
+  if(role === "user"){
+
+    bubble.textContent =
+      content || "";
+
+  }else{
+
+    bubble.innerHTML =
+      formatAIText(
+        content || ""
+      );
+
+  }
+
+
+  wrapper.appendChild(
+    avatar
+  );
+
+  wrapper.appendChild(
+    bubble
+  );
+
+  container.appendChild(
+    wrapper
+  );
+
+
+  if(scroll){
+
+    scrollMessages();
+
+  }
 
   return bubble;
+
 }
 
 
-/* STREAMING */
+/* =========================
+   AI TEXT FORMAT
+========================= */
 
-function handleKey(event){
+function formatAIText(text){
 
-  if(
-    event.key === "Enter" &&
-    !event.shiftKey
-  ){
+  let value =
+    escapeHTML(
+      String(text || "")
+    );
 
-    event.preventDefault();
+  value =
+    value.replace(
+      /```([\s\S]*?)```/g,
+      "<pre><code>$1</code></pre>"
+    );
 
-    sendMessage();
-  }
+  value =
+    value.replace(
+      /`([^`]+)`/g,
+      "<code>$1</code>"
+    );
+
+  value =
+    value.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+
+  value =
+    value.replace(
+      /\n/g,
+      "<br>"
+    );
+
+  return value;
+
 }
 
 
-function autoResize(element){
+/* =========================
+   SEND MESSAGE
+========================= */
 
-  element.style.height =
-    "auto";
+async function sendMessage(){
 
-  element.style.height =
-    Math.min(
-      element.scrollHeight,
-      180
-    ) + "px";
-}
+  if(isGenerating){
 
-
-function setGenerating(value){
-
-  isGenerating =
-    value;
-
-  document.getElementById(
-    "sendBtn"
-  ).disabled =
-    value;
-
-  updateBuildState();
-
-  document.getElementById(
-    "sendBtn"
-  ).textContent =
-    value ? "…" : "↑";
-}
-
-
-async function sendMessage(
-  customMessage = null
-){
-
-  if(isGenerating)
     return;
 
-  ensureChat();
+  }
+
+  if(!currentUser){
+
+    showLoggedOut();
+
+    return;
+
+  }
+
 
   const input =
     document.getElementById(
       "messageInput"
     );
 
+  if(!input) return;
+
+
   const message =
-    customMessage !== null
-      ? customMessage.trim()
-      : input.value.trim();
+    input.value.trim();
 
-  if(!message)
+  if(!message){
+
     return;
-
-  if(customMessage === null){
-
-    input.value = "";
-
-    input.style.height =
-      "auto";
 
   }
 
-  addMessage(
+
+  const token =
+    await getAccessToken();
+
+  if(!token){
+
+    showLoggedOut();
+
+    return;
+
+  }
+
+
+  let conversation =
+    getCurrentConversation();
+
+
+  if(!conversation){
+
+    conversation =
+      createConversation(
+        message
+      );
+
+  }
+
+
+  conversation.messages =
+    conversation.messages || [];
+
+
+  conversation.messages.push({
+
+    role:
+      "user",
+
+    content:
+      message,
+
+    createdAt:
+      Date.now()
+
+  });
+
+
+  conversation.updatedAt =
+    Date.now();
+
+
+  if(
+    !conversation.title ||
+    conversation.title ===
+      "محادثة جديدة"
+  ){
+
+    conversation.title =
+      createConversationTitle(
+        message
+      );
+
+  }
+
+
+  currentConversationId =
+    conversation.id;
+
+
+  saveConversations();
+
+  renderConversations();
+
+  appendMessage(
     "user",
     message
   );
 
-  addThinking();
 
-  setGenerating(true);
+  input.value = "";
+
+  autoResize(input);
+
+
+  isGenerating = true;
+
+  abortController =
+    new AbortController();
+
+
+  setGeneratingUI(true);
+
+
+  const aiBubble =
+    appendMessage(
+      "assistant",
+      ""
+    );
+
+
+  let fullResponse = "";
+
 
   try{
 
     const response =
       await fetch(
-        getApiUrl(),
+        BACKEND_URL +
+        "/api/chat",
         {
-          method:"POST",
+
+          method:
+            "POST",
+
           headers:{
             "Content-Type":
-              "application/json"
+              "application/json",
+
+            "Authorization":
+              "Bearer " + token
           },
-          body:JSON.stringify({
-            message
-          })
+
+          body:
+            JSON.stringify({
+              message
+            }),
+
+          signal:
+            abortController.signal
+
         }
       );
 
+
     if(!response.ok){
 
-      const errorText =
-        await response.text();
-
-      let errorMessage =
-        errorText;
+      let errorText =
+        "حدث خطأ أثناء الاتصال بالخادم.";
 
       try{
 
-        const json =
-          JSON.parse(
-            errorText
-          );
+        const errorData =
+          await response.json();
 
-        errorMessage =
-          json.error ||
-          json.message ||
+        errorText =
+          errorData.error ||
           errorText;
 
       }catch{}
 
       throw new Error(
-        errorMessage ||
-        "حدث خطأ في السيرفر"
+        errorText
       );
+
     }
 
-    if(!response.body)
+
+    if(!response.body){
+
       throw new Error(
-        "المتصفح لا يدعم Streaming."
+        "الخادم لم يرجع Stream."
       );
 
-    const aiBubble =
-      replaceThinkingWithStream();
+    }
+
 
     const reader =
       response.body.getReader();
 
     const decoder =
-      new TextDecoder("utf-8");
+      new TextDecoder();
 
     let buffer = "";
-    let fullText = "";
-    let receivedText = false;
+
 
     while(true){
 
-      const result =
+      const {
+        value,
+        done
+      } =
         await reader.read();
 
-      if(result.done)
-        break;
+
+      if(done) break;
+
 
       buffer +=
         decoder.decode(
-          result.value,
-          {stream:true}
+          value,
+          {
+            stream:true
+          }
         );
 
+
       const events =
-        buffer.split("\n\n");
+        buffer.split(
+          "\n\n"
+        );
+
 
       buffer =
         events.pop() || "";
 
+
       for(
-        const eventBlock of events
+        const eventBlock
+        of events
       ){
 
-        processStreamEvent(
-          eventBlock,
-          aiBubble,
-          chunk => {
+        const parsed =
+          parseSSE(
+            eventBlock
+          );
 
-            receivedText = true;
-            fullText += chunk;
+
+        if(!parsed) continue;
+
+
+        if(
+          parsed.event ===
+          "text"
+        ){
+
+          let text =
+            parsed.data?.text ||
+            "";
+
+          fullResponse +=
+            text;
+
+
+          if(aiBubble){
+
+            aiBubble.innerHTML =
+              formatAIText(
+                fullResponse
+              );
 
           }
-        );
+
+
+          scrollMessages();
+
+        }
+
+
+        if(
+          parsed.event ===
+          "error"
+        ){
+
+          throw new Error(
+            parsed.data?.error ||
+            "حدث خطأ أثناء التوليد."
+          );
+
+        }
 
       }
 
-      scrollToBottom();
-
     }
 
-    if(buffer.trim()){
 
-      processStreamEvent(
-        buffer,
-        aiBubble,
-        chunk => {
+    if(
+      buffer.trim()
+    ){
 
-          receivedText = true;
-          fullText += chunk;
+      const parsed =
+        parseSSE(
+          buffer
+        );
+
+
+      if(
+        parsed &&
+        parsed.event ===
+          "text"
+      ){
+
+        const text =
+          parsed.data?.text ||
+          "";
+
+        fullResponse +=
+          text;
+
+        if(aiBubble){
+
+          aiBubble.innerHTML =
+            formatAIText(
+              fullResponse
+            );
 
         }
-      );
+
+      }
 
     }
 
-    if(!receivedText){
 
-      aiBubble.textContent =
-        "❌ لم يصل أي نص من Aizen.";
+    if(!fullResponse.trim()){
 
-      fullText =
-        "❌ لم يصل أي نص من Aizen.";
+      fullResponse =
+        "لم يتم توليد رد.";
 
-    }
+      if(aiBubble){
 
-    const current =
-      getCurrentChat();
+        aiBubble.innerHTML =
+          formatAIText(
+            fullResponse
+          );
 
-    if(current){
-
-      current.messages.push({
-        type:"ai",
-        text:fullText
-      });
-
-      saveData();
+      }
 
     }
+
+
+    conversation.messages.push({
+
+      role:
+        "assistant",
+
+      content:
+        fullResponse,
+
+      createdAt:
+        Date.now()
+
+    });
+
+
+    conversation.updatedAt =
+      Date.now();
+
+
+    saveConversations();
+
+    renderConversations();
+
 
   }catch(error){
 
-    console.error(error);
+    if(
+      error.name ===
+      "AbortError"
+    ){
 
-    const thinking =
-      document.getElementById(
-        "thinkingMessage"
+      if(
+        fullResponse.trim()
+      ){
+
+        conversation.messages.push({
+
+          role:
+            "assistant",
+
+          content:
+            fullResponse,
+
+          createdAt:
+            Date.now()
+
+        });
+
+        conversation.updatedAt =
+          Date.now();
+
+        saveConversations();
+
+      }
+
+    }else{
+
+      console.error(
+        "Chat error:",
+        error
       );
 
-    if(thinking){
 
-      const bubble =
-        thinking.querySelector(
-          ".bubble"
+      const errorMessage =
+        "❌ " +
+        (
+          error.message ||
+          "حدث خطأ غير معروف."
         );
 
-      bubble.className =
-        "bubble";
 
-      bubble.textContent =
-        "❌ حدث خطأ:\n" +
-        error.message;
+      if(aiBubble){
+
+        aiBubble.innerHTML =
+          formatAIText(
+            errorMessage
+          );
+
+      }else{
+
+        appendMessage(
+          "assistant",
+          errorMessage
+        );
+
+      }
 
     }
 
   }finally{
 
-    setGenerating(false);
+    isGenerating = false;
 
-    scrollToBottom();
+    abortController = null;
+
+    setGeneratingUI(false);
 
   }
+
 }
 
 
-function processStreamEvent(
-  eventBlock,
-  bubble,
-  onText
+/* =========================
+   PARSE SSE
+========================= */
+
+function parseSSE(
+  block
 ){
 
-  if(!eventBlock)
-    return;
+  if(!block) return null;
 
   const lines =
-    eventBlock.split("\n");
+    block.split("\n");
 
-  let eventType = "";
-  let dataText = "";
+  let event =
+    "";
+
+  let data =
+    "";
+
 
   for(
-    const line of lines
+    const line
+    of lines
   ){
 
     if(
-      line.startsWith("event:")
+      line.startsWith(
+        "event:"
+      )
     ){
 
-      eventType =
+      event =
         line.slice(6).trim();
 
     }
 
+
     if(
-      line.startsWith("data:")
+      line.startsWith(
+        "data:"
+      )
     ){
 
-      dataText +=
+      data +=
         line.slice(5).trim();
 
     }
 
   }
 
-  if(!dataText)
-    return;
+
+  if(!data){
+
+    return null;
+
+  }
+
 
   try{
 
-    const data =
-      JSON.parse(dataText);
+    return {
 
-    if(
-      eventType === "text" &&
-      data.text
-    ){
+      event,
 
-      bubble.textContent +=
-        data.text;
+      data:
+        JSON.parse(data)
 
-      onText(data.text);
+    };
 
-      scrollToBottom();
+  }catch{
 
-      return;
-
-    }
-
-    if(
-      eventType === "error"
-    ){
-
-      const errorText =
-        "❌ " +
-        (
-          data.error ||
-          "حدث خطأ أثناء التوليد"
-        );
-
-      bubble.textContent =
-        errorText;
-
-      onText(errorText);
-
-    }
-
-  }catch(error){
-
-    console.error(
-      "Stream event error:",
-      error
-    );
+    return null;
 
   }
+
 }
 
 
-/* BUILD */
+/* =========================
+   GENERATING UI
+========================= */
 
-function updateBuildState(){
+function setGeneratingUI(
+  generating
+){
 
-  const button =
+  const send =
     document.getElementById(
-      "buildBtn"
+      "sendBtn"
     );
 
-  if(buildUsed){
+  const stop =
+    document.getElementById(
+      "stopBtn"
+    );
 
-    button.disabled = true;
-    button.classList.add("used");
-    button.textContent =
-      "✓ تم استخدام Build";
+  const input =
+    document.getElementById(
+      "messageInput"
+    );
 
-  }else{
+  if(send){
 
-    button.disabled =
-      isGenerating;
-
-    button.classList.remove("used");
-    button.textContent =
-      "🛠️ Build";
+    send.disabled =
+      generating;
 
   }
+
+  if(stop){
+
+    stop.style.display =
+      generating
+        ? "block"
+        : "none";
+
+  }
+
+  if(input){
+
+    input.disabled =
+      generating;
+
+  }
+
+
+  const indicator =
+    document.getElementById(
+      "typingIndicator"
+    );
+
+  if(indicator){
+
+    indicator.style.display =
+      generating
+        ? "flex"
+        : "none";
+
+  }
+
 }
 
+
+/* =========================
+   STOP GENERATION
+========================= */
+
+function stopGeneration(){
+
+  if(
+    abortController
+  ){
+
+    abortController.abort();
+
+  }
+
+  isGenerating = false;
+
+  setGeneratingUI(false);
+
+}
+
+
+/* =========================
+   CURRENT CONVERSATION
+========================= */
+
+function getCurrentConversation(){
+
+  if(!currentConversationId){
+
+    return null;
+
+  }
+
+  return conversations.find(
+    conversation =>
+      conversation.id ===
+      currentConversationId
+  ) || null;
+
+}
+
+
+/* =========================
+   CREATE CONVERSATION
+========================= */
+
+function createConversation(
+  firstMessage = ""
+){
+
+  const conversation = {
+
+    id:
+      generateId(),
+
+    title:
+      createConversationTitle(
+        firstMessage
+      ),
+
+    pinned:
+      false,
+
+    archived:
+      false,
+
+    buildUsed:
+      false,
+
+    buildUsedAt:
+      null,
+
+    createdAt:
+      Date.now(),
+
+    updatedAt:
+      Date.now(),
+
+    messages: []
+
+  };
+
+
+  conversations.unshift(
+    conversation
+  );
+
+
+  currentConversationId =
+    conversation.id;
+
+
+  saveConversations();
+
+  return conversation;
+
+}
+
+
+/* =========================
+   TITLE
+========================= */
+
+function createConversationTitle(
+  text
+){
+
+  const clean =
+    String(
+      text || ""
+    )
+      .replace(
+        /\s+/g,
+        " "
+      )
+      .trim();
+
+
+  if(!clean){
+
+    return "محادثة جديدة";
+
+  }
+
+
+  if(clean.length <= 34){
+
+    return clean;
+
+  }
+
+
+  return (
+    clean.slice(
+      0,
+      34
+    ) +
+    "..."
+  );
+
+  }/* =========================
+   BUILD SYSTEM
+========================= */
 
 function openBuildModal(){
 
-  if(isGenerating)
+  if(!currentUser){
+
+    showLoggedOut();
+
     return;
 
-  if(buildUsed)
-    return;
+  }
+
+  const overlay =
+    document.getElementById(
+      "buildOverlay"
+    );
+
+  if(!overlay) return;
+
+  overlay.classList.add(
+    "show"
+  );
+
+  selectedProjectType = null;
 
   document
-    .getElementById("buildModal")
-    .classList.add("show");
+    .querySelectorAll(
+      ".project-type"
+    )
+    .forEach(
+      button =>
+        button.classList.remove(
+          "selected"
+        )
+    );
+
+  const description =
+    document.getElementById(
+      "projectDescription"
+    );
+
+  const start =
+    document.getElementById(
+      "startBuildBtn"
+    );
+
+  if(description){
+
+    description.classList.remove(
+      "show"
+    );
+
+  }
+
+  if(start){
+
+    start.disabled = true;
+
+  }
+
 }
 
 
 function closeBuildModal(){
 
   document
-    .getElementById("buildModal")
-    .classList.remove("show");
+    .getElementById(
+      "buildOverlay"
+    )
+    ?.classList.remove(
+      "show"
+    );
+
 }
 
 
-function closeBuildOnOverlay(event){
+function closeBuildOutside(event){
 
   if(
-    event.target.id ===
-    "buildModal"
+    event.target ===
+    event.currentTarget
   ){
 
     closeBuildModal();
 
   }
+
 }
 
 
+/* =========================
+   PROJECT TYPE
+========================= */
+
 function selectProjectType(
-  type,
-  element
+  button
 ){
 
+  if(!button) return;
+
   selectedProjectType =
-    type;
+    button.dataset.type ||
+    null;
+
 
   document
     .querySelectorAll(
       ".project-type"
     )
     .forEach(
-      button =>
-        button.classList.remove(
+      item =>
+        item.classList.remove(
           "selected"
         )
     );
 
-  element.classList.add(
+
+  button.classList.add(
     "selected"
   );
 
-  document
-    .getElementById(
+
+  const description =
+    document.getElementById(
       "projectDescription"
-    )
-    .classList.add(
-      "show"
     );
 
-  document
-    .getElementById(
-      "buildDescription"
-    )
-    .focus();
-
-  updateBuildButton();
-
-}
-
-
-function updateBuildButton(){
-
-  const description =
-    document
-      .getElementById(
-        "buildDescription"
-      )
-      .value
-      .trim();
-
-  document
-    .getElementById(
+  const start =
+    document.getElementById(
       "startBuildBtn"
-    ).disabled =
-      !selectedProjectType ||
-      !description ||
-      buildUsed;
-
-}
+    );
 
 
-function startBuild(){
+  if(description){
 
-  if(buildUsed)
-    return;
-
-  if(!selectedProjectType)
-    return;
-
-  const description =
-    document
-      .getElementById(
-        "buildDescription"
-      )
-      .value
-      .trim();
-
-  if(!description)
-    return;
-
-  ensureChat();
-
-  const prompt =
-`أريد بناء مشروع من نوع: ${selectedProjectType}
-
-وصف المشروع:
-${description}
-
-تعامل مع هذا الطلب كمشروع حقيقي داخل Aizen AI Builder.
-حلل الفكرة، حدد البنية والواجهة والوظائف والتقنيات المناسبة، وابدأ بتنفيذ المشروع عمليًا.
-إذا احتجت إلى كود، ضعه داخل Code Block واضح.
-لا تطرح أسئلة إلا إذا كانت ضرورية جدًا.`;
-
-  buildUsed = true;
-
-  const current =
-    getCurrentChat();
-
-  if(current){
-
-    current.buildUsed =
-      true;
-
-    current.projectType =
-      selectedProjectType;
-
-    current.projectDescription =
-      description;
-
-    current.title =
-      "🛠️ " +
-      makeTitle(
-        description
-      );
-
-    saveData();
+    description.classList.add(
+      "show"
+    );
 
   }
 
-  updateBuildState();
 
-  createProjectRecord(
-    selectedProjectType,
-    description
-  );
+  if(start){
 
-  closeBuildModal();
+    start.disabled =
+      !selectedProjectType;
 
-  document
-    .getElementById(
-      "buildDescription"
-    ).value = "";
-
-  selectedProjectType = "";
-
-  document
-    .querySelectorAll(
-      ".project-type"
-    )
-    .forEach(
-      button =>
-        button.classList.remove(
-          "selected"
-        )
-    );
-
-  document
-    .getElementById(
-      "projectDescription"
-    )
-    .classList.remove(
-      "show"
-    );
-
-  updateBuildButton();
-
-  sendMessage(prompt);
+  }
 
 }
 
 
-/* PROJECTS */
+/* =========================
+   START BUILD
+========================= */
 
-function createProjectRecord(
-  type,
-  description
-){
+async function startBuild(){
 
-  const current =
-    getCurrentChat();
+  if(!currentUser){
 
-  const project = {
+    showLoggedOut();
 
-    id:
-      "project_" +
-      Date.now(),
+    return;
 
-    name:
-      makeTitle(
-        description
-      ),
+  }
 
-    type,
 
-    description,
+  if(buildUsed){
 
-    chatId:
-      currentChatId,
+    alert(
+      "تم استخدام البناء الأساسي لهذه المحادثة. أنشئ محادثة جديدة لبناء مشروع آخر."
+    );
+
+    return;
+
+  }
+
+
+  if(!selectedProjectType){
+
+    return;
+
+  }
+
+
+  const description =
+    document.getElementById(
+      "buildDescription"
+    )?.value.trim() || "";
+
+
+  if(!description){
+
+    alert(
+      "اكتب وصف المشروع أولاً."
+    );
+
+    return;
+
+  }
+
+
+  const token =
+    await getAccessToken();
+
+
+  if(!token){
+
+    showLoggedOut();
+
+    return;
+
+  }
+
+
+  const conversation =
+    getCurrentConversation() ||
+    createConversation(
+      description
+    );
+
+
+  buildUsed = true;
+
+  conversation.buildUsed =
+    true;
+
+  conversation.buildUsedAt =
+    Date.now();
+
+  conversation.updatedAt =
+    Date.now();
+
+
+  saveConversations();
+
+  renderConversations();
+
+
+  const button =
+    document.getElementById(
+      "startBuildBtn"
+    );
+
+  if(button){
+
+    button.disabled = true;
+
+    button.textContent =
+      "⏳ جارٍ إنشاء المشروع...";
+
+  }
+
+
+  closeBuildModal();
+
+
+  const buildMessage =
+    [
+      "أنشئ مشروعاً جديداً.",
+
+      "نوع المشروع: " +
+        selectedProjectType,
+
+      "الوصف:",
+
+      description
+    ].join("\n");
+
+
+  appendMessage(
+    "user",
+    "🚀 إنشاء مشروع: " +
+      description
+  );
+
+
+  conversation.messages =
+    conversation.messages || [];
+
+
+  conversation.messages.push({
+
+    role:
+      "user",
+
+    content:
+      "🚀 إنشاء مشروع: " +
+      description,
 
     createdAt:
       Date.now()
 
-  };
+  });
 
-  projects.unshift(
-    project
-  );
 
-  saveData();
+  try{
 
-  renderProjects();
+    const response =
+      await fetch(
+        BACKEND_URL +
+        "/api/create",
+        {
+
+          method:
+            "POST",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Authorization":
+              "Bearer " +
+              token
+          },
+
+          body:
+            JSON.stringify({
+
+              idea:
+                description,
+
+              type:
+                selectedProjectType
+
+            })
+
+          }
+
+        }
+      );
+
+
+    const data =
+      await response.json()
+        .catch(
+          () => ({})
+        );
+
+
+    if(!response.ok){
+
+      throw new Error(
+        data.error ||
+        "فشل إنشاء المشروع."
+      );
+
+    }
+
+
+    const project = {
+
+      id:
+        generateId(),
+
+      name:
+        createProjectName(
+          description
+        ),
+
+      type:
+        selectedProjectType,
+
+      description,
+
+      status:
+        "building",
+
+      createdAt:
+        Date.now(),
+
+      updatedAt:
+        Date.now(),
+
+      repositoryUrl:
+        "",
+
+      deploymentUrl:
+        ""
+
+    };
+
+
+    projects.unshift(
+      project
+    );
+
+
+    saveProjects();
+
+    renderProjects();
+
+
+    const successMessage =
+      "✅ تم إرسال المشروع إلى Aizen Builder.\n\n" +
+      "النوع: " +
+      selectedProjectType +
+      "\n" +
+      "الحالة: جارٍ البناء.";
+
+
+    appendMessage(
+      "assistant",
+      successMessage
+    );
+
+
+    conversation.messages.push({
+
+      role:
+        "assistant",
+
+      content:
+        successMessage,
+
+      createdAt:
+        Date.now()
+
+    });
+
+
+    conversation.updatedAt =
+      Date.now();
+
+
+    saveConversations();
+
+    renderConversations();
+
+
+  }catch(error){
+
+    console.error(
+      "Build error:",
+      error
+    );
+
+
+    buildUsed = false;
+
+    conversation.buildUsed =
+      false;
+
+    conversation.buildUsedAt =
+      null;
+
+
+    saveConversations();
+
+
+    appendMessage(
+      "assistant",
+      "❌ " +
+      (
+        error.message ||
+        "فشل إنشاء المشروع."
+      )
+    );
+
+  }finally{
+
+    if(button){
+
+      button.disabled =
+        buildUsed;
+
+      button.textContent =
+        "🚀 ابدأ البناء";
+
+    }
+
+  }
 
 }
 
+
+/* =========================
+   PROJECT NAME
+========================= */
+
+function createProjectName(
+  description
+){
+
+  const text =
+    String(
+      description || ""
+    )
+      .replace(
+        /\s+/g,
+        " "
+      )
+      .trim();
+
+
+  if(!text){
+
+    return "مشروع جديد";
+
+  }
+
+
+  return text.length > 28
+    ? text.slice(0,28) + "..."
+    : text;
+
+}
+
+
+/* =========================
+   PROJECTS
+========================= */
 
 function renderProjects(){
 
@@ -2470,138 +4561,280 @@ function renderProjects(){
       "projectList"
     );
 
-  list.innerHTML = "";
-
-  if(!projects.length){
-
-    list.innerHTML =
-      `<div class="sidebar-empty">
-        لا توجد مشاريع حتى الآن
-      </div>`;
-
-    return;
-
-  }
-
-  projects.forEach(project => {
-
-    const item =
-      document.createElement("button");
-
-    item.className =
-      "project-item";
-
-    item.onclick =
-      () => {
-
-        if(project.chatId){
-
-          loadConversation(
-            project.chatId
-          );
-
-          closeSidebar();
-
-        }
-
-      };
-
-    item.innerHTML =
-      `
-      <span>📁</span>
-      <span class="item-text">
-        ${escapeHTML(project.name)}
-      </span>
-      `;
-
-    list.appendChild(item);
-
-  });
-
-  renderProjectsModal();
-
-}
-
-
-function renderProjectsModal(){
-
-  const list =
+  const container =
     document.getElementById(
-      "projectsModalList"
+      "projectsContainer"
     );
 
-  if(!list)
-    return;
 
-  list.innerHTML = "";
+  if(list){
 
-  if(!projects.length){
+    list.innerHTML = "";
 
-    list.innerHTML =
-      `<div class="sidebar-empty">
-        لا توجد مشاريع حتى الآن.
-      </div>`;
+    if(!currentUser){
+
+      list.innerHTML =
+        '<div class="empty-state">سجّل الدخول أولاً</div>';
+
+    }else if(
+      projects.length === 0
+    ){
+
+      list.innerHTML =
+        '<div class="empty-state">لا توجد مشاريع بعد</div>';
+
+    }else{
+
+      projects.forEach(
+        project => {
+
+          list.appendChild(
+            createProjectElement(
+              project
+            )
+          );
+
+        }
+      );
+
+    }
+
+  }
+
+
+  if(container){
+
+    container.innerHTML = "";
+
+    if(projects.length === 0){
+
+      container.innerHTML =
+        '<div class="empty-state">لا توجد مشاريع بعد.</div>';
+
+    }else{
+
+      projects.forEach(
+        project => {
+
+          container.appendChild(
+            createProjectElement(
+              project
+            )
+          );
+
+        }
+      );
+
+    }
+
+  }
+
+}
+
+
+/* =========================
+   PROJECT ELEMENT
+========================= */
+
+function createProjectElement(
+  project
+){
+
+  const card =
+    document.createElement(
+      "div"
+    );
+
+  card.className =
+    "project-card";
+
+
+  const status =
+    project.status ===
+    "building"
+      ? "⏳ جارٍ البناء"
+      : project.status ===
+        "ready"
+        ? "🟢 جاهز"
+        : "⚪ " +
+          (
+            project.status ||
+            "غير معروف"
+          );
+
+
+  card.innerHTML = `
+
+    <div class="project-card-title">
+      ${escapeHTML(
+        project.name ||
+        "مشروع"
+      )}
+    </div>
+
+    <div class="project-card-type">
+      ${escapeHTML(
+        project.type ||
+        "custom"
+      )}
+      ·
+      ${status}
+    </div>
+
+    <div
+      style="
+        margin-top:9px;
+        color:#888c98;
+        font-size:12px;
+      "
+    >
+      ${escapeHTML(
+        project.description ||
+        ""
+      )}
+    </div>
+
+    <div
+      style="
+        display:flex;
+        gap:7px;
+        margin-top:10px;
+      "
+    >
+
+      <button
+        class="account-action"
+        onclick="openProject('${project.id}')"
+      >
+        فتح المشروع
+      </button>
+
+      <button
+        class="account-action danger"
+        onclick="deleteProject('${project.id}')"
+      >
+        حذف
+      </button>
+
+    </div>
+
+  `;
+
+
+  return card;
+
+}
+
+
+/* =========================
+   PROJECT ACTIONS
+========================= */
+
+function openProject(
+  id
+){
+
+  const project =
+    projects.find(
+      item =>
+        item.id === id
+    );
+
+
+  if(!project) return;
+
+
+  closeProjectsModal();
+
+  showSidebarTab(
+    "projects"
+  );
+
+
+  const message =
+    "📁 المشروع: " +
+    project.name +
+    "\n\n" +
+    "النوع: " +
+    project.type +
+    "\n" +
+    "الحالة: " +
+    project.status;
+
+
+  appendMessage(
+    "assistant",
+    message
+  );
+
+
+  showChat();
+
+}
+
+
+function deleteProject(
+  id
+){
+
+  const project =
+    projects.find(
+      item =>
+        item.id === id
+    );
+
+
+  if(!project) return;
+
+
+  if(
+    !confirm(
+      "هل تريد حذف المشروع؟"
+    )
+  ){
 
     return;
 
   }
 
-  projects.forEach(project => {
 
-    const card =
-      document.createElement("div");
+  projects =
+    projects.filter(
+      item =>
+        item.id !== id
+    );
 
-    card.className =
-      "project-card";
 
-    card.innerHTML =
-      `
-      <div class="project-card-title">
-        📁 ${escapeHTML(project.name)}
-      </div>
+  saveProjects();
 
-      <div class="project-card-type">
-        النوع: ${escapeHTML(project.type)}
-      </div>
-
-      <div
-        style="color:#999;font-size:12px;margin-top:7px"
-      >
-        ${escapeHTML(project.description)}
-      </div>
-
-      <button
-        style="
-          margin-top:10px;
-          border:1px solid #30333d;
-          background:#20232c;
-          color:#ddd;
-          padding:8px 10px;
-          border-radius:8px;
-          cursor:pointer
-        "
-        onclick="openProjectChat('${project.chatId}')"
-      >
-        💬 فتح المحادثة
-      </button>
-      `;
-
-    list.appendChild(card);
-
-  });
+  renderProjects();
 
 }
 
+
+/* =========================
+   PROJECTS MODAL
+========================= */
 
 function openProjectsModal(){
 
-  renderProjectsModal();
+  if(!currentUser){
+
+    showLoggedOut();
+
+    return;
+
+  }
+
+  renderProjects();
 
   document
     .getElementById(
-      "projectsModal"
+      "projectsOverlay"
     )
-    .classList.add("show");
+    ?.classList.add(
+      "show"
+    );
 
 }
 
@@ -2610,179 +4843,2133 @@ function closeProjectsModal(){
 
   document
     .getElementById(
-      "projectsModal"
+      "projectsOverlay"
     )
-    .classList.remove("show");
+    ?.classList.remove(
+      "show"
+    );
 
 }
 
 
-function closeProjectsOnOverlay(event){
+function closeProjectsOutside(
+  event
+){
 
   if(
-    event.target.id ===
-    "projectsModal"
+    event.target ===
+    event.currentTarget
   ){
 
     closeProjectsModal();
 
   }
 
+  }/* =========================
+   FILE UPLOAD
+========================= */
+
+function triggerFileUpload(){
+
+  if(!currentUser){
+
+    showLoggedOut();
+
+    return;
+
+  }
+
+  const input =
+    document.getElementById(
+      "fileInput"
+    );
+
+  if(input){
+
+    input.click();
+
+  }
+
 }
 
 
-function openProjectChat(chatId){
+async function handleFileUpload(
+  event
+){
 
-  if(!chatId)
+  const input =
+    event.target;
+
+  const files =
+    Array.from(
+      input.files || []
+    );
+
+  if(!files.length){
+
     return;
 
-  loadConversation(chatId);
+  }
 
-  closeProjectsModal();
-  closeSidebar();
+
+  for(
+    const file
+    of files
+  ){
+
+    if(
+      file.size >
+      10 * 1024 * 1024
+    ){
+
+      alert(
+        "حجم الملف يجب أن يكون أقل من 10MB: " +
+        file.name
+      );
+
+      continue;
+
+    }
+
+
+    uploadedFiles.push({
+
+      id:
+        generateId(),
+
+      name:
+        file.name,
+
+      size:
+        file.size,
+
+      type:
+        file.type,
+
+      file
+
+    });
+
+  }
+
+
+  input.value = "";
+
+  renderUploadedFiles();
 
 }
 
 
-/* NEW CHAT */
+function renderUploadedFiles(){
 
-function newChat(){
+  const old =
+    document.getElementById(
+      "uploadedFiles"
+    );
 
-  if(isGenerating)
+  if(old){
+
+    old.remove();
+
+  }
+
+
+  if(!uploadedFiles.length){
+
     return;
 
-  currentChatId =
-    createChatId();
+  }
 
-  buildUsed = false;
 
-  conversations.unshift({
+  const composer =
+    document.querySelector(
+      ".composer"
+    );
+
+  if(!composer){
+
+    return;
+
+  }
+
+
+  const container =
+    document.createElement(
+      "div"
+    );
+
+  container.id =
+    "uploadedFiles";
+
+  container.style.cssText =
+    `
+      display:flex;
+      flex-wrap:wrap;
+      gap:7px;
+      padding:8px;
+      border-top:1px solid #292c35;
+    `;
+
+
+  uploadedFiles.forEach(
+    item => {
+
+      const file =
+        document.createElement(
+          "div"
+        );
+
+      file.style.cssText =
+        `
+          display:flex;
+          align-items:center;
+          gap:7px;
+          padding:7px 9px;
+          background:#1a1d25;
+          border:1px solid #30333d;
+          border-radius:8px;
+          font-size:11px;
+          color:#ddd;
+        `;
+
+
+      file.innerHTML = `
+
+        <span>
+          📎
+        </span>
+
+        <span
+          style="
+            max-width:150px;
+            overflow:hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap;
+          "
+        >
+          ${escapeHTML(
+            item.name
+          )}
+        </span>
+
+        <button
+          onclick="removeUploadedFile('${item.id}')"
+          style="
+            border:0;
+            background:transparent;
+            color:#ff8f8f;
+            cursor:pointer;
+          "
+        >
+          ×
+        </button>
+
+      `;
+
+
+      container.appendChild(
+        file
+      );
+
+    }
+  );
+
+
+  composer.prepend(
+    container
+  );
+
+}
+
+
+function removeUploadedFile(
+  id
+){
+
+  uploadedFiles =
+    uploadedFiles.filter(
+      item =>
+        item.id !== id
+    );
+
+  renderUploadedFiles();
+
+}
+
+
+/* =========================
+   SUGGESTIONS
+========================= */
+
+function useSuggestion(
+  text
+){
+
+  if(!currentUser){
+
+    showLoggedOut();
+
+    return;
+
+  }
+
+
+  const input =
+    document.getElementById(
+      "messageInput"
+    );
+
+  if(!input) return;
+
+  input.value =
+    text;
+
+  autoResize(input);
+
+  input.focus();
+
+}
+
+
+/* =========================
+   KEYBOARD
+========================= */
+
+function handleInputKey(
+  event
+){
+
+  if(
+    event.key ===
+      "Enter" &&
+    !event.shiftKey
+  ){
+
+    event.preventDefault();
+
+    sendMessage();
+
+  }
+
+}
+
+
+/* =========================
+   AUTO RESIZE
+========================= */
+
+function autoResize(
+  textarea
+){
+
+  if(!textarea) return;
+
+  textarea.style.height =
+    "auto";
+
+  textarea.style.height =
+    Math.min(
+      textarea.scrollHeight,
+      180
+    ) + "px";
+
+}
+
+
+/* =========================
+   SCROLL
+========================= */
+
+function scrollMessages(){
+
+  const container =
+    document.getElementById(
+      "messages"
+    );
+
+  if(!container) return;
+
+  requestAnimationFrame(
+    () => {
+
+      container.scrollTop =
+        container.scrollHeight;
+
+    }
+  );
+
+}
+
+
+/* =========================
+   UTILITIES
+========================= */
+
+function generateId(){
+
+  if(
+    window.crypto &&
+    crypto.randomUUID
+  ){
+
+    return crypto.randomUUID();
+
+  }
+
+
+  return (
+    Date.now().toString(36) +
+    Math.random()
+      .toString(36)
+      .slice(2)
+  );
+
+}
+
+
+function escapeHTML(
+  value
+){
+
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+
+function formatDate(
+  timestamp
+){
+
+  if(!timestamp){
+
+    return "";
+
+  }
+
+
+  const date =
+    new Date(
+      Number(timestamp)
+    );
+
+
+  if(
+    Number.isNaN(
+      date.getTime()
+    )
+  ){
+
+    return "";
+
+  }
+
+
+  const now =
+    new Date();
+
+
+  const diff =
+    now.getTime() -
+    date.getTime();
+
+
+  if(
+    diff <
+    60 * 1000
+  ){
+
+    return "الآن";
+
+  }
+
+
+  if(
+    diff <
+    60 * 60 * 1000
+  ){
+
+    return (
+      Math.floor(
+        diff /
+        (60 * 1000)
+      ) +
+      " د"
+    );
+
+  }
+
+
+  if(
+    diff <
+    24 * 60 * 60 * 1000
+  ){
+
+    return (
+      Math.floor(
+        diff /
+        (60 * 60 * 1000)
+      ) +
+      " س"
+    );
+
+  }
+
+
+  return date.toLocaleDateString(
+    "ar"
+  );
+
+}
+
+
+/* =========================
+   INITIALIZATION
+========================= */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    initAuth();
+
+    const input =
+      document.getElementById(
+        "messageInput"
+      );
+
+    if(input){
+
+      autoResize(input);
+
+    }
+
+  }
+);
+
+
+/* =========================
+   OUTSIDE CLICK
+========================= */
+
+document.addEventListener(
+  "click",
+  event => {
+
+    const menu =
+      document.getElementById(
+        "accountMenu"
+      );
+
+    const button =
+      document.getElementById(
+        "accountBtn"
+      );
+
+
+    if(
+      menu &&
+      menu.classList.contains(
+        "show"
+      ) &&
+      !menu.contains(
+        event.target
+      ) &&
+      event.target !== button
+    ){
+
+      closeAccountMenu();
+
+    }
+
+  }
+);
+
+
+/* =========================
+   ESCAPE
+========================= */
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if(
+      event.key !==
+      "Escape"
+    ){
+
+      return;
+
+    }
+
+    closeAccountMenu();
+
+    closeBuildModal();
+
+    closeProjectsModal();
+
+    closeSidebar();
+
+  }
+);
+
+</script>
+
+</body>
+</html>/* =========================
+   EXTRA CHAT ACTIONS
+========================= */
+
+function regenerateLastResponse(){
+
+  if(isGenerating){
+
+    return;
+
+  }
+
+  const conversation =
+    getCurrentConversation();
+
+  if(!conversation){
+
+    return;
+
+  }
+
+  const messages =
+    conversation.messages || [];
+
+  if(!messages.length){
+
+    return;
+
+  }
+
+
+  let lastUserMessage = null;
+
+  for(
+    let i = messages.length - 1;
+    i >= 0;
+    i--
+  ){
+
+    if(
+      messages[i].role ===
+      "user"
+    ){
+
+      lastUserMessage =
+        messages[i];
+
+      break;
+
+    }
+
+  }
+
+
+  if(!lastUserMessage){
+
+    return;
+
+  }
+
+
+  if(
+    messages.length &&
+    messages[messages.length - 1]
+      .role === "assistant"
+  ){
+
+    messages.pop();
+
+  }
+
+
+  clearMessages();
+
+  renderMessages(
+    messages
+  );
+
+
+  const input =
+    document.getElementById(
+      "messageInput"
+    );
+
+  if(input){
+
+    input.value =
+      lastUserMessage.content;
+
+  }
+
+
+  sendMessage();
+
+}
+
+
+/* =========================
+   COPY TEXT
+========================= */
+
+function copyText(
+  text
+){
+
+  if(
+    navigator.clipboard
+  ){
+
+    navigator.clipboard.writeText(
+      text
+    ).then(
+      () => {
+        alert("تم النسخ ✅");
+      }
+    ).catch(
+      () => {
+        fallbackCopy(text);
+      }
+    );
+
+  }else{
+
+    fallbackCopy(text);
+
+  }
+
+}
+
+
+function fallbackCopy(
+  text
+){
+
+  const textarea =
+    document.createElement(
+      "textarea"
+    );
+
+  textarea.value =
+    text;
+
+  textarea.style.position =
+    "fixed";
+
+  textarea.style.opacity =
+    "0";
+
+  document.body.appendChild(
+    textarea
+  );
+
+  textarea.select();
+
+  try{
+
+    document.execCommand(
+      "copy"
+    );
+
+    alert(
+      "تم النسخ ✅"
+    );
+
+  }catch{
+
+    alert(
+      "تعذر النسخ."
+    );
+
+  }
+
+  textarea.remove();
+
+}
+
+
+/* =========================
+   EXPORT CHAT
+========================= */
+
+function exportCurrentChat(){
+
+  const conversation =
+    getCurrentConversation();
+
+  if(!conversation){
+
+    alert(
+      "لا توجد محادثة مفتوحة."
+    );
+
+    return;
+
+  }
+
+
+  const lines = [];
+
+  lines.push(
+    "Aizen AI Builder"
+  );
+
+  lines.push(
+    "================"
+  );
+
+  lines.push(
+    conversation.title ||
+    "محادثة"
+  );
+
+  lines.push("");
+
+
+  (
+    conversation.messages ||
+    []
+  ).forEach(
+    message => {
+
+      const role =
+        message.role === "user"
+          ? "المستخدم"
+          : "Aizen AI";
+
+      lines.push(
+        role + ":"
+      );
+
+      lines.push(
+        message.content || ""
+      );
+
+      lines.push("");
+
+    }
+  );
+
+
+  const blob =
+    new Blob(
+      [
+        lines.join("\n")
+      ],
+      {
+        type:
+          "text/plain;charset=utf-8"
+      }
+    );
+
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+
+  const link =
+    document.createElement(
+      "a"
+    );
+
+  link.href =
+    url;
+
+  link.download =
+    (
+      conversation.title ||
+      "aizen-chat"
+    )
+      .replace(
+        /[^\w\u0600-\u06FF-]+/g,
+        "_"
+      ) +
+    ".txt";
+
+
+  document.body.appendChild(
+    link
+  );
+
+  link.click();
+
+  link.remove();
+
+  URL.revokeObjectURL(
+    url
+  );
+
+}
+
+
+/* =========================
+   ARCHIVE
+========================= */
+
+function archiveConversation(
+  id
+){
+
+  const conversation =
+    conversations.find(
+      item =>
+        item.id === id
+    );
+
+  if(!conversation){
+
+    return;
+
+  }
+
+
+  conversation.archived =
+    true;
+
+  conversation.updatedAt =
+    Date.now();
+
+  saveConversations();
+
+  renderConversations();
+
+}
+
+
+/* =========================
+   UNARCHIVE
+========================= */
+
+function unarchiveConversation(
+  id
+){
+
+  const conversation =
+    conversations.find(
+      item =>
+        item.id === id
+    );
+
+  if(!conversation){
+
+    return;
+
+  }
+
+
+  conversation.archived =
+    false;
+
+  conversation.updatedAt =
+    Date.now();
+
+  saveConversations();
+
+  renderConversations();
+
+}
+
+
+/* =========================
+   SEARCH
+========================= */
+
+function searchConversations(
+  query
+){
+
+  const input =
+    document.getElementById(
+      "searchInput"
+    );
+
+  if(input){
+
+    input.value =
+      query || "";
+
+  }
+
+  renderConversations();
+
+}
+
+
+/* =========================
+   CLEAR SEARCH
+========================= */
+
+function clearSearch(){
+
+  const input =
+    document.getElementById(
+      "searchInput"
+    );
+
+  if(input){
+
+    input.value = "";
+
+  }
+
+  renderConversations();
+
+}
+
+
+/* =========================
+   OPEN FIRST CHAT
+========================= */
+
+function openLatestConversation(){
+
+  if(
+    !conversations.length
+  ){
+
+    newChat();
+
+    return;
+
+  }
+
+
+  const sorted =
+    [...conversations].sort(
+      (a,b) =>
+        Number(
+          b.updatedAt || 0
+        ) -
+        Number(
+          a.updatedAt || 0
+        )
+    );
+
+
+  if(sorted[0]){
+
+    openConversation(
+      sorted[0].id
+    );
+
+  }
+
+}
+
+
+/* =========================
+   PAGE VISIBILITY
+========================= */
+
+document.addEventListener(
+  "visibilitychange",
+  async () => {
+
+    if(
+      document.visibilityState !==
+      "visible"
+    ){
+
+      return;
+
+    }
+
+
+    if(!currentUser){
+
+      return;
+
+    }
+
+
+    try{
+
+      const result =
+        await supabaseClient.auth.getSession();
+
+      if(
+        result.data.session
+      ){
+
+        currentSession =
+          result.data.session;
+
+        currentUser =
+          result.data.session.user;
+
+        updateAccountUI();
+
+      }else{
+
+        showLoggedOut();
+
+      }
+
+    }catch(error){
+
+      console.error(
+        "Session refresh error:",
+        error
+      );
+
+    }
+
+  }
+);
+
+
+/* =========================
+   ONLINE STATUS
+========================= */
+
+function updateOnlineStatus(){
+
+  const status =
+    document.querySelector(
+      ".status"
+    );
+
+  if(!status) return;
+
+
+  if(
+    navigator.onLine
+  ){
+
+    status.textContent =
+      "Aizen AI متصل وجاهز للعمل.";
+
+  }else{
+
+    status.textContent =
+      "⚠️ لا يوجد اتصال بالإنترنت.";
+
+  }
+
+}
+
+
+window.addEventListener(
+  "online",
+  updateOnlineStatus
+);
+
+
+window.addEventListener(
+  "offline",
+  updateOnlineStatus
+);
+
+updateOnlineStatus();function clearMessages(){
+
+  const container =
+    document.getElementById(
+      "messages"
+    );
+
+  if(container){
+
+    container.innerHTML = "";
+
+  }
+
+}
+
+
+function renderMessages(
+  messages
+){
+
+  clearMessages();
+
+  if(
+    !messages ||
+    !messages.length
+  ){
+
+    showWelcome();
+
+    return;
+
+  }
+
+
+  messages.forEach(
+    message => {
+
+      appendMessage(
+        message.role,
+        message.content
+      );
+
+    }
+  );
+
+}
+
+
+function getCurrentConversation(){
+
+  if(!currentConversationId){
+
+    return null;
+
+  }
+
+  return conversations.find(
+    conversation =>
+      conversation.id ===
+      currentConversationId
+  ) || null;
+
+}
+
+
+function updateBuildButton(){
+
+  const button =
+    document.getElementById(
+      "buildButton"
+    );
+
+  if(!button){
+
+    return;
+
+  }
+
+
+  const conversation =
+    getCurrentConversation();
+
+
+  if(
+    conversation &&
+    conversation.buildUsed
+  ){
+
+    button.disabled = true;
+
+    button.textContent =
+      "تم استخدام Build ✓";
+
+  }else{
+
+    button.disabled = false;
+
+    button.textContent =
+      "Build";
+
+  }
+
+}
+
+
+function showWelcome(){
+
+  const container =
+    document.getElementById(
+      "messages"
+    );
+
+  if(!container){
+
+    return;
+
+  }
+
+
+  container.innerHTML = `
+    <div class="welcome">
+      <div class="logo">A</div>
+
+      <h1>
+        مرحباً بك في Aizen AI Builder
+      </h1>
+
+      <p>
+        اكتب فكرتك وسيساعدك Aizen
+        في بناء مشروعك.
+      </p>
+    </div>
+  `;
+
+}
+
+
+function updateConversationTitle(
+  conversation
+){
+
+  if(!conversation){
+
+    return;
+
+  }
+
+
+  if(
+    !conversation.title ||
+    conversation.title ===
+      "محادثة جديدة"
+  ){
+
+    const firstUserMessage =
+      (
+        conversation.messages || []
+      ).find(
+        message =>
+          message.role === "user"
+      );
+
+
+    if(firstUserMessage){
+
+      let title =
+        firstUserMessage.content
+          .replace(
+            /\s+/g,
+            " "
+          )
+          .trim();
+
+
+      if(title.length > 40){
+
+        title =
+          title.slice(
+            0,
+            40
+          ) +
+          "…";
+
+      }
+
+
+      if(title){
+
+        conversation.title =
+          title;
+
+      }
+
+    }
+
+  }
+
+}
+
+
+function addMessageToCurrentConversation(
+  role,
+  content
+){
+
+  const conversation =
+    getCurrentConversation();
+
+  if(!conversation){
+
+    return;
+
+  }
+
+
+  if(
+    !Array.isArray(
+      conversation.messages
+    )
+  ){
+
+    conversation.messages = [];
+
+  }
+
+
+  conversation.messages.push({
 
     id:
-      currentChatId,
+      generateId(),
 
-    title:
-      "محادثة جديدة",
+    role:
+      role,
 
-    messages:[],
-
-    buildUsed:false,
+    content:
+      content,
 
     createdAt:
       Date.now()
 
   });
 
-  saveData();
 
-  showWelcome();
+  conversation.updatedAt =
+    Date.now();
 
-  document
-    .getElementById(
-      "messageInput"
-    ).value = "";
 
-  document
-    .getElementById(
-      "messageInput"
-    ).style.height =
-      "auto";
+  updateConversationTitle(
+    conversation
+  );
 
-  updateBuildState();
+  saveConversations();
 
   renderConversations();
 
-  closeSidebar();
+}
+
+
+function setGenerating(
+  value
+){
+
+  isGenerating =
+    Boolean(value);
+
+
+  const sendButton =
+    document.getElementById(
+      "sendButton"
+    );
+
+  const stopButton =
+    document.getElementById(
+      "stopButton"
+    );
+
+
+  if(sendButton){
+
+    sendButton.disabled =
+      isGenerating;
+
+  }
+
+
+  if(stopButton){
+
+    stopButton.style.display =
+      isGenerating
+        ? "inline-flex"
+        : "none";
+
+  }
 
 }
 
 
-/* FILE */
+function showToast(
+  message
+){
 
-function fileSelected(input){
-
-  if(!input.files.length)
-    return;
-
-  const file =
-    input.files[0];
-
-  const inputBox =
-    document.getElementById(
-      "messageInput"
+  const old =
+    document.querySelector(
+      ".aizen-toast"
     );
 
-  inputBox.value =
-    `📎 الملف المحدد: ${file.name}\n\nاكتب ماذا تريد من Aizen أن يفعل بهذا الملف.`;
+  if(old){
 
-  inputBox.focus();
+    old.remove();
 
-  input.value = "";
-
-}
+  }
 
 
-/* UTILS */
-
-function scrollToBottom(){
-
-  const main =
-    document.getElementById(
-      "main"
+  const toast =
+    document.createElement(
+      "div"
     );
+
+  toast.className =
+    "aizen-toast";
+
+  toast.textContent =
+    message;
+
+
+  Object.assign(
+    toast.style,
+    {
+
+      position:
+        "fixed",
+
+      bottom:
+        "25px",
+
+      left:
+        "50%",
+
+      transform:
+        "translateX(-50%)",
+
+      zIndex:
+        "99999",
+
+      padding:
+        "10px 16px",
+
+      borderRadius:
+        "12px",
+
+      background:
+        "#111",
+
+      color:
+        "#fff",
+
+      fontSize:
+        "13px",
+
+      boxShadow:
+        "0 8px 30px rgba(0,0,0,.3)"
+
+    }
+  );
+
+
+  document.body.appendChild(
+    toast
+  );
+
 
   setTimeout(
     () => {
-      main.scrollTop =
-        main.scrollHeight;
+
+      toast.remove();
+
     },
-    20
+    2500
   );
 
 }
 
 
-function escapeHTML(text){
+function safeJsonParse(
+  value,
+  fallback = null
+){
 
-  const div =
-    document.createElement(
-      "div"
+  try{
+
+    return JSON.parse(
+      value
     );
 
-  div.textContent =
-    text || "";
+  }catch{
 
-  return div.innerHTML;
-
-}
-
-
-/* INIT */
-
-function init(){
-
-  if(conversations.length){
-
-    loadConversation(
-      conversations[0].id
-    );
-
-  }else{
-
-    newChat();
+    return fallback;
 
   }
 
-  renderConversations();
-  renderProjects();
+}
 
-  updateBuildState();
+
+function normalizeUser(){
+
+  if(!currentUser){
+
+    return null;
+
+  }
+
+
+  return {
+
+    id:
+      currentUser.id,
+
+    email:
+      currentUser.email ||
+      "",
+
+    displayName:
+      currentUser.user_metadata
+        ?.display_name ||
+      currentUser.user_metadata
+        ?.full_name ||
+      currentUser.user_metadata
+        ?.name ||
+      currentUser.email?.split("@")[0] ||
+      "User",
+
+    avatar:
+      currentUser.user_metadata
+        ?.avatar_url ||
+      currentUser.user_metadata
+        ?.picture ||
+      ""
+
+  };
 
 }
 
-init();
+
+function getProvider(){
+
+  if(!currentUser){
+
+    return "";
+
+  }
+
+
+  return (
+    currentUser.app_metadata
+      ?.provider ||
+    ""
+  );
+
+}
+
+
+function isEmailVerified(){
+
+  if(!currentUser){
+
+    return false;
+
+  }
+
+
+  return Boolean(
+    currentUser.email_confirmed_at
+  );
+
+}
+
+
+async function refreshUser(){
+
+  try{
+
+    const result =
+      await supabaseClient.auth
+        .getUser();
+
+    if(
+      result.data &&
+      result.data.user
+    ){
+
+      currentUser =
+        result.data.user;
+
+      updateAccountUI();
+
+      return currentUser;
+
+    }
+
+  }catch(error){
+
+    console.error(
+      error
+    );
+
+  }
+
+
+  return null;
+
+}
+
+
+async function refreshSession(){
+
+  try{
+
+    const result =
+      await supabaseClient.auth
+        .refreshSession();
+
+    if(
+      result.data &&
+      result.data.session
+    ){
+
+      currentSession =
+        result.data.session;
+
+      currentUser =
+        result.data.session.user;
+
+      updateAccountUI();
+
+      return true;
+
+    }
+
+  }catch(error){
+
+    console.error(
+      error
+    );
+
+  }
+
+
+  return false;
+
+}
+
+
+function requireLogin(){
+
+  if(currentUser){
+
+    return true;
+
+  }
+
+
+  showLoggedOut();
+
+  showToast(
+    "سجّل الدخول أولاً."
+  );
+
+  return false;
+
+}
+
+
+/* =========================
+   AUTH STATE LISTENER
+========================= */
+
+supabaseClient.auth.onAuthStateChange(
+  async (
+    event,
+    session
+  ) => {
+
+    currentSession =
+      session || null;
+
+    currentUser =
+      session?.user || null;
+
+
+    if(session){
+
+      showAuthenticated();
+
+      updateAccountUI();
+
+      loadLocalData();
+
+      updateBuildButton();
+
+    }else{
+
+      showLoggedOut();
+
+    }
+
+  }
+);
+
+
+/* =========================
+   CHAT ACTION EVENTS
+========================= */
+
+document.addEventListener(
+  "click",
+  event => {
+
+    const copyButton =
+      event.target.closest(
+        "[data-copy]"
+      );
+
+
+    if(copyButton){
+
+      const value =
+        copyButton.getAttribute(
+          "data-copy"
+        );
+
+
+      if(value){
+
+        copyText(
+          value
+        );
+
+      }
+
+    }
+
+  }
+);
+
+
+/* =========================
+   PREVENT FORM RELOAD
+========================= */
+
+document.addEventListener(
+  "submit",
+  event => {
+
+    if(
+      event.target &&
+      event.target.id ===
+        "authForm"
+    ){
+
+      event.preventDefault();
+
+    }
+
+  }
+);
+
+
+/* =========================
+   FINAL UI STATE
+========================= */
+
+function refreshUI(){
+
+  if(currentUser){
+
+    showAuthenticated();
+
+    updateAccountUI();
+
+    renderConversations();
+
+    renderProjects();
+
+    updateBuildButton();
+
+  }else{
+
+    showLoggedOut();
+
+  }
+
+}<script>
+/* =========================
+   FINAL INITIALIZATION
+========================= */
+
+async function finalizeAizen(){
+
+  try{
+
+    await initAuth();
+
+  }catch(error){
+
+    console.error(
+      "Aizen initialization error:",
+      error
+    );
+
+    showLoggedOut();
+
+  }
+
+  updateOnlineStatus();
+
+}
+
+
+/* =========================
+   AUTH BUTTONS
+========================= */
+
+const loginButton =
+  document.getElementById(
+    "loginButton"
+  );
+
+if(loginButton){
+
+  loginButton.addEventListener(
+    "click",
+    () => {
+
+      showLoggedOut();
+
+    }
+  );
+
+}
+
+
+const logoutButton =
+  document.getElementById(
+    "logoutButton"
+  );
+
+if(logoutButton){
+
+  logoutButton.addEventListener(
+    "click",
+    logout
+  );
+
+}
+
+
+/* =========================
+   NEW CHAT BUTTONS
+========================= */
+
+document.querySelectorAll(
+  "[data-new-chat]"
+).forEach(
+  button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        if(requireLogin()){
+
+          newChat();
+
+        }
+
+      }
+    );
+
+  }
+);
+
+
+/* =========================
+   SEND BUTTON
+========================= */
+
+const sendButton =
+  document.getElementById(
+    "sendButton"
+  );
+
+if(sendButton){
+
+  sendButton.addEventListener(
+    "click",
+    sendMessage
+  );
+
+}
+
+
+/* =========================
+   STOP BUTTON
+========================= */
+
+const stopButton =
+  document.getElementById(
+    "stopButton"
+  );
+
+if(stopButton){
+
+  stopButton.addEventListener(
+    "click",
+    stopGeneration
+  );
+
+}
+
+
+/* =========================
+   BUILD BUTTON
+========================= */
+
+const buildButton =
+  document.getElementById(
+    "buildButton"
+  );
+
+if(buildButton){
+
+  buildButton.addEventListener(
+    "click",
+    () => {
+
+      if(requireLogin()){
+
+        openBuildModal();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================
+   MESSAGE INPUT
+========================= */
+
+const messageInput =
+  document.getElementById(
+    "messageInput"
+  );
+
+if(messageInput){
+
+  messageInput.addEventListener(
+    "keydown",
+    event => {
+
+      if(
+        event.key === "Enter" &&
+        !event.shiftKey
+      ){
+
+        event.preventDefault();
+
+        sendMessage();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================
+   SEARCH INPUT
+========================= */
+
+const searchInput =
+  document.getElementById(
+    "searchInput"
+  );
+
+if(searchInput){
+
+  searchInput.addEventListener(
+    "input",
+    event => {
+
+      searchConversations(
+        event.target.value
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================
+   FILE INPUT
+========================= */
+
+const fileInput =
+  document.getElementById(
+    "fileInput"
+  );
+
+if(fileInput){
+
+  fileInput.addEventListener(
+    "change",
+    handleFileUpload
+  );
+
+}
+
+
+/* =========================
+   START APP
+========================= */
+
+if(
+  document.readyState ===
+  "loading"
+){
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    finalizeAizen,
+    {
+      once: true
+    }
+  );
+
+}else{
+
+  finalizeAizen();
+
+}
+
+
+/* =========================
+   GLOBAL ERROR HANDLER
+========================= */
+
+window.addEventListener(
+  "error",
+  event => {
+
+    console.error(
+      "Aizen error:",
+      event.error ||
+      event.message
+    );
+
+  }
+);
+
+
+/* =========================
+   UNHANDLED PROMISE ERRORS
+========================= */
+
+window.addEventListener(
+  "unhandledrejection",
+  event => {
+
+    console.error(
+      "Aizen promise error:",
+      event.reason
+    );
+
+  }
+);
 
 </script>
-
 </body>
-  </html>
+</html>
