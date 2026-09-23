@@ -746,6 +746,13 @@ button{cursor:pointer}
     padding:8px 8px 10px;
   }
 }
+
+.ai-avatar{width:42px;height:42px;min-width:42px;border-radius:50%;object-fit:cover;border:1px solid #3b3f4b;background:#171a22;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.build-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.build-type-card{padding:14px;border:1px solid #30343e;border-radius:13px;background:#181b22;color:#fff;text-align:right;transition:.15s}
+.build-type-card:hover{border-color:#6d5dfc;background:#211e35;transform:translateY(-1px)}
+.build-type-icon{font-size:25px;margin-bottom:7px}.build-type-title{font-weight:700;font-size:13px}.build-type-desc{margin-top:4px;color:#858b97;font-size:11px;line-height:1.45}
+@media(max-width:520px){.build-type-grid{grid-template-columns:1fr}}
 </style>
 </head>
 
@@ -886,7 +893,7 @@ button{cursor:pointer}
 
     <div class="welcome">
 
-      <div class="welcome-logo">A</div>
+      <img class="ai-avatar" src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AizenAI&backgroundColor=0b0d12" alt="Aizen AI" onerror="this.style.display='none'">
 
       <h1>مرحباً بك في Aizen AI Builder</h1>
 
@@ -1180,6 +1187,22 @@ button{cursor:pointer}
 </div>
 
 
+
+<div id="buildTypeModal" class="modal hidden">
+  <div class="modal-box">
+    <h3>ماذا تريد أن تبني؟</h3>
+    <div class="auth-subtitle">اختر نوع المشروع ليعرف Aizen كيف يخطط للبناء.</div>
+    <div class="build-type-grid">
+      <button type="button" class="build-type-card" onclick="confirmBuildType('website')"><div class="build-type-icon">🌐</div><div class="build-type-title">موقع ويب</div><div class="build-type-desc">مواقع، لوحات تحكم ومتاجر.</div></button>
+      <button type="button" class="build-type-card" onclick="confirmBuildType('telegram_bot')"><div class="build-type-icon">🤖</div><div class="build-type-title">بوت Telegram</div><div class="build-type-desc">أوامر وأزرار وقواعد بيانات.</div></button>
+      <button type="button" class="build-type-card" onclick="confirmBuildType('game')"><div class="build-type-icon">🎮</div><div class="build-type-title">لعبة</div><div class="build-type-desc">ألعاب ويب ومنطق لعب وواجهة.</div></button>
+      <button type="button" class="build-type-card" onclick="confirmBuildType('app')"><div class="build-type-icon">📱</div><div class="build-type-title">تطبيق</div><div class="build-type-desc">تطبيقات موبايل أو سطح مكتب.</div></button>
+      <button type="button" class="build-type-card" onclick="confirmBuildType('api')"><div class="build-type-icon">⚡</div><div class="build-type-title">API / Backend</div><div class="build-type-desc">خدمات خلفية وواجهات API.</div></button>
+      <button type="button" class="build-type-card" onclick="confirmBuildType('other')"><div class="build-type-icon">✨</div><div class="build-type-title">مشروع مخصص</div><div class="build-type-desc">دع Aizen يحدد البنية المناسبة.</div></button>
+    </div>
+    <div class="modal-buttons"><button type="button" onclick="closeBuildTypeModal()">إلغاء</button></div>
+  </div>
+</div>
 <div id="toast" class="toast"></div>
 
 
@@ -2229,8 +2252,13 @@ async function sendMessage(){
         "\n[نهاية الملفات]"
       : "";
 
+  const buildTypeInstruction =
+    "[نوع المشروع المختار: " + typeLabel + " | build_type=" + type + "]\n" +
+    "ابنِ المشروع على أساس هذا النوع. نفّذ الملفات والتعديلات المطلوبة فعلياً، وراعِ الواجهة وتجربة المستخدم والأمان والاستجابة حسب نوع المشروع.\n" +
+    "[نهاية نوع المشروع]\n\n";
+
   const messageForAI =
-    text + attachmentPrompt;
+    buildTypeInstruction + text + attachmentPrompt;
 
   if(!messageForAI) return;
 
@@ -2617,7 +2645,20 @@ async function requestAI(
    BUILD
 ========================================================= */
 
-async function startBuild(){
+function openBuildTypeModal(){
+  if(generating) return;
+  if(!currentUser){ openAuth(); showToast("سجّل الدخول أولاً."); return; }
+  const button = $("buildButton");
+  if(button && button.disabled) return;
+  $("buildTypeModal").classList.remove("hidden");
+}
+function closeBuildTypeModal(){ $("buildTypeModal").classList.add("hidden"); }
+function confirmBuildType(type){
+  const labels={website:"موقع ويب",telegram_bot:"بوت Telegram",game:"لعبة",app:"تطبيق",api:"API / Backend",other:"مشروع مخصص"};
+  closeBuildTypeModal();
+  runBuild(type,labels[type] || "مشروع مخصص");
+}
+async function runBuild(type,typeLabel){
 
   if(generating) return;
 
