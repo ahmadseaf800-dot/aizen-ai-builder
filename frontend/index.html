@@ -755,7 +755,7 @@ button{cursor:pointer}
 @media(max-width:520px){.build-type-grid{grid-template-columns:1fr}}
 .ai-avatar-small{width:34px;height:34px;min-width:34px;border-radius:10px;object-fit:cover;background:#171a22;border:1px solid #30343e}
 .profile-card{width:min(520px,100%);padding:0;overflow:hidden;border:1px solid #30343e;border-radius:20px;background:linear-gradient(180deg,#171a22,#101218);box-shadow:0 25px 70px rgba(0,0,0,.55)}
-.profile-head{padding:24px 22px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #292d36}.profile-head-avatar{width:64px;height:64px;border-radius:18px;object-fit:cover;background:#181b22;border:1px solid #3b3f4b}.profile-head h3{margin:0;font-size:20px}.profile-head p{margin:5px 0 0;color:#858b97;font-size:12px}.profile-body{padding:20px 22px}.profile-label{display:block;margin:0 0 7px;color:#aeb3bf;font-size:12px}.profile-footer{padding:14px 22px 20px;display:flex;gap:8px}.profile-footer button{flex:1}.build-description{min-height:130px;resize:vertical}
+.profile-head{padding:24px 22px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #292d36}.profile-head-avatar{width:64px;height:64px;border-radius:18px;object-fit:cover;background:#181b22;border:1px solid #3b3f4b}.profile-head h3{margin:0;font-size:20px}.profile-head p{margin:5px 0 0;color:#858b97;font-size:12px}.profile-body{padding:20px 22px}.profile-label{display:block;margin:0 0 7px;color:#aeb3bf;font-size:12px}.profile-footer{padding:14px 22px 20px;display:flex;gap:8px}.profile-footer button{flex:1}.build-description{min-height:130px;resize:vertical}.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.profile-stats>div{padding:10px;border:1px solid #30343e;border-radius:10px;background:#15181f;text-align:center;font-size:12px}.profile-stats span{display:block;color:#858b97;font-size:10px;margin-top:4px}.build-button:disabled,.send-button:disabled{opacity:.5;cursor:not-allowed}
 </style>
 </head>
 
@@ -1061,13 +1061,6 @@ button{cursor:pointer}
         Discord
       </button>
 
-      <button
-        class="auth-oauth"
-        onclick="oauthLogin('apple')"
-      >
-        Apple
-      </button>
-
     </div>
 
     <div
@@ -1101,7 +1094,9 @@ button{cursor:pointer}
 <div id="profileModal" class="modal hidden" onclick="if(event.target===this) closeProfile()">
 <div class="profile-card">
 <div class="profile-head"><img id="profilePreview" class="profile-head-avatar" src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AizenAI&backgroundColor=0b0d12" alt="الحساب"><div><h3>الحساب</h3><p>إدارة اسمك وصورة حسابك في Aizen AI Builder</p></div></div>
-<div class="profile-body"><label class="profile-label" for="profileName">اسم العرض</label><input id="profileName" class="auth-input" placeholder="اسم العرض"><label class="profile-label" for="profileAvatar">رابط صورة الحساب</label><input id="profileAvatar" class="auth-input" placeholder="https://..."></div>
+<div class="profile-body"><label class="profile-label" for="profileName">اسم العرض</label><input id="profileName" class="auth-input" placeholder="اسم العرض"><input id="profileAvatar" type="hidden">
+<label class="profile-label">صورة الحساب</label><input id="profileAvatarFile" class="auth-input" type="file" accept="image/png,image/jpeg,image/webp" onchange="previewProfileImage(event)">
+<div class="profile-stats"><div>💬 <b id="profileChatCount">0</b><span>محادثات</span></div><div>📁 <b id="profileProjectCount">0</b><span>مشاريع</span></div><div>📅 <b id="profileMemberSince">—</b><span>عضو منذ</span></div></div></div>
 <div class="profile-footer"><button class="primary" onclick="saveProfile()">حفظ التغييرات</button><button onclick="closeProfile()">إلغاء</button></div>
 </div></div>
 
@@ -1162,16 +1157,18 @@ button{cursor:pointer}
     <div class="auth-subtitle">اختر نوع المشروع ليعرف Aizen كيف يخطط للبناء.</div>
     <div class="build-type-grid">
       <button type="button" class="build-type-card" onclick="confirmBuildType('website')"><div class="build-type-icon">🌐</div><div class="build-type-title">موقع ويب</div><div class="build-type-desc">مواقع، لوحات تحكم ومتاجر.</div></button>
-      <button type="button" class="build-type-card" onclick="confirmBuildType('telegram_bot')"><div class="build-type-icon">🤖</div><div class="build-type-title">بوت Telegram</div><div class="build-type-desc">أوامر وأزرار وقواعد بيانات.</div></button>
+      <button type="button" class="build-type-card" onclick="openBotTypeModal()"><div class="build-type-icon">🤖</div><div class="build-type-title">بوت</div><div class="build-type-desc">اختر Telegram أو Discord ثم اكتب فكرتك.</div></button>
       <button type="button" class="build-type-card" onclick="confirmBuildType('game')"><div class="build-type-icon">🎮</div><div class="build-type-title">لعبة</div><div class="build-type-desc">ألعاب ويب ومنطق لعب وواجهة.</div></button>
       <button type="button" class="build-type-card" onclick="confirmBuildType('app')"><div class="build-type-icon">📱</div><div class="build-type-title">تطبيق</div><div class="build-type-desc">تطبيقات موبايل أو سطح مكتب.</div></button>
+      <button type="button" class="build-type-card" onclick="confirmBuildType('automation')"><div class="build-type-icon">⚙️</div><div class="build-type-title">أتمتة</div><div class="build-type-desc">مهام آلية وربط الخدمات.</div></button>
+      <button type="button" class="build-type-card" onclick="confirmBuildType('extension')"><div class="build-type-icon">🧩</div><div class="build-type-title">إضافة متصفح</div><div class="build-type-desc">إضافات Chrome وEdge.</div></button>
       <button type="button" class="build-type-card" onclick="confirmBuildType('api')"><div class="build-type-icon">⚡</div><div class="build-type-title">API / Backend</div><div class="build-type-desc">خدمات خلفية وواجهات API.</div></button>
       <button type="button" class="build-type-card" onclick="confirmBuildType('other')"><div class="build-type-icon">✨</div><div class="build-type-title">مشروع مخصص</div><div class="build-type-desc">دع Aizen يحدد البنية المناسبة.</div></button>
     </div>
     <div class="modal-buttons"><button type="button" onclick="closeBuildTypeModal()">إلغاء</button></div>
   </div>
 </div>
-<div id="buildDescriptionModal" class="modal hidden" onclick="if(event.target===this) closeBuildDescriptionModal()"><div class="modal-box"><h3 id="buildDescriptionTitle">وصف المشروع</h3><div id="buildDescriptionHint" class="auth-subtitle">اكتب فكرة المشروع بالتفصيل.</div><textarea id="buildDescriptionInput" class="auth-input build-description" rows="6" placeholder="مثال: أريد موقع متجر حديث مع تسجيل دخول وسلة شراء ولوحة تحكم..."></textarea><div class="modal-buttons"><button class="primary" onclick="submitBuildDescription()">بدء البناء</button><button onclick="closeBuildDescriptionModal()">إلغاء</button></div></div></div><div id="toast" class="toast"></div>
+<div id="botTypeModal" class="modal hidden"><div class="modal-box"><h3>اختر نوع البوت</h3><div class="build-type-grid"><button type="button" class="build-type-card" onclick="confirmBotType('telegram')"><div class="build-type-icon">✈️</div><div class="build-type-title">Telegram</div><div class="build-type-desc">بوت Telegram.</div></button><button type="button" class="build-type-card" onclick="confirmBotType('discord')"><div class="build-type-icon">🎮</div><div class="build-type-title">Discord</div><div class="build-type-desc">بوت Discord.</div></button></div><div class="modal-buttons"><button type="button" onclick="closeBotTypeModal()">إلغاء</button></div></div></div><div id="buildDescriptionModal" class="modal hidden" onclick="if(event.target===this) closeBuildDescriptionModal()"><div class="modal-box"><h3 id="buildDescriptionTitle">وصف المشروع</h3><div id="buildDescriptionHint" class="auth-subtitle">اكتب فكرة المشروع بالتفصيل.</div><textarea id="buildDescriptionInput" class="auth-input build-description" rows="6" placeholder="مثال: أريد موقع متجر حديث مع تسجيل دخول وسلة شراء ولوحة تحكم..."></textarea><div class="modal-buttons"><button class="primary" onclick="submitBuildDescription()">بدء البناء</button><button onclick="closeBuildDescriptionModal()">إلغاء</button></div></div></div><div id="toast" class="toast"></div>
 
 
 <script>
@@ -1505,6 +1502,8 @@ async function forgotPassword(){
 }
 
 async function logout(){
+  if(!currentUser) return;
+  if(!confirm("هل أنت متأكد أنك تريد تسجيل الخروج؟")) return;
 
   try{
     await supabaseClient.auth.signOut();
@@ -1679,6 +1678,10 @@ function openProfile(){
 
   $("profileAvatar").value =
     currentUser.user_metadata?.avatar_url || "";
+  $("profileAvatarFile").value="";
+  $("profileChatCount").textContent=String(conversations.length);
+  $("profileProjectCount").textContent=String(projects.length);
+  $("profileMemberSince").textContent=currentUser.created_at ? new Date(currentUser.created_at).toLocaleDateString("ar") : "—";
   const preview=$("profilePreview");
   if(preview) preview.src=currentUser.user_metadata?.avatar_url || "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AizenAI&backgroundColor=0b0d12";
   $("profileModal")
@@ -1690,6 +1693,15 @@ function closeProfile(){
   $("profileModal")
     .classList
     .add("hidden");
+}
+
+function previewProfileImage(event){
+  const file=event.target.files?.[0];
+  if(!file) return;
+  if(file.size>1024*1024){showToast("الصورة يجب أن تكون أقل من 1MB.");event.target.value="";return;}
+  const reader=new FileReader();
+  reader.onload=()=>{const src=String(reader.result||"");$("profileAvatar").value=src;$("profilePreview").src=src;};
+  reader.readAsDataURL(file);
 }
 
 async function saveProfile(){
@@ -2212,8 +2224,7 @@ async function sendMessage(){
   const input =
     $("messageInput");
 
-  const text =
-    String(description || input.value || "").trim();
+  const text = input.value.trim();
 
   const attachmentPrompt =
     pendingAttachments.length
@@ -2226,15 +2237,12 @@ async function sendMessage(){
         "\n[نهاية الملفات]"
       : "";
 
-  const buildTypeInstruction =
-    "[نوع المشروع المختار: " + typeLabel + " | build_type=" + type + "]\n" +
-    "ابنِ المشروع على أساس هذا النوع. نفّذ الملفات والتعديلات المطلوبة فعلياً، وراعِ الواجهة وتجربة المستخدم والأمان والاستجابة حسب نوع المشروع.\n" +
-    "[نهاية نوع المشروع]\n\n";
+  const messageForAI = text + attachmentPrompt;
 
-  const messageForAI =
-    buildTypeInstruction + text + attachmentPrompt;
-
-  if(!messageForAI) return;
+  if(!text && !pendingAttachments.length){
+    showToast("اكتب رسالة أولاً أو أرفق ملفاً.");
+    return;
+  }
 
   try{
 
@@ -2628,8 +2636,11 @@ function openBuildTypeModal(){
 }
 function closeBuildTypeModal(){ $("buildTypeModal").classList.add("hidden"); }
 let selectedBuildType=null,selectedBuildLabel=null;
+function openBotTypeModal(){closeBuildTypeModal();$("botTypeModal").classList.remove("hidden");}
+function closeBotTypeModal(){$("botTypeModal").classList.add("hidden");}
+function confirmBotType(type){closeBotTypeModal();confirmBuildType(type==="discord"?"discord_bot":"telegram_bot");}
 function confirmBuildType(type){
-  const labels={website:"موقع ويب",telegram_bot:"بوت Telegram",game:"لعبة",app:"تطبيق",api:"API / Backend",other:"مشروع مخصص"};
+  const labels={website:"موقع ويب",telegram_bot:"بوت Telegram",discord_bot:"بوت Discord",game:"لعبة",app:"تطبيق",api:"API / Backend",automation:"أتمتة",extension:"إضافة متصفح",other:"مشروع مخصص"};
   selectedBuildType=type;selectedBuildLabel=labels[type]||"مشروع مخصص";
   closeBuildTypeModal();
   $("buildDescriptionTitle").textContent="وصف "+selectedBuildLabel;
@@ -2658,8 +2669,7 @@ async function runBuild(type,typeLabel,description){
   const input =
     $("messageInput");
 
-  const text =
-    input.value.trim();
+  const text = String(description || "").trim();
 
   const attachmentPrompt =
     pendingAttachments.length
@@ -2673,19 +2683,9 @@ async function runBuild(type,typeLabel,description){
       : "";
 
   const messageForAI =
+    "[نوع المشروع: " + typeLabel + " | build_type=" + type + "]\n" +
+    "نفّذ المشروع فعلياً وأنشئ الملفات الأساسية القابلة للتشغيل.\n\n" +
     text + attachmentPrompt;
-
-  if(
-    !currentConversationId &&
-    !messageForAI
-  ){
-
-    showToast(
-      "اكتب فكرة المشروع أو أرفق ملفات أولاً."
-    );
-
-    return;
-  }
 
   try{
 
@@ -2788,6 +2788,19 @@ async function runBuild(type,typeLabel,description){
       autoResizeTextarea();
       clearAttachments();
     }
+
+    const {data:createdProject,error:projectError} =
+      await supabaseClient.from("projects").insert({
+        user_id:currentUser.id,
+        name:(text.slice(0,60) || (typeLabel + " جديد")),
+        type:typeLabel,
+        description:text,
+        status:"building"
+      }).select().single();
+    if(projectError) throw projectError;
+    projects.unshift(createdProject);
+    currentProjectId=createdProject.id;
+    renderProjects();
 
     await requestAI(
       conversation.id,
