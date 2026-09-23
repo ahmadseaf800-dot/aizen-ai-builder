@@ -2575,6 +2575,13 @@ async function requestAI(
     if(isBuild && currentProjectId){
       try{
         const generatedFiles=await saveGeneratedProjectFiles(currentProjectId,fullText);
+        await supabaseClient.from("projects").update({
+          status: generatedFiles ? "ready" : "building",
+          updated_at:new Date().toISOString()
+        }).eq("id",currentProjectId).eq("user_id",currentUser.id);
+        const project=projects.find(p=>p.id===currentProjectId);
+        if(project) project.status=generatedFiles ? "ready" : "building";
+        renderProjects();
         if(generatedFiles) setStatus("تم إنشاء "+generatedFiles+" ملفاً للمشروع.");
       }catch(fileError){
         console.error("PROJECT FILES ERROR:",fileError);
