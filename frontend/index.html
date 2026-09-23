@@ -2193,6 +2193,18 @@ async function sendMessage(){
         );
     }
 
+    if(
+      conversation &&
+      conversation.build_used
+    ){
+
+      showToast(
+        "تم استخدام Build لهذه المحادثة مسبقاً."
+      );
+
+      return;
+    }
+
     if(!conversation){
 
       conversation =
@@ -2692,18 +2704,6 @@ async function startBuild(){
       input.value = "";
       autoResizeTextarea();
       clearAttachments();
-    }
-
-    if(
-      conversation &&
-      conversation.build_used
-    ){
-
-      showToast(
-        "تم استخدام Build لهذه المحادثة مسبقاً."
-      );
-
-      return;
     }
 
     await requestAI(
