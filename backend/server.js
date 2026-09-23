@@ -469,8 +469,8 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
       completed = true;
       try {
         if (!res.writableEnded) {
-          res.write("event: done\\n");
-          res.write("data: {}\\n\\n");
+          res.write("event: done\n");
+          res.write("data: {}\n\n");
           res.end();
         }
       } catch {}
@@ -576,20 +576,20 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
 
             const delta = data?.choices?.[0]?.delta?.content;
             if (typeof delta === "string" && delta) {
-              res.write("event: text\\n");
-              res.write("data: " + JSON.stringify({ text: delta }) + "\\n\\n");
+              res.write("event: text\n");
+              res.write("data: " + JSON.stringify({ text: delta }) + "\n\n");
             }
 
             if (data?.choices?.[0]?.finish_reason) {
-              res.write("event: complete\\n");
-              res.write("data: {}\\n\\n");
+              res.write("event: complete\n");
+              res.write("data: {}\n\n");
             }
 
             if (data?.error) {
-              res.write("event: error\\n");
+              res.write("event: error\n");
               res.write("data: " + JSON.stringify({
                 message: data.error.message || "حدث خطأ أثناء توليد الرد"
-              }) + "\\n\\n");
+              }) + "\n\n");
             }
           }
         });
@@ -598,10 +598,10 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
         response.on("error", () => {
           if (completed) return;
           try {
-            res.write("event: error\\n");
+            res.write("event: error\n");
             res.write("data: " + JSON.stringify({
               message: "انقطع اتصال مزود الذكاء الاصطناعي"
-            }) + "\\n\\n");
+            }) + "\n\n");
           } catch {}
           finish();
         });
@@ -611,10 +611,10 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
         if (completed) return;
         try { request.destroy(); } catch {}
         try {
-          res.write("event: error\\n");
+          res.write("event: error\n");
           res.write("data: " + JSON.stringify({
             message: "انتهت مهلة الاتصال بمزود الذكاء الاصطناعي"
-          }) + "\\n\\n");
+          }) + "\n\n");
         } catch {}
         finish();
       });
@@ -632,10 +632,10 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
           return;
         }
         try {
-          res.write("event: error\\n");
+          res.write("event: error\n");
           res.write("data: " + JSON.stringify({
             message: "تعذر الاتصال بمزود الذكاء الاصطناعي"
-          }) + "\\n\\n");
+          }) + "\n\n");
         } catch {}
         finish();
       });
