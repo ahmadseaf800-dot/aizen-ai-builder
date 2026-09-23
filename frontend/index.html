@@ -1312,6 +1312,22 @@ function showSidebarTab(tab){
   );
 }
 
+function syncBuildButtonState(){
+  const button=$("buildButton");
+  if(!button) return;
+  const conversation=
+    conversations.find(
+      c=>c.id===currentConversationId
+    );
+  button.disabled=
+    Boolean(conversation?.build_used) ||
+    generating;
+  button.title=
+    conversation?.build_used
+      ? "تم استخدام Build في هذه المحادثة. افتح محادثة جديدة."
+      : "بناء المشروع";
+}
+
 
 /* =========================================================
    AUTH UI
@@ -1890,6 +1906,7 @@ async function createConversation(title="محادثة جديدة"){
   currentConversationId = data.id;
 
   renderConversations();
+  syncBuildButtonState();
 
   clearMessages();
 
@@ -1928,6 +1945,7 @@ async function openConversation(id){
   currentConversationId = id;
 
   renderConversations();
+  syncBuildButtonState();
 
   await loadMessages(id);
 
@@ -2226,14 +2244,6 @@ async function sendMessage(){
         conversations.find(
           c=>c.id === currentConversationId
         );
-    }
-
-    if(
-      conversation &&
-      conversation.build_used
-    ){
-      showToast("تم استخدام Build لهذه المحادثة مسبقاً. افتح محادثة جديدة لبناء مشروع آخر.");
-      return;
     }
 
     if(!conversation){
