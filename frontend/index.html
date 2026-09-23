@@ -2710,10 +2710,24 @@ function closeBotTypeModal(){$("botTypeModal").classList.add("hidden");}
 function confirmBotType(type){closeBotTypeModal();confirmBuildType(type==="discord"?"discord_bot":"telegram_bot");}
 function confirmBuildType(type){
   const labels={website:"موقع ويب",telegram_bot:"بوت Telegram",discord_bot:"بوت Discord",game:"لعبة",app:"تطبيق",api:"API / Backend",automation:"أتمتة",extension:"إضافة للمتصفح",game_mod:"تطوير إضافات للألعاب",game_skin:"تصميم سكن للعبة",other:"مشروع مخصص"};
+  const examples={
+    website:"مثال: أريد موقعاً إلكترونياً حديثاً مع تسجيل دخول، سلة شراء، صفحة منتجات ولوحة تحكم للإدارة.",
+    telegram_bot:"مثال: أريد بوت Telegram فيه /start و /help ونظام تذاكر وإشعارات ولوحة تحكم للمشرف.",
+    discord_bot:"مثال: أريد بوت Discord فيه أوامر إدارية، ترحيب بالأعضاء، نظام تذاكر وسجل للمخالفات.",
+    game:"مثال: أريد لعبة متصفح ثنائية الأبعاد فيها مراحل، نقاط، أعداء وقائمة رئيسية.",
+    app:"مثال: أريد تطبيقاً لإدارة المهام مع تسجيل دخول، إضافة المهام، إشعارات وصفحة إعدادات.",
+    api:"مثال: أريد REST API لتسجيل المستخدمين وتسجيل الدخول وإدارة البيانات مع حماية وصلاحيات.",
+    automation:"مثال: أريد أتمتة تنقل البيانات بين خدمتين وترسل إشعاراً عند حدوث عملية جديدة.",
+    extension:"مثال: أريد إضافة Chrome تحفظ النص المحدد وتوفر زر ترجمة سريع من قائمة المتصفح.",
+    game_mod:"مثال: أريد مود Minecraft يضيف سلاحاً جديداً مع وصفات وصلاحيات وأوامر خاصة.",
+    game_skin:"مثال: أريد تصميم سكن لشخصية لعبة بطابع مستقبلي مع ألوان وتفاصيل واضحة.",
+    other:"مثال: أريد مشروعاً متكاملاً لفكرة خاصة بي، مع الواجهة والوظائف والملفات اللازمة للتشغيل."
+  };
   selectedBuildType=type;selectedBuildLabel=labels[type]||"مشروع مخصص";
   closeBuildTypeModal();
   $("buildDescriptionTitle").textContent="وصف "+selectedBuildLabel;
-  $("buildDescriptionHint").textContent="اكتب فكرة المشروع الآن، وسيستخدمها Aizen لبناء "+selectedBuildLabel+".";
+  $("buildDescriptionHint").textContent=examples[type]||examples.other;
+  $("buildDescriptionInput").placeholder=examples[type]||examples.other;
   $("buildDescriptionInput").value="";
   if($("buildProjectName")) $("buildProjectName").value="";
   $("buildDescriptionModal").classList.remove("hidden");
