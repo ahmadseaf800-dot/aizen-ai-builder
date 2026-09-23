@@ -1168,7 +1168,7 @@ button{cursor:pointer}
     <div class="modal-buttons"><button type="button" onclick="closeBuildTypeModal()">إلغاء</button></div>
   </div>
 </div>
-<div id="botTypeModal" class="modal hidden"><div class="modal-box"><h3>اختر نوع البوت</h3><div class="build-type-grid"><button type="button" class="build-type-card" onclick="confirmBotType('telegram')"><div class="build-type-icon">✈️</div><div class="build-type-title">Telegram</div><div class="build-type-desc">بوت Telegram.</div></button><button type="button" class="build-type-card" onclick="confirmBotType('discord')"><div class="build-type-icon">🎮</div><div class="build-type-title">Discord</div><div class="build-type-desc">بوت Discord.</div></button></div><div class="modal-buttons"><button type="button" onclick="closeBotTypeModal()">إلغاء</button></div></div></div><div id="buildDescriptionModal" class="modal hidden" onclick="if(event.target===this) closeBuildDescriptionModal()"><div class="modal-box"><h3 id="buildDescriptionTitle">وصف المشروع</h3><div id="buildDescriptionHint" class="auth-subtitle">اكتب فكرة المشروع بالتفصيل.</div><textarea id="buildDescriptionInput" class="auth-input build-description" rows="6" placeholder="مثال: أريد موقع متجر حديث مع تسجيل دخول وسلة شراء ولوحة تحكم..."></textarea><div class="modal-buttons"><button class="primary" onclick="submitBuildDescription()">بدء البناء</button><button onclick="closeBuildDescriptionModal()">إلغاء</button></div></div></div><div id="toast" class="toast"></div>
+<div id="botTypeModal" class="modal hidden"><div class="modal-box"><h3>اختر نوع البوت</h3><div class="build-type-grid"><button type="button" class="build-type-card" onclick="confirmBotType('telegram')"><div class="build-type-icon">✈️</div><div class="build-type-title">Telegram</div><div class="build-type-desc">بوت Telegram.</div></button><button type="button" class="build-type-card" onclick="confirmBotType('discord')"><div class="build-type-icon">🎮</div><div class="build-type-title">Discord</div><div class="build-type-desc">بوت Discord.</div></button></div><div class="modal-buttons"><button type="button" onclick="closeBotTypeModal()">إلغاء</button></div></div></div><div id="botSecretModal" class="modal hidden" onclick="if(event.target===this) closeBotSecretModal()"><div class="modal-box"><h3 id="botSecretTitle">إعداد البوت</h3><div class="auth-subtitle">اكتب فكرة البوت والتوكن. التوكن لا يُرسل إلى نموذج الذكاء الاصطناعي ولا يظهر داخل المحادثة؛ يُحفظ مشفراً في مساحة أسرار المشروع.</div><textarea id="botIdeaInput" class="auth-input build-description" rows="5" placeholder="فكرة البوت والميزات والأوامر المطلوبة..."></textarea><input id="botTokenInput" class="auth-input" type="password" autocomplete="new-password" placeholder="توكن البوت السري"><div class="modal-buttons"><button type="button" class="primary" onclick="submitBotBuild()">بدء بناء البوت</button><button type="button" onclick="closeBotSecretModal()">إلغاء</button></div></div></div><div id="buildDescriptionModal" class="modal hidden" onclick="if(event.target===this) closeBuildDescriptionModal()"><div class="modal-box"><h3 id="buildDescriptionTitle">وصف المشروع</h3><div id="buildDescriptionHint" class="auth-subtitle">اكتب فكرة المشروع بالتفصيل.</div><textarea id="buildDescriptionInput" class="auth-input build-description" rows="6" placeholder="مثال: أريد موقع متجر حديث مع تسجيل دخول وسلة شراء ولوحة تحكم..."></textarea><div class="modal-buttons"><button class="primary" onclick="submitBuildDescription()">بدء البناء</button><button onclick="closeBuildDescriptionModal()">إلغاء</button></div></div></div><div id="toast" class="toast"></div>
 
 
 <script>
@@ -2696,9 +2696,27 @@ function closeBuildDescriptionModal(){$("buildDescriptionModal").classList.add("
 function submitBuildDescription(){
   const description=$("buildDescriptionInput").value.trim();
   if(!description){showToast("اكتب فكرة المشروع أولاً.");$("buildDescriptionInput").focus();return;}
-  closeBuildDescriptionModal();runBuild(selectedBuildType,selectedBuildLabel,description);
+  closeBuildDescriptionModal();
+  if(selectedBuildType==="telegram_bot" || selectedBuildType==="discord_bot"){
+    $("botSecretTitle").textContent="إعداد "+selectedBuildLabel;
+    $("botIdeaInput").value=description;
+    $("botTokenInput").value="";
+    $("botSecretModal").classList.remove("hidden");
+    setTimeout(()=>$("botTokenInput").focus(),50);
+    return;
+  }
+  runBuild(selectedBuildType,selectedBuildLabel,description,"");
 }
-async function runBuild(type,typeLabel,description){
+function closeBotSecretModal(){$("botSecretModal").classList.add("hidden");}
+async function submitBotBuild(){
+  const idea=$("botIdeaInput").value.trim();
+  const token=$("botTokenInput").value.trim();
+  if(!idea){showToast("اكتب فكرة البوت أولاً.");return;}
+  if(!token){showToast("ضع توكن البوت السري أولاً.");$("botTokenInput").focus();return;}
+  closeBotSecretModal();
+  await runBuild(selectedBuildType,selectedBuildLabel,idea,token);
+}
+async function runBuild(type,typeLabel,description,secretToken=""){
 
   if(generating) return;
 
@@ -2844,6 +2862,26 @@ async function runBuild(type,typeLabel,description){
     projects.unshift(createdProject);
     currentProjectId=createdProject.id;
     renderProjects();
+
+    if(secretToken && (type==="telegram_bot" || type==="discord_bot")){
+      const session=(await supabaseClient.auth.getSession()).data.session;
+      const secretResponse=await fetch(BACKEND_URL+"/api/project-secret",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "Authorization":"Bearer "+(session?.access_token || "")
+        },
+        body:JSON.stringify({
+          projectId:createdProject.id,
+          name:type==="telegram_bot" ? "TELEGRAM_BOT_TOKEN" : "DISCORD_BOT_TOKEN",
+          value:secretToken
+        })
+      });
+      const secretData=await secretResponse.json().catch(()=>({}));
+      if(!secretResponse.ok || !secretData.success){
+        throw new Error(secretData.message || "تعذر حفظ التوكن بأمان.");
+      }
+    }
 
     await requestAI(
       conversation.id,
