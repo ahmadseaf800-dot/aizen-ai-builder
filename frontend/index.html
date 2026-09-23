@@ -2341,7 +2341,7 @@ async function requestAI(
         );
 
       const parts =
-        buffer.split("\n");
+        buffer.split(/\n\n/);
 
       buffer =
         parts.pop() || "";
