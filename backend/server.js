@@ -10,7 +10,7 @@ const SUPABASE_URL = String(process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const APP_ORIGIN = process.env.APP_ORIGIN || "*";
 
-const GEMINI_MODEL = "gemini-3.6-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 const FRONTEND_PATH = path.join(__dirname, "..", "frontend", "index.html");
 
@@ -473,8 +473,59 @@ function askGeminiStream(currentMessage, res, isBuild, history = []) {
 
           response.setEncoding("utf8");
 
+          if (response.statusCode >= 400) {
+            response.on("data", (chunk) => {
+              if (completed) return;
+              buffer += chunk;
+            });
+
+            response.on("end", () => {
+              if (completed) return;
+
+              let message = "فشل طلب Gemini.";
+
+              try {
+                const parsed = JSON.parse(buffer);
+                message =
+                  parsed?.error?.message ||
+                  parsed?.message ||
+                  message;
+              } catch {}
+
+              completed = true;
+
+              if (!res.headersSent) {
+                sendJson(res, 502, {
+                  success: false,
+                  error: "GEMINI_API_ERROR",
+                  message,
+                  upstream_status: response.statusCode || 0,
+                });
+              }
+
+              resolve();
+            });
+
+            response.on("error", (error) => {
+              if (completed) return;
+              completed = true;
+
+              if (!res.headersSent) {
+                sendJson(res, 502, {
+                  success: false,
+                  error: "GEMINI_RESPONSE_ERROR",
+                  message: "حدث خطأ أثناء قراءة رد Gemini.",
+                });
+              }
+
+              resolve();
+            });
+
+            return;
+          }
+
           if (!res.headersSent) {
-            res.writeHead(response.statusCode >= 400 ? 502 : 200, {
+            res.writeHead(200, {
               "Content-Type": "text/event-stream; charset=utf-8",
               "Cache-Control": "no-cache, no-transform",
               Connection: "keep-alive",
