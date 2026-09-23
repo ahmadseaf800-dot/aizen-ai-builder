@@ -239,7 +239,41 @@ button{cursor:pointer}
   border-radius:8px;
   background:transparent;
   color:#888e9a;
+  position:relative;
+  z-index:2;
 }
+.conversation-menu>button{
+  width:34px;height:34px;border:0;border-radius:8px;
+  background:transparent;color:#888e9a;cursor:pointer;
+}
+.conversation-actions{
+  position:absolute;
+  top:36px;
+  left:0;
+  width:155px;
+  padding:5px;
+  display:none;
+  flex-direction:column;
+  gap:4px;
+  background:#15181f;
+  border:1px solid #30343e;
+  border-radius:10px;
+  box-shadow:0 12px 30px rgba(0,0,0,.45);
+  z-index:60;
+}
+.conversation-actions.open{display:flex}
+.conversation-actions button{
+  width:100%;
+  padding:8px 9px;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  color:#fff;
+  text-align:right;
+  font-size:12px;
+}
+.conversation-actions button:hover{background:#242832}
+.conversation-actions .danger{color:#ff8f9c}
 
 /* PROJECTS */
 
@@ -1806,12 +1840,21 @@ function renderConversations(){
 
           </div>
 
-          <button
-            class="conversation-menu"
-            onclick="conversationMenu(event,'${c.id}')"
-          >
-            ⋮
-          </button>
+          <div class="conversation-menu">
+            <button
+              type="button"
+              onclick="conversationMenu(event,'${c.id}')"
+              aria-label="إجراءات المحادثة"
+            >⋮</button>
+            <div
+              id="conversationActions-${c.id}"
+              class="conversation-actions"
+            >
+              <button type="button" onclick="conversationAction(event,'${c.id}','rename')">✏️ إعادة تسمية</button>
+              <button type="button" onclick="conversationAction(event,'${c.id}','pin')">${c.pinned ? "📌 إلغاء التثبيت" : "📌 تثبيت"}</button>
+              <button type="button" class="danger" onclick="conversationAction(event,'${c.id}','delete')">🗑️ حذف</button>
+            </div>
+          </div>
 
         </div>
       `;
@@ -2009,67 +2052,59 @@ function scrollMessages(){
    CONVERSATION ACTIONS
 ========================================================= */
 
-async function conversationMenu(event,id){
+async function closeConversationMenus(exceptId=null){
+  document.querySelectorAll(".conversation-actions.open").forEach(menu=>{
+    if(!exceptId || menu.id !== "conversationActions-"+exceptId){
+      menu.classList.remove("open");
+    }
+  });
+}
 
+function conversationMenu(event,id){
   event.stopPropagation();
+  const menu=$("conversationActions-"+id);
+  if(!menu) return;
+  const willOpen=!menu.classList.contains("open");
+  closeConversationMenus(id);
+  menu.classList.toggle("open",willOpen);
+}
 
-  const conversation =
-    conversations.find(
-      c=>c.id === id
-    );
-
+async function conversationAction(event,id,action){
+  event.stopPropagation();
+  const conversation=conversations.find(c=>c.id===id);
   if(!conversation) return;
+  closeConversationMenus();
 
-  const action =
-    prompt(
-      "اكتب:\nrename لإعادة التسمية\npin للتثبيت\nunpin لإلغاء التثبيت\ndelete للحذف"
-    );
-
-  if(!action) return;
-
-  const normalized =
-    action.trim().toLowerCase();
-
-  if(normalized === "rename"){
-
-    const title =
-      prompt(
-        "الاسم الجديد:",
-        conversation.title
-      );
-
-    if(!title) return;
-
-    await updateConversation(
-      id,
-      {title:title.trim()}
-    );
-
-  }else if(normalized === "pin"){
-
-    await updateConversation(
-      id,
-      {pinned:true}
-    );
-
-  }else if(normalized === "unpin"){
-
-    await updateConversation(
-      id,
-      {pinned:false}
-    );
-
-  }else if(normalized === "delete"){
-
-    if(
-      !confirm(
-        "هل تريد حذف هذه المحادثة؟"
-      )
-    ) return;
-
-    await deleteConversation(id);
+  try{
+    if(action==="rename"){
+      const title=prompt("الاسم الجديد:",conversation.title||"محادثة جديدة");
+      if(title===null) return;
+      const clean=title.trim();
+      if(!clean){
+        showToast("اكتب اسماً للمحادثة.");
+        return;
+      }
+      await updateConversation(id,{title:clean.slice(0,120)});
+      showToast("تمت إعادة تسمية المحادثة.");
+      return;
+    }
+    if(action==="pin"){
+      const next=!Boolean(conversation.pinned);
+      await updateConversation(id,{pinned:next});
+      showToast(next ? "تم تثبيت المحادثة." : "تم إلغاء تثبيت المحادثة.");
+      return;
+    }
+    if(action==="delete"){
+      if(!confirm("هل تريد حذف هذه المحادثة؟")) return;
+      await deleteConversation(id);
+    }
+  }catch(error){
+    console.error(error);
+    showToast(error?.message||"تعذر تنفيذ الإجراء.");
   }
 }
+
+document.addEventListener("click",closeConversationMenus);
 
 async function updateConversation(id,updates){
 
