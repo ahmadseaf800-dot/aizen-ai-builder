@@ -2330,6 +2330,32 @@ async function sendMessage(){
    AI REQUEST / SSE
 ========================================================= */
 
+async function saveGeneratedProjectFiles(projectId, text){
+  if(!projectId || !text) return 0;
+  const blocks=[];
+  const re=/FILE:\s*([^\n]+)\n\s*```(?:[^\n]*)\n([\s\S]*?)```/g;
+  let match;
+  while((match=re.exec(text))!==null){
+    const filePath=match[1].trim().replace(/^\/+/, "");
+    const content=match[2].replace(/\n$/,"");
+    if(!filePath || filePath.includes("..") || filePath.length>240 || content.length>500000) continue;
+    blocks.push({path:filePath,content,file_type:filePath.split(".").pop()||"text",size_bytes:new Blob([content]).size});
+    if(blocks.length>=30) break;
+  }
+  if(!blocks.length) return 0;
+  const rows=blocks.map(file=>({
+    project_id:projectId,
+    user_id:currentUser.id,
+    path:file.path,
+    content:file.content,
+    file_type:file.file_type,
+    size_bytes:file.size_bytes
+  }));
+  const {error}=await supabaseClient.from("project_files").upsert(rows,{onConflict:"project_id,path"});
+  if(error) throw error;
+  return rows.length;
+}
+
 async function requestAI(
   conversationId,
   isBuild,
@@ -2544,6 +2570,16 @@ async function requestAI(
 
       contentElement.textContent =
         fullText;
+    }
+
+    if(isBuild && currentProjectId){
+      try{
+        const generatedFiles=await saveGeneratedProjectFiles(currentProjectId,fullText);
+        if(generatedFiles) setStatus("تم إنشاء "+generatedFiles+" ملفاً للمشروع.");
+      }catch(fileError){
+        console.error("PROJECT FILES ERROR:",fileError);
+        showToast("تم إنشاء الرد، لكن تعذر حفظ بعض ملفات المشروع.");
+      }
     }
 
     const {error:saveError} =
