@@ -412,7 +412,7 @@ function buildGeminiInput(messages, currentMessage) {
 /*
  * Call Gemini using SSE streaming.
  */
-function askGeminiStream(currentMessage, res, isBuild, history = []) {
+function askGeminiStream(currentMessage, res, isBuild, history = [], modelOverride = null, retryCount = 0) {
   return new Promise((resolve) => {
     if (!GEMINI_API_KEY) {
       if (!res.headersSent) {
@@ -487,7 +487,7 @@ FILE: path/to/file.ext
 `;
 
     const payload = JSON.stringify({
-      model: GEMINI_MODEL,
+      model: modelOverride || GEMINI_MODEL,
       input,
       stream: true,
       system_instruction: systemInstruction,
@@ -545,7 +545,6 @@ FILE: path/to/file.ext
               if (completed) return;
 
               let message = "فشل طلب Gemini.";
-
               try {
                 const parsed = JSON.parse(buffer);
                 message =
@@ -553,6 +552,24 @@ FILE: path/to/file.ext
                   parsed?.message ||
                   message;
               } catch {}
+
+              // Retry one time with a fallback model for provider rate limits.
+              if (
+                response.statusCode === 429 &&
+                retryCount === 0 &&
+                GEMINI_FALLBACK_MODEL &&
+                GEMINI_FALLBACK_MODEL !== (modelOverride || GEMINI_MODEL)
+              ) {
+                askGeminiStream(
+                  currentMessage,
+                  res,
+                  isBuild,
+                  history,
+                  GEMINI_FALLBACK_MODEL,
+                  1
+                ).then(resolve);
+                return;
+              }
 
               completed = true;
 
