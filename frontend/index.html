@@ -754,7 +754,7 @@ button{cursor:pointer}
 .build-type-icon{font-size:25px;margin-bottom:7px}.build-type-title{font-weight:700;font-size:13px}.build-type-desc{margin-top:4px;color:#858b97;font-size:11px;line-height:1.45}
 @media(max-width:520px){.build-type-grid{grid-template-columns:1fr}}
 .ai-avatar-small{width:34px;height:34px;min-width:34px;border-radius:10px;object-fit:cover;background:#171a22;border:1px solid #30343e}
-.profile-card{width:min(520px,100%);padding:0;overflow:hidden;border:1px solid #30343e;border-radius:20px;background:linear-gradient(180deg,#171a22,#101218);box-shadow:0 25px 70px rgba(0,0,0,.55)}
+.brand-ai-small{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px;letter-spacing:-1px}\n.profile-card{width:min(520px,100%);padding:0;overflow:hidden;border:1px solid #30343e;border-radius:20px;background:linear-gradient(180deg,#171a22,#101218);box-shadow:0 25px 70px rgba(0,0,0,.55)}
 .profile-head{padding:24px 22px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #292d36}.profile-head-avatar{width:64px;height:64px;border-radius:18px;object-fit:cover;background:#181b22;border:1px solid #3b3f4b}.profile-head h3{margin:0;font-size:20px}.profile-head p{margin:5px 0 0;color:#858b97;font-size:12px}.profile-body{padding:20px 22px}.profile-label{display:block;margin:0 0 7px;color:#aeb3bf;font-size:12px}.profile-footer{padding:14px 22px 20px;display:flex;gap:8px}.profile-footer button{flex:1}.build-description{min-height:130px;resize:vertical}.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.profile-stats>div{padding:10px;border:1px solid #30343e;border-radius:10px;background:#15181f;text-align:center;font-size:12px}.profile-stats span{display:block;color:#858b97;font-size:10px;margin-top:4px}.build-button:disabled,.send-button:disabled{opacity:.5;cursor:not-allowed}
 </style>
 </head>
@@ -1987,7 +1987,7 @@ function clearMessages(){
 
   $("messages").innerHTML = `
     <div class="welcome">
-      <img class="ai-avatar" src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AizenAI&backgroundColor=0b0d12" alt="Aizen AI" onerror="this.onerror=null;this.style.display='block'">
+      <div class="ai-avatar brand-ai-avatar" aria-label="Aizen AI">AI</div>
       <h1>مرحباً بك في Aizen AI Builder</h1>
       <p>
         اكتب فكرتك وسيساعدك Aizen في بناء مشروعك.
@@ -2022,7 +2022,7 @@ function messageHTML(message){
     <div class="message ${user ? "user" : "assistant"}">
 
       <div class="message-avatar">
-        ${user ? "أنت" : '<img class="ai-avatar-small" src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AizenAI&backgroundColor=0b0d12" alt="Aizen AI">'}
+        ${user ? "أنت" : '<div class="ai-avatar-small brand-ai-small" aria-label="Aizen AI">AI</div>'}
       </div>
 
       <div class="message-content">
@@ -2048,7 +2048,7 @@ function addMessageToUI(role,content){
 
   div.innerHTML = `
     <div class="message-avatar">
-      ${role === "user" ? "أنت" : '<img class="ai-avatar-small" src="https://api.dicebear.com/9.x/bottts-neutral/svg?seed=AizenAI&backgroundColor=0b0d12" alt="Aizen AI">'}
+      ${role === "user" ? "أنت" : '<div class="ai-avatar-small brand-ai-small" aria-label="Aizen AI">AI</div>'}
     </div>
 
     <div class="message-content"></div>
