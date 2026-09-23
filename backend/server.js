@@ -18,6 +18,8 @@ const OPENROUTER_API_KEY = String(process.env.OPENROUTER_API_KEY || "");
 const OPENROUTER_MODEL = String(process.env.OPENROUTER_MODEL || "openrouter/free");
 const OPENROUTER_SITE_URL = String(process.env.OPENROUTER_SITE_URL || "");
 const OPENROUTER_APP_NAME = String(process.env.OPENROUTER_APP_NAME || "Aizen AI Builder");
+const GROQ_API_KEY = String(process.env.GROQ_API_KEY || "");
+const GROQ_MODEL = String(process.env.GROQ_MODEL || "llama-3.3-70b-versatile");
 const SECRET_ENCRYPTION_KEY = String(process.env.SECRET_ENCRYPTION_KEY || "");
 
 const FRONTEND_PATH = path.join(__dirname, "..", "frontend", "index.html");
