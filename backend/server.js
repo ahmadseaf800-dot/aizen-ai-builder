@@ -595,11 +595,11 @@ FILE: path/to/file.ext
 
             buffer += chunk;
 
-            const events = buffer.split(/\n\n/);
+            const events = buffer.split(/\r?\n\r?\n/);
             buffer = events.pop() || "";
 
             for (const rawEvent of events) {
-              const lines = rawEvent.split("\n");
+              const lines = rawEvent.split(/\r?\n/);
 
               let eventName = "";
               let dataText = "";
@@ -624,58 +624,51 @@ FILE: path/to/file.ext
                 continue;
               }
 
-              /*
-               * Gemini text delta.
-               */
+              const findText = (value, depth = 0) => {
+                if (depth > 5 || value == null) return "";
+                if (typeof value === "string") return value;
+                if (Array.isArray(value)) {
+                  for (const item of value) {
+                    const found = findText(item, depth + 1);
+                    if (found) return found;
+                  }
+                  return "";
+                }
+                if (typeof value !== "object") return "";
+                for (const key of ["text", "output_text", "delta", "content"]) {
+                  if (typeof value[key] === "string" && value[key]) return value[key];
+                }
+                for (const key of ["step", "content", "output", "delta", "data"]) {
+                  if (value[key] && typeof value[key] === "object") {
+                    const found = findText(value[key], depth + 1);
+                    if (found) return found;
+                  }
+                }
+                return "";
+              };
+
+              const deltaText =
+                eventName === "error" || data?.error ? "" : findText(data);
+
+              if (deltaText) {
+                res.write("event: text\n");
+                res.write(`data: ${JSON.stringify({ text: String(deltaText) })}\n\n`);
+              }
+
               if (
-                eventName === "step.delta" &&
-                data &&
-                data.text
-              ) {
-                res.write("event: text\n");
-                res.write(
-                  `data: ${JSON.stringify({
-                    text: String(data.text),
-                  })}\n\n`
-                );
-              }
-
-              /*
-               * Some Gemini responses may contain
-               * text inside other delta structures.
-               */
-              else if (
-                data &&
-                typeof data.text === "string"
-              ) {
-                res.write("event: text\n");
-                res.write(
-                  `data: ${JSON.stringify({
-                    text: data.text,
-                  })}\n\n`
-                );
-              }
-
-              else if (
-                eventName === "interaction.completed"
+                eventName === "interaction.completed" ||
+                eventName === "interaction.complete" ||
+                eventName === "response.completed"
               ) {
                 res.write("event: complete\n");
                 res.write("data: {}\n\n");
               }
 
-              else if (
-                eventName === "error" ||
-                data.error
-              ) {
+              if (eventName === "error" || data?.error) {
                 res.write("event: error\n");
-                res.write(
-                  `data: ${JSON.stringify({
-                    message:
-                      data?.error?.message ||
-                      data?.message ||
-                      "حدث خطأ أثناء توليد الرد",
-                  })}\n\n`
-                );
+                res.write(`data: ${JSON.stringify({
+                  message: data?.error?.message || data?.message || "حدث خطأ أثناء توليد الرد",
+                })}\n\n`);
               }
             }
           });
