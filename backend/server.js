@@ -509,7 +509,24 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
               message = parsed?.error?.message || message;
             } catch {}
 
-            if (retryCount === 0 && GEMINI_API_KEY) {
+            if (response.statusCode === 429 && retryCount === 0) {
+              console.error(
+                "OPENROUTER RATE LIMIT: retrying once before fallback",
+                "model=" + OPENROUTER_MODEL
+              );
+              setTimeout(() => {
+                askOpenRouterStream(
+                  currentMessage,
+                  res,
+                  isBuild,
+                  history,
+                  1
+                ).then(resolve);
+              }, 2000);
+              return;
+            }
+
+            if (retryCount <= 1 && GEMINI_API_KEY) {
               console.error(
                 "OPENROUTER API ERROR:",
                 response.statusCode,
