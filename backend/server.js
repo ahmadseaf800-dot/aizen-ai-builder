@@ -13,6 +13,11 @@ const APP_ORIGIN = process.env.APP_ORIGIN || "*";
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash";
+const AI_PROVIDER = String(process.env.AI_PROVIDER || "auto").toLowerCase();
+const OPENROUTER_API_KEY = String(process.env.OPENROUTER_API_KEY || "");
+const OPENROUTER_MODEL = String(process.env.OPENROUTER_MODEL || "openai/gpt-oss-120b:free");
+const OPENROUTER_SITE_URL = String(process.env.OPENROUTER_SITE_URL || "");
+const OPENROUTER_APP_NAME = String(process.env.OPENROUTER_APP_NAME || "Aizen AI Builder");
 const SECRET_ENCRYPTION_KEY = String(process.env.SECRET_ENCRYPTION_KEY || "");
 
 const FRONTEND_PATH = path.join(__dirname, "..", "frontend", "index.html");
@@ -408,6 +413,264 @@ function buildGeminiInput(messages, currentMessage) {
   }).reverse();
 
   return compacted;
+}
+
+/*
+ * Call OpenRouter using OpenAI-compatible SSE streaming.
+ * This keeps the provider key on the backend and never exposes it to the browser.
+ */
+function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCount = 0) {
+  return new Promise((resolve) => {
+    if (!OPENROUTER_API_KEY) {
+      if (!res.headersSent) {
+        sendJson(res, 500, {
+          success: false,
+          error: "OPENROUTER_NOT_CONFIGURED",
+          message: "OPENROUTER_API_KEY غير موجود في إعدادات السيرفر",
+        });
+      }
+      resolve();
+      return;
+    }
+
+    const historyMessages = history
+      .filter((message) => message && message.content)
+      .map((message) => ({
+        role: message.role === "model" ? "assistant" : "user",
+        content: String(message.content),
+      }));
+
+    if (String(currentMessage || "").trim()) {
+      const last = historyMessages[historyMessages.length - 1];
+      const text = String(currentMessage).trim();
+      if (!(last && last.role === "user" && String(last.content || "").trim() === text)) {
+        historyMessages.push({ role: "user", content: text });
+      }
+    }
+
+    const systemInstruction = isBuild
+      ? "أنت Aizen AI Builder، مهندس برمجيات دقيق. أنشئ مشاريع حقيقية قابلة للتشغيل، التزم بالتقنيات المطلوبة، راجع syntax/imports/المسارات، ولا تضع أسراراً حقيقية داخل الكود. عند إخراج ملفات استخدم FILE: path ثم code fence ومحتوى الملف الكامل. لا تدّعي تشغيل أو اختبار شيء لم ينفذه النظام فعلياً."
+      : "أنت Aizen AI، المساعد الذكي الرسمي داخل Aizen AI Builder. أعطِ الجواب المباشر أولاً، حافظ على سياق المحادثة، لا تختلق APIs أو أوامر، وفي البرمجة أعطِ كوداً كاملاً ومتوافقاً. إذا سُئلت مين طورك أو صنعك فأجب: أحمد قسوم هو من صنعني بدون مساعدة، وهو يمثل الفريق كامل.";
+
+    const payload = JSON.stringify({
+      model: OPENROUTER_MODEL,
+      stream: true,
+      messages: [
+        { role: "system", content: systemInstruction },
+        ...historyMessages,
+      ],
+    });
+
+    const url = new URL("https://openrouter.ai/api/v1/chat/completions");
+    let completed = false;
+
+    const finish = () => {
+      if (completed) return;
+      completed = true;
+      try {
+        if (!res.writableEnded) {
+          res.write("event: done\\n");
+          res.write("data: {}\\n\\n");
+          res.end();
+        }
+      } catch {}
+      resolve();
+    };
+
+    let request;
+    try {
+      request = https.request({
+        hostname: url.hostname,
+        port: 443,
+        path: url.pathname,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+          Authorization: "Bearer " + OPENROUTER_API_KEY,
+          ...(OPENROUTER_SITE_URL ? { "HTTP-Referer": OPENROUTER_SITE_URL } : {}),
+          "X-Title": OPENROUTER_APP_NAME,
+          "Content-Length": Buffer.byteLength(payload),
+        },
+      }, (response) => {
+        let buffer = "";
+        response.setEncoding("utf8");
+
+        if (response.statusCode >= 400) {
+          response.on("data", (chunk) => {
+            if (!completed) buffer += chunk;
+          });
+          response.on("end", () => {
+            if (completed) return;
+
+            let message = "فشل طلب مزود الذكاء الاصطناعي.";
+            try {
+              const parsed = JSON.parse(buffer);
+              message = parsed?.error?.message || message;
+            } catch {}
+
+            if (
+              response.statusCode === 429 &&
+              retryCount === 0 &&
+              GEMINI_API_KEY
+            ) {
+              askGeminiStream(currentMessage, res, isBuild, history).then(resolve);
+              return;
+            }
+
+            completed = true;
+            if (!res.headersSent) {
+              sendJson(res, 502, {
+                success: false,
+                error: "OPENROUTER_API_ERROR",
+                message: response.statusCode === 429
+                  ? "الخدمة مشغولة حالياً. حاول مرة أخرى بعد قليل."
+                  : message,
+                upstream_status: response.statusCode || 0,
+              });
+            }
+            resolve();
+          });
+          response.on("error", () => {
+            if (completed) return;
+            completed = true;
+            if (!res.headersSent) {
+              sendJson(res, 502, {
+                success: false,
+                error: "OPENROUTER_RESPONSE_ERROR",
+                message: "حدث خطأ أثناء قراءة رد مزود الذكاء الاصطناعي.",
+              });
+            }
+            resolve();
+          });
+          return;
+        }
+
+        if (!res.headersSent) {
+          res.writeHead(200, {
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "Cache-Control": "no-cache, no-transform",
+            Connection: "keep-alive",
+            "X-Accel-Buffering": "no",
+          });
+        }
+
+        response.on("data", (chunk) => {
+          if (completed) return;
+          buffer += chunk;
+
+          const events = buffer.split(/\\r?\\n\\r?\\n/);
+          buffer = events.pop() || "";
+
+          for (const rawEvent of events) {
+            const lines = rawEvent.split(/\\r?\\n/);
+            let dataText = "";
+            for (const line of lines) {
+              if (line.startsWith("data:")) dataText += line.slice(5).trim();
+            }
+
+            if (!dataText || dataText === "[DONE]") continue;
+
+            let data;
+            try { data = JSON.parse(dataText); } catch { continue; }
+
+            const delta = data?.choices?.[0]?.delta?.content;
+            if (typeof delta === "string" && delta) {
+              res.write("event: text\\n");
+              res.write("data: " + JSON.stringify({ text: delta }) + "\\n\\n");
+            }
+
+            if (data?.choices?.[0]?.finish_reason) {
+              res.write("event: complete\\n");
+              res.write("data: {}\\n\\n");
+            }
+
+            if (data?.error) {
+              res.write("event: error\\n");
+              res.write("data: " + JSON.stringify({
+                message: data.error.message || "حدث خطأ أثناء توليد الرد"
+              }) + "\\n\\n");
+            }
+          }
+        });
+
+        response.on("end", finish);
+        response.on("error", () => {
+          if (completed) return;
+          try {
+            res.write("event: error\\n");
+            res.write("data: " + JSON.stringify({
+              message: "انقطع اتصال مزود الذكاء الاصطناعي"
+            }) + "\\n\\n");
+          } catch {}
+          finish();
+        });
+      });
+
+      request.setTimeout(120000, () => {
+        if (completed) return;
+        try { request.destroy(); } catch {}
+        try {
+          res.write("event: error\\n");
+          res.write("data: " + JSON.stringify({
+            message: "انتهت مهلة الاتصال بمزود الذكاء الاصطناعي"
+          }) + "\\n\\n");
+        } catch {}
+        finish();
+      });
+
+      request.on("error", () => {
+        if (completed) return;
+        if (!res.headersSent) {
+          sendJson(res, 502, {
+            success: false,
+            error: "OPENROUTER_CONNECTION_ERROR",
+            message: "تعذر الاتصال بمزود الذكاء الاصطناعي",
+          });
+          completed = true;
+          resolve();
+          return;
+        }
+        try {
+          res.write("event: error\\n");
+          res.write("data: " + JSON.stringify({
+            message: "تعذر الاتصال بمزود الذكاء الاصطناعي"
+          }) + "\\n\\n");
+        } catch {}
+        finish();
+      });
+
+      request.write(payload);
+      request.end();
+    } catch (error) {
+      console.error("OPENROUTER SETUP ERROR:", error.message);
+      if (!res.headersSent) {
+        sendJson(res, 500, {
+          success: false,
+          error: "OPENROUTER_ERROR",
+          message: "حدث خطأ أثناء تشغيل مزود الذكاء الاصطناعي",
+        });
+      }
+      completed = true;
+      resolve();
+    }
+  });
+}
+
+function askAIStream(currentMessage, res, isBuild, history = []) {
+  if (AI_PROVIDER === "openrouter") {
+    return askOpenRouterStream(currentMessage, res, isBuild, history);
+  }
+
+  if (AI_PROVIDER === "gemini") {
+    return askGeminiStream(currentMessage, res, isBuild, history);
+  }
+
+  if (OPENROUTER_API_KEY) {
+    return askOpenRouterStream(currentMessage, res, isBuild, history);
+  }
+
+  return askGeminiStream(currentMessage, res, isBuild, history);
 }
 
 /*
@@ -879,7 +1142,7 @@ async function handleChat(req, res, user) {
       return;
     }
 
-    await askGeminiStream(
+    await askAIStream(
       currentMessage,
       res,
       isBuild,
