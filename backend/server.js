@@ -11,7 +11,8 @@ const SUPABASE_URL = String(process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const APP_ORIGIN = process.env.APP_ORIGIN || "*";
 
-const GEMINI_MODEL = "gemini-3.6-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
+const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash";
 const SECRET_ENCRYPTION_KEY = String(process.env.SECRET_ENCRYPTION_KEY || "");
 
 const FRONTEND_PATH = path.join(__dirname, "..", "frontend", "index.html");
