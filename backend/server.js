@@ -559,11 +559,11 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
           if (completed) return;
           buffer += chunk;
 
-          const events = buffer.split(/\\r?\\n\\r?\\n/);
+          const events = buffer.split(/\r?\n\r?\n/);
           buffer = events.pop() || "";
 
           for (const rawEvent of events) {
-            const lines = rawEvent.split(/\\r?\\n/);
+            const lines = rawEvent.split(/\r?\n/);
             let dataText = "";
             for (const line of lines) {
               if (line.startsWith("data:")) dataText += line.slice(5).trim();
