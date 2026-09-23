@@ -410,7 +410,19 @@ function askGeminiStream(currentMessage, res, isBuild, history = []) {
       return;
     }
 
-    const input = buildGeminiInput(history, currentMessage);
+    const historySteps = history
+      .filter((message) => message && message.content)
+      .map((message) => ({
+        type: "text",
+        text: `[${message.role === "model" ? "ASSISTANT" : "USER"}]\n${String(message.content)}`,
+      }));
+
+    const input = [
+      ...historySteps,
+      ...(String(currentMessage || "").trim()
+        ? [{ type: "text", text: String(currentMessage).trim() }]
+        : []),
+    ];
 
     const systemInstruction = isBuild
       ? `
