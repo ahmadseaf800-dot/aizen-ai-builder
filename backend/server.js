@@ -1165,7 +1165,14 @@ const server = http.createServer(async (req, res) => {
   /*
    * Build/Create
    */
-  if (method === "POST" && pathname === "/api/verify-bot-token") {\n    const user = await requireAuth(req, res);\n    if (!user) return;\n    await handleVerifyBotToken(req, res, user);\n    return;\n  }\n\n  if (method === "POST" && pathname === "/api/project-secret") {
+  if (method === "POST" && pathname === "/api/verify-bot-token") {
+    const user = await requireAuth(req, res);
+    if (!user) return;
+    await handleVerifyBotToken(req, res, user);
+    return;
+  }
+
+  if (method === "POST" && pathname === "/api/project-secret") {
     const user = await requireAuth(req, res);
     if (!user) return;
     await handleProjectSecret(req, res, user);
