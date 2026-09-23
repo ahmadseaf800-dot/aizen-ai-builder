@@ -2568,36 +2568,159 @@ async function startBuild(){
     return;
   }
 
-  if(!currentConversationId){
+  const input =
+    $("messageInput");
 
-    showToast(
-      "اكتب فكرة المشروع أولاً."
-    );
+  const text =
+    input.value.trim();
 
-    return;
-  }
+  const attachmentPrompt =
+    pendingAttachments.length
+      ? "\n\n[ملفات مرفقة]\n" +
+        pendingAttachments.map(
+          item =>
+            "--- FILE: " + item.name + " ---\n" +
+            item.content
+        ).join("\n\n") +
+        "\n[نهاية الملفات]"
+      : "";
 
-  const conversation =
-    conversations.find(
-      c=>c.id === currentConversationId
-    );
+  const messageForAI =
+    text + attachmentPrompt;
 
   if(
-    conversation &&
-    conversation.build_used
+    !currentConversationId &&
+    !messageForAI
   ){
 
     showToast(
-      "تم استخدام Build لهذه المحادثة مسبقاً."
+      "اكتب فكرة المشروع أو أرفق ملفات أولاً."
     );
 
     return;
   }
 
-  await requestAI(
-    currentConversationId,
-    true
-  );
+  try{
+
+    let conversation =
+      currentConversationId
+        ? conversations.find(
+            c=>c.id === currentConversationId
+          )
+        : null;
+
+    if(!conversation){
+
+      conversation =
+        await createConversation(
+          (text ||
+            pendingAttachments[0]?.name ||
+            "مشروع جديد"
+          ).slice(0,60)
+        );
+
+      if(messageForAI){
+
+        const {error} =
+          await supabaseClient
+            .from("messages")
+            .insert({
+              conversation_id:conversation.id,
+              user_id:currentUser.id,
+              role:"user",
+              content:messageForAI,
+              metadata:{
+                attachments:
+                  pendingAttachments.map(
+                    item=>item.name
+                  )
+              }
+            });
+
+        if(error) throw error;
+
+        addMessageToUI(
+          "user",
+          messageForAI
+        );
+
+        input.value = "";
+        autoResizeTextarea();
+        clearAttachments();
+      }
+    }else if(messageForAI){
+
+      const {error} =
+        await supabaseClient
+          .from("messages")
+          .insert({
+            conversation_id:conversation.id,
+            user_id:currentUser.id,
+            role:"user",
+            content:messageForAI,
+            metadata:{
+              attachments:
+                pendingAttachments.map(
+                  item=>item.name
+                )
+            }
+          });
+
+      if(error) throw error;
+
+      addMessageToUI(
+        "user",
+        messageForAI
+      );
+
+      if(
+        !conversation.title ||
+        conversation.title === "محادثة جديدة"
+      ){
+        await updateConversation(
+          conversation.id,
+          {
+            title:
+              (text ||
+                pendingAttachments[0]?.name ||
+                "مشروع جديد"
+              ).slice(0,60)
+          }
+        );
+      }
+
+      input.value = "";
+      autoResizeTextarea();
+      clearAttachments();
+    }
+
+    if(
+      conversation &&
+      conversation.build_used
+    ){
+
+      showToast(
+        "تم استخدام Build لهذه المحادثة مسبقاً."
+      );
+
+      return;
+    }
+
+    await requestAI(
+      conversation.id,
+      true,
+      messageForAI
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+    showToast(
+      error.message ||
+      "تعذر بدء البناء."
+    );
+  }
 }
 
 function stopGeneration(){
