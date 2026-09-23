@@ -367,10 +367,27 @@ function buildGeminiInput(messages, currentMessage) {
     });
   }
 
-  history.push({
-    role: "user",
-    content: String(currentMessage || ""),
-  });
+  const messageText =
+    String(currentMessage || "").trim();
+
+  const lastItem =
+    history.length
+      ? history[history.length - 1]
+      : null;
+
+  if(
+    messageText &&
+    !(
+      lastItem &&
+      lastItem.role === "user" &&
+      String(lastItem.content || "").trim() === messageText
+    )
+  ){
+    history.push({
+      role: "user",
+      content: messageText,
+    });
+  }
 
   return history;
 }
