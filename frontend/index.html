@@ -2755,8 +2755,29 @@ async function submitBotBuild(){
   const token=$("botTokenInput").value.trim();
   if(!idea){showToast("اكتب فكرة البوت أولاً.");return;}
   if(!token){showToast("ضع توكن البوت السري أولاً.");$("botTokenInput").focus();return;}
-  closeBotSecretModal();
-  await runBuild(selectedBuildType,selectedBuildLabel,idea,token,($("buildProjectName")?.value || "").trim());
+  const session=(await supabaseClient.auth.getSession()).data.session;
+  if(!session?.access_token){showToast("انتهت جلسة تسجيل الدخول. سجّل الدخول مرة أخرى.");return;}
+  const button=document.querySelector("#botSecretModal .primary");
+  if(button){button.disabled=true;button.textContent="جاري التحقق...";}
+  try{
+    const response=await fetch(BACKEND_URL+"/api/verify-bot-token",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token},
+      body:JSON.stringify({type:selectedBuildType,token})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok || !data.success || !data.verified){
+      showToast(data.message || "التوكن غير صالح أو ليس توكن بوت معتمداً.");
+      return;
+    }
+    closeBotSecretModal();
+    await runBuild(selectedBuildType,selectedBuildLabel,idea,token,($("buildProjectName")?.value || "").trim());
+  }catch(error){
+    console.error("BOT TOKEN VERIFY ERROR:",error);
+    showToast("تعذر التحقق من التوكن الآن. حاول مرة أخرى.");
+  }finally{
+    if(button){button.disabled=false;button.textContent="بدء بناء البوت";}
+  }
 }
 async function runBuild(type,typeLabel,description,secretToken="",projectName=""){
 
