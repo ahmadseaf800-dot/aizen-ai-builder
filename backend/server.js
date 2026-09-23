@@ -1,32 +1,43 @@
-const https = require("https");
 const http = require("http");
+const https = require("https");
 const fs = require("fs");
 const path = require("path");
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT || 3000);
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_URL = String(process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-
 const APP_ORIGIN = process.env.APP_ORIGIN || "*";
 
-const MODEL = "gemini-3.6-flash";
+const GEMINI_MODEL = "gemini-3.6-flash";
 
+const FRONTEND_PATH = path.join(__dirname, "..", "frontend", "index.html");
 
-/* =========================================================
-   CORS
-========================================================= */
+function sendJson(res, statusCode, data) {
+  if (res.headersSent) return;
 
-function setCORS(res) {
+  res.writeHead(statusCode, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+  });
+
+  res.end(JSON.stringify(data));
+}
+
+function setCors(res) {
+  const origin = res.req?.headers?.origin;
+
+  if (APP_ORIGIN === "*") {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  } else if (origin === APP_ORIGIN) {
+    res.setHeader("Access-Control-Allow-Origin", APP_ORIGIN);
+    res.setHeader("Vary", "Origin");
+  }
+
   res.setHeader(
-    "Access-Control-Allow-Origin",
-    APP_ORIGIN
-  );
-
-  res.setHeader(
-    "Vary",
-    "Origin"
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With"
   );
 
   res.setHeader(
@@ -34,1604 +45,973 @@ function setCORS(res) {
     "GET, POST, OPTIONS"
   );
 
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization"
-  );
+  res.setHeader("Access-Control-Expose-Headers", "Content-Type");
 }
-
-
-/* =========================================================
-   JSON
-========================================================= */
-
-function sendJSON(res, status, data) {
-  if (res.writableEnded) return;
-
-  setCORS(res);
-
-  res.writeHead(status, {
-    "Content-Type":
-      "application/json; charset=utf-8"
-  });
-
-  res.end(
-    JSON.stringify(data)
-  );
-}
-
-
-/* =========================================================
-   REQUEST BODY
-========================================================= */
-
-function readBody(req, callback) {
-  let body = "";
-
-  req.on("data", chunk => {
-    body += chunk.toString();
-
-    if (body.length > 2_000_000) {
-      req.destroy();
-    }
-  });
-
-  req.on("end", () => {
-    try {
-      callback(
-        null,
-        JSON.parse(body || "{}")
-      );
-    } catch (error) {
-      callback(error, null);
-    }
-  });
-
-  req.on("error", error => {
-    callback(error, null);
-  });
-}
-
-
-/* =========================================================
-   BEARER TOKEN
-========================================================= */
 
 function getBearerToken(req) {
-  const authorization =
-    String(
-      req.headers.authorization || ""
-    );
+  const header = req.headers.authorization || "";
 
-  if (
-    !authorization.startsWith(
-      "Bearer "
-    )
-  ) {
+  if (!header.toLowerCase().startsWith("bearer ")) {
     return null;
   }
 
-  const token =
-    authorization
-      .slice(7)
-      .trim();
-
-  return token || null;
+  return header.slice(7).trim() || null;
 }
 
+function readJsonBody(req, res, maxBytes = 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    let size = 0;
+    let rejected = false;
 
-/* =========================================================
-   SUPABASE AUTH
-========================================================= */
+    req.setEncoding("utf8");
 
-function verifySupabaseToken(
-  token,
-  callback
-) {
-  if (
-    !SUPABASE_URL ||
-    !SUPABASE_ANON_KEY
-  ) {
-    return callback(
-      new Error(
-        "Supabase environment variables are missing"
-      )
-    );
-  }
+    req.on("data", (chunk) => {
+      if (rejected) return;
 
-  const baseURL =
-    SUPABASE_URL.replace(
-      /\/$/,
-      ""
-    );
+      size += Buffer.byteLength(chunk, "utf8");
 
-  let url;
+      if (size > maxBytes) {
+        rejected = true;
+        reject(new Error("REQUEST_TOO_LARGE"));
 
-  try {
-    url = new URL(
-      baseURL +
-      "/auth/v1/user"
-    );
-  } catch {
-    return callback(
-      new Error(
-        "Invalid SUPABASE_URL"
-      )
-    );
-  }
-
-  const request =
-    https.request(
-      {
-        hostname:
-          url.hostname,
-
-        path:
-          url.pathname +
-          url.search,
-
-        method:
-          "GET",
-
-        headers: {
-          apikey:
-            SUPABASE_ANON_KEY,
-
-          Authorization:
-            "Bearer " + token,
-
-          Accept:
-            "application/json"
-        },
-
-        timeout:
-          10000
-      },
-
-      supabaseRes => {
-        let body = "";
-
-        supabaseRes.on(
-          "data",
-          chunk => {
-            body +=
-              chunk.toString("utf8");
-          }
-        );
-
-        supabaseRes.on(
-          "end",
-          () => {
-            if (
-              supabaseRes.statusCode !==
-              200
-            ) {
-              return callback(
-                null,
-                null
-              );
-            }
-
-            try {
-              const user =
-                JSON.parse(body);
-
-              if (
-                !user ||
-                !user.id
-              ) {
-                return callback(
-                  null,
-                  null
-                );
-              }
-
-              callback(
-                null,
-                user
-              );
-
-            } catch {
-              callback(
-                null,
-                null
-              );
-            }
-          }
-        );
-      }
-    );
-
-  request.on(
-    "timeout",
-    () => {
-      request.destroy();
-
-      callback(
-        new Error(
-          "Supabase authentication timeout"
-        )
-      );
-    }
-  );
-
-  request.on(
-    "error",
-    error => {
-      callback(
-        error
-      );
-    }
-  );
-
-  request.end();
-}
-
-
-/* =========================================================
-   AUTH MIDDLEWARE
-========================================================= */
-
-function requireAuth(
-  req,
-  res,
-  callback
-) {
-  const token =
-    getBearerToken(req);
-
-  if (!token) {
-    return sendJSON(
-      res,
-      401,
-      {
-        success: false,
-        error:
-          "يجب تسجيل الدخول أولاً"
-      }
-    );
-  }
-
-  verifySupabaseToken(
-    token,
-    (error, user) => {
-      if (error) {
-        console.error(
-          "Supabase auth error:",
-          error.message
-        );
-
-        return sendJSON(
-          res,
-          503,
-          {
-            success: false,
-            error:
-              "تعذر التحقق من جلسة تسجيل الدخول"
-          }
-        );
+        try {
+          req.destroy();
+        } catch {}
+        return;
       }
 
-      if (!user) {
-        return sendJSON(
-          res,
-          401,
-          {
-            success: false,
-            error:
-              "جلسة تسجيل الدخول غير صالحة أو منتهية"
-          }
-        );
-      }
-
-      callback(
-        user,
-        token
-      );
-    }
-  );
-}
-
-
-/* =========================================================
-   SUPABASE REST REQUEST
-========================================================= */
-
-function supabaseRequest(
-  method,
-  endpoint,
-  token,
-  body,
-  callback
-) {
-  if (
-    !SUPABASE_URL ||
-    !SUPABASE_ANON_KEY
-  ) {
-    return callback(
-      new Error(
-        "Supabase configuration missing"
-      )
-    );
-  }
-
-  const baseURL =
-    SUPABASE_URL.replace(
-      /\/$/,
-      ""
-    );
-
-  let url;
-
-  try {
-    url = new URL(
-      baseURL +
-      endpoint
-    );
-  } catch {
-    return callback(
-      new Error(
-        "Invalid Supabase URL"
-      )
-    );
-  }
-
-  const requestBody =
-    body === undefined
-      ? null
-      : JSON.stringify(body);
-
-  const headers = {
-    apikey:
-      SUPABASE_ANON_KEY,
-
-    Authorization:
-      "Bearer " + token,
-
-    Accept:
-      "application/json"
-  };
-
-  if (requestBody) {
-    headers[
-      "Content-Type"
-    ] =
-      "application/json";
-
-    headers[
-      "Content-Length"
-    ] =
-      Buffer.byteLength(
-        requestBody
-      );
-  }
-
-  const request =
-    https.request(
-      {
-        hostname:
-          url.hostname,
-
-        path:
-          url.pathname +
-          url.search,
-
-        method,
-
-        headers,
-
-        timeout:
-          20000
-      },
-
-      response => {
-        let responseBody = "";
-
-        response.on(
-          "data",
-          chunk => {
-            responseBody +=
-              chunk.toString(
-                "utf8"
-              );
-          }
-        );
-
-        response.on(
-          "end",
-          () => {
-            let parsed =
-              null;
-
-            try {
-              parsed =
-                responseBody
-                  ? JSON.parse(
-                      responseBody
-                    )
-                  : null;
-            } catch {
-              parsed =
-                responseBody;
-            }
-
-            if (
-              response.statusCode < 200 ||
-              response.statusCode >= 300
-            ) {
-              return callback(
-                new Error(
-                  typeof parsed ===
-                    "string"
-                    ? parsed
-                    : JSON.stringify(
-                        parsed
-                      )
-                )
-              );
-            }
-
-            callback(
-              null,
-              parsed
-            );
-          }
-        );
-      }
-    );
-
-  request.on(
-    "timeout",
-    () => {
-      request.destroy();
-
-      callback(
-        new Error(
-          "Supabase request timeout"
-        )
-      );
-    }
-  );
-
-  request.on(
-    "error",
-    error => {
-      callback(
-        error
-      );
-    }
-  );
-
-  if (requestBody) {
-    request.write(
-      requestBody
-    );
-  }
-
-  request.end();
-}
-
-
-/* =========================================================
-   LOAD CONVERSATION MESSAGES
-========================================================= */
-
-function loadConversationMessages(
-  conversationId,
-  userId,
-  token,
-  callback
-) {
-  const endpoint =
-    "/rest/v1/messages" +
-    "?select=role,content,created_at" +
-    "&conversation_id=eq." +
-    encodeURIComponent(
-      conversationId
-    ) +
-    "&user_id=eq." +
-    encodeURIComponent(
-      userId
-    ) +
-    "&order=created_at.asc" +
-    "&limit=100";
-
-  supabaseRequest(
-    "GET",
-    endpoint,
-    token,
-    undefined,
-    callback
-  );
-}
-
-
-/* =========================================================
-   LOAD LATEST USER MESSAGE
-========================================================= */
-
-function loadLatestUserMessage(
-  conversationId,
-  userId,
-  token,
-  callback
-) {
-  const endpoint =
-    "/rest/v1/messages" +
-    "?select=content,created_at" +
-    "&conversation_id=eq." +
-    encodeURIComponent(
-      conversationId
-    ) +
-    "&user_id=eq." +
-    encodeURIComponent(
-      userId
-    ) +
-    "&role=eq.user" +
-    "&order=created_at.desc" +
-    "&limit=1";
-
-  supabaseRequest(
-    "GET",
-    endpoint,
-    token,
-    undefined,
-    (error, data) => {
-      if (error) {
-        return callback(
-          error
-        );
-      }
-
-      const message =
-        Array.isArray(data) &&
-        data.length
-          ? data[0].content
-          : "";
-
-      callback(
-        null,
-        message
-      );
-    }
-  );
-}
-
-
-/* =========================================================
-   BUILD GEMINI INPUT
-========================================================= */
-
-function buildGeminiInput(
-  currentMessage,
-  history,
-  isBuild
-) {
-  const lines = [];
-
-  if (isBuild) {
-    lines.push(
-      "وضع BUILD مفعل."
-    );
-
-    lines.push(
-      "حلل فكرة المستخدم وأنشئ خطة عملية لبناء المشروع."
-    );
-
-    lines.push(
-      "قدم الملفات والكود والخطوات المطلوبة بشكل منظم."
-    );
-  }
-
-  if (
-    Array.isArray(history)
-  ) {
-    for (
-      const message
-      of history
-    ) {
-      const role =
-        message.role ===
-        "assistant"
-          ? "Aizen"
-          : "المستخدم";
-
-      lines.push(
-        `${role}: ${message.content}`
-      );
-    }
-  }
-
-  if (
-    currentMessage
-  ) {
-    lines.push(
-      `المستخدم: ${currentMessage}`
-    );
-  }
-
-  return lines.join(
-    "\n\n"
-  );
-}
-
-
-/* =========================================================
-   GEMINI STREAM
-========================================================= */
-
-function askGeminiStream(
-  message,
-  res,
-  isBuild = false,
-  history = []
-) {
-  if (!GEMINI_API_KEY) {
-    return sendJSON(
-      res,
-      500,
-      {
-        success: false,
-        error:
-          "GEMINI_API_KEY غير موجود في Render"
-      }
-    );
-  }
-
-  const input =
-    buildGeminiInput(
-      message,
-      history,
-      isBuild
-    );
-
-  const requestData =
-    JSON.stringify({
-      model:
-        MODEL,
-
-      input,
-
-      stream:
-        true,
-
-      system_instruction:
-        "أنت Aizen AI، مساعد ذكي داخل منصة Aizen AI Builder. " +
-        "أجب بالعربية بشكل واضح ومباشر. " +
-        "ساعد المستخدم في البرمجة وبناء المواقع والتطبيقات والبوتات والألعاب والمشاريع. " +
-        "افهم سياق المحادثة قبل الإجابة. " +
-        "عند طلب بناء مشروع، قدم نتيجة عملية ومنظمة. " +
-        "لا تطيل بدون حاجة."
+      body += chunk;
     });
 
-  const url =
-    new URL(
+    req.on("end", () => {
+      if (rejected) return;
+
+      if (!body.trim()) {
+        resolve({});
+        return;
+      }
+
+      try {
+        resolve(JSON.parse(body));
+      } catch {
+        reject(new Error("INVALID_JSON"));
+      }
+    });
+
+    req.on("error", (error) => {
+      if (!rejected) {
+        rejected = true;
+        reject(error);
+      }
+    });
+  });
+}
+
+function httpsRequest(options, body = null, timeout = 15000) {
+  return new Promise((resolve, reject) => {
+    let finished = false;
+
+    const request = https.request(options, (response) => {
+      let data = "";
+
+      response.setEncoding("utf8");
+
+      response.on("data", (chunk) => {
+        data += chunk;
+      });
+
+      response.on("end", () => {
+        if (finished) return;
+        finished = true;
+
+        resolve({
+          statusCode: response.statusCode || 0,
+          headers: response.headers,
+          body: data,
+        });
+      });
+
+      response.on("error", (error) => {
+        if (finished) return;
+        finished = true;
+        reject(error);
+      });
+    });
+
+    request.setTimeout(timeout, () => {
+      if (finished) return;
+
+      finished = true;
+
+      try {
+        request.destroy();
+      } catch {}
+
+      reject(new Error("REQUEST_TIMEOUT"));
+    });
+
+    request.on("error", (error) => {
+      if (finished) return;
+      finished = true;
+      reject(error);
+    });
+
+    if (body !== null) {
+      request.write(body);
+    }
+
+    request.end();
+  });
+}
+
+/*
+ * Verify the Supabase access token.
+ *
+ * The frontend logs in through Supabase Auth.
+ * Supabase returns an access_token.
+ * The frontend sends:
+ *
+ * Authorization: Bearer <access_token>
+ *
+ * This backend verifies that token against Supabase.
+ */
+async function verifySupabaseToken(token) {
+  if (!token) {
+    throw new Error("MISSING_TOKEN");
+  }
+
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error("SUPABASE_NOT_CONFIGURED");
+  }
+
+  const url = new URL(`${SUPABASE_URL}/auth/v1/user`);
+
+  const response = await httpsRequest(
+    {
+      hostname: url.hostname,
+      port: 443,
+      path: `${url.pathname}${url.search}`,
+      method: "GET",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    },
+    null,
+    10000
+  );
+
+  let data = null;
+
+  try {
+    data = JSON.parse(response.body);
+  } catch {
+    data = null;
+  }
+
+  if (response.statusCode !== 200 || !data || !data.id) {
+    const error = new Error("INVALID_TOKEN");
+    error.statusCode = response.statusCode;
+    error.supabase = data;
+    throw error;
+  }
+
+  return data;
+}
+
+async function requireAuth(req, res) {
+  const token = getBearerToken(req);
+
+  if (!token) {
+    sendJson(res, 401, {
+      success: false,
+      error: "UNAUTHORIZED",
+      message: "يجب تسجيل الدخول أولاً",
+    });
+
+    return null;
+  }
+
+  try {
+    const user = await verifySupabaseToken(token);
+    return user;
+  } catch (error) {
+    console.error("AUTH ERROR:", error.message);
+
+    sendJson(res, 401, {
+      success: false,
+      error: "INVALID_SESSION",
+      message: "جلسة تسجيل الدخول غير صالحة أو منتهية",
+    });
+
+    return null;
+  }
+}
+
+/*
+ * Supabase REST request.
+ *
+ * The user's access token is used here,
+ * so Supabase RLS policies continue protecting
+ * the user's data.
+ */
+async function supabaseRequest(method, endpoint, accessToken, body = null) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error("SUPABASE_NOT_CONFIGURED");
+  }
+
+  const url = new URL(`${SUPABASE_URL}${endpoint}`);
+
+  const headers = {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${accessToken}`,
+    Accept: "application/json",
+  };
+
+  if (body !== null) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const response = await httpsRequest(
+    {
+      hostname: url.hostname,
+      port: 443,
+      path: `${url.pathname}${url.search}`,
+      method,
+      headers,
+    },
+    body === null ? null : JSON.stringify(body),
+    15000
+  );
+
+  let data = null;
+
+  if (response.body) {
+    try {
+      data = JSON.parse(response.body);
+    } catch {
+      data = response.body;
+    }
+  }
+
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    const error = new Error("SUPABASE_REQUEST_FAILED");
+    error.statusCode = response.statusCode;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+}
+
+/*
+ * Get a conversation and make sure it belongs
+ * to the currently authenticated user.
+ */
+async function getConversation(accessToken, conversationId, userId) {
+  if (!conversationId) return null;
+
+  const safeId = encodeURIComponent(String(conversationId));
+
+  const data = await supabaseRequest(
+    "GET",
+    `/rest/v1/conversations?id=eq.${safeId}&user_id=eq.${encodeURIComponent(
+      userId
+    )}&select=id,user_id,title,pinned,archived,build_used,build_used_at,created_at,updated_at&limit=1`,
+    accessToken
+  );
+
+  if (!Array.isArray(data) || data.length === 0) {
+    const error = new Error("CONVERSATION_NOT_FOUND");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return data[0];
+}
+
+/*
+ * Load messages from a conversation.
+ */
+async function getConversationMessages(accessToken, conversationId) {
+  const safeId = encodeURIComponent(String(conversationId));
+
+  const data = await supabaseRequest(
+    "GET",
+    `/rest/v1/messages?conversation_id=eq.${safeId}&select=id,conversation_id,user_id,role,content,metadata,created_at&order=created_at.asc&limit=100`,
+    accessToken
+  );
+
+  return Array.isArray(data) ? data : [];
+}
+
+/*
+ * Convert DB messages into Gemini history.
+ */
+function buildGeminiInput(messages, currentMessage) {
+  const history = [];
+
+  for (const message of messages) {
+    if (!message || !message.content) continue;
+
+    const role =
+      message.role === "assistant"
+        ? "model"
+        : "user";
+
+    history.push({
+      role,
+      content: String(message.content),
+    });
+  }
+
+  history.push({
+    role: "user",
+    content: String(currentMessage || ""),
+  });
+
+  return history;
+}
+
+/*
+ * Call Gemini using SSE streaming.
+ */
+function askGeminiStream(currentMessage, res, isBuild, history = []) {
+  return new Promise((resolve) => {
+    if (!GEMINI_API_KEY) {
+      if (!res.headersSent) {
+        sendJson(res, 500, {
+          success: false,
+          error: "GEMINI_NOT_CONFIGURED",
+          message: "GEMINI_API_KEY غير موجود في إعدادات السيرفر",
+        });
+      }
+
+      resolve();
+      return;
+    }
+
+    const input = buildGeminiInput(history, currentMessage);
+
+    const systemInstruction = isBuild
+      ? `
+أنت Aizen AI Builder، مساعد ذكي لبناء التطبيقات والمواقع.
+
+المستخدم يريد تحويل فكرته إلى مشروع برمجي حقيقي.
+
+حلل الفكرة ثم:
+1. افهم المطلوب.
+2. اقترح بنية المشروع.
+3. حدد الصفحات والميزات.
+4. حدد التقنيات المناسبة.
+5. اشرح الملفات المطلوبة.
+6. اقترح خطوات التنفيذ.
+
+لا تدّعي أنك أنشأت ملفات أو نشرتها فعلياً إذا لم يتم تنفيذ ذلك من خلال النظام.
+كن واضحاً وعملياً.
+`
+      : `
+أنت Aizen AI، مساعد برمجي ذكي داخل منصة Aizen AI Builder.
+
+ساعد المستخدم في البرمجة، بناء التطبيقات والمواقع، إصلاح الأخطاء، شرح الأكواد، وتصميم المشاريع.
+
+عندما يطلب المستخدم إنشاء شيء برمجياً:
+- أعطه حلاً عملياً.
+- استخدم كوداً صحيحاً.
+- لا تدّعي تنفيذ عمليات لم يتم تنفيذها فعلياً.
+- إذا كان الطلب متعلقاً بمشروعه، حافظ على سياق المحادثة.
+`;
+
+    const payload = JSON.stringify({
+      model: GEMINI_MODEL,
+      input,
+      stream: true,
+      system_instruction: systemInstruction,
+    });
+
+    const url = new URL(
       "https://generativelanguage.googleapis.com/v1beta/interactions"
     );
 
-  const request =
-    https.request(
-      {
-        hostname:
-          url.hostname,
+    let completed = false;
 
-        path:
-          url.pathname,
+    const finish = () => {
+      if (completed) return;
+      completed = true;
 
-        method:
-          "POST",
+      try {
+        if (!res.writableEnded) {
+          res.write("event: done\n");
+          res.write("data: {}\n\n");
+          res.end();
+        }
+      } catch {}
 
-        headers: {
-          "Content-Type":
-            "application/json",
+      resolve();
+    };
 
-          Accept:
-            "text/event-stream",
+    let request;
 
-          "x-goog-api-key":
-            GEMINI_API_KEY,
-
-          "Content-Length":
-            Buffer.byteLength(
-              requestData
-            )
+    try {
+      request = https.request(
+        {
+          hostname: url.hostname,
+          port: 443,
+          path: `${url.pathname}${url.search}`,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "text/event-stream",
+            "x-goog-api-key": GEMINI_API_KEY,
+            "Content-Length": Buffer.byteLength(payload),
+          },
         },
+        (response) => {
+          let buffer = "";
 
-        timeout:
-          120000
-      },
+          response.setEncoding("utf8");
 
-      geminiRes => {
+          if (!res.headersSent) {
+            res.writeHead(response.statusCode >= 400 ? 502 : 200, {
+              "Content-Type": "text/event-stream; charset=utf-8",
+              "Cache-Control": "no-cache, no-transform",
+              Connection: "keep-alive",
+              "X-Accel-Buffering": "no",
+            });
+          }
 
-        /* =====================
-           GEMINI ERROR
-        ===================== */
+          response.on("data", (chunk) => {
+            if (completed) return;
 
-        if (
-          geminiRes.statusCode < 200 ||
-          geminiRes.statusCode >= 300
-        ) {
-          let errorBody =
-            "";
+            buffer += chunk;
 
-          geminiRes.on(
-            "data",
-            chunk => {
-              errorBody +=
-                chunk.toString(
-                  "utf8"
-                );
-            }
-          );
+            const events = buffer.split(/\n\n/);
+            buffer = events.pop() || "";
 
-          geminiRes.on(
-            "end",
-            () => {
-              console.error(
-                "Gemini error:",
-                geminiRes.statusCode,
-                errorBody
-              );
+            for (const rawEvent of events) {
+              const lines = rawEvent.split("\n");
 
-              let errorMessage =
-                "حدث خطأ من Gemini";
+              let eventName = "";
+              let dataText = "";
+
+              for (const line of lines) {
+                if (line.startsWith("event:")) {
+                  eventName = line.slice(6).trim();
+                }
+
+                if (line.startsWith("data:")) {
+                  dataText += line.slice(5).trim();
+                }
+              }
+
+              if (!dataText) continue;
+
+              let data;
 
               try {
-                const result =
-                  JSON.parse(
-                    errorBody
-                  );
+                data = JSON.parse(dataText);
+              } catch {
+                continue;
+              }
 
-                errorMessage =
-                  result?.error
-                    ?.message ||
-                  result?.message ||
-                  errorMessage;
-
-              } catch {}
-
+              /*
+               * Gemini text delta.
+               */
               if (
-                !res.writableEnded
+                eventName === "step.delta" &&
+                data &&
+                data.text
               ) {
-                sendJSON(
-                  res,
-                  geminiRes.statusCode,
-                  {
-                    success:
-                      false,
+                res.write("event: text\n");
+                res.write(
+                  `data: ${JSON.stringify({
+                    text: String(data.text),
+                  })}\n\n`
+                );
+              }
 
-                    error:
-                      errorMessage
-                  }
+              /*
+               * Some Gemini responses may contain
+               * text inside other delta structures.
+               */
+              else if (
+                data &&
+                typeof data.text === "string"
+              ) {
+                res.write("event: text\n");
+                res.write(
+                  `data: ${JSON.stringify({
+                    text: data.text,
+                  })}\n\n`
+                );
+              }
+
+              else if (
+                eventName === "interaction.completed"
+              ) {
+                res.write("event: complete\n");
+                res.write("data: {}\n\n");
+              }
+
+              else if (
+                eventName === "error" ||
+                data.error
+              ) {
+                res.write("event: error\n");
+                res.write(
+                  `data: ${JSON.stringify({
+                    message:
+                      data?.error?.message ||
+                      data?.message ||
+                      "حدث خطأ أثناء توليد الرد",
+                  })}\n\n`
                 );
               }
             }
-          );
+          });
 
-          return;
+          response.on("end", finish);
+
+          response.on("error", (error) => {
+            if (completed) return;
+
+            console.error("GEMINI RESPONSE ERROR:", error);
+
+            try {
+              res.write("event: error\n");
+              res.write(
+                `data: ${JSON.stringify({
+                  message: "انقطع اتصال Gemini",
+                })}\n\n`
+              );
+            } catch {}
+
+            finish();
+          });
         }
-
-
-        /* =====================
-           SSE HEADERS
-        ===================== */
-
-        setCORS(res);
-
-        res.writeHead(
-          200,
-          {
-            "Content-Type":
-              "text/event-stream; charset=utf-8",
-
-            "Cache-Control":
-              "no-cache, no-transform",
-
-            Connection:
-              "keep-alive",
-
-            "X-Accel-Buffering":
-              "no"
-          }
-        );
-
-
-        let buffer = "";
-
-
-        /* =====================
-           STREAM DATA
-        ===================== */
-
-        geminiRes.on(
-          "data",
-          chunk => {
-            buffer +=
-              chunk.toString(
-                "utf8"
-              );
-
-            const events =
-              buffer.split(
-                "\n\n"
-              );
-
-            buffer =
-              events.pop() ||
-              "";
-
-            for (
-              const eventBlock
-              of events
-            ) {
-              processSSEEvent(
-                eventBlock,
-                res
-              );
-            }
-          }
-        );
-
-
-        /* =====================
-           STREAM END
-        ===================== */
-
-        geminiRes.on(
-          "end",
-          () => {
-
-            if (
-              buffer.trim()
-            ) {
-              processSSEEvent(
-                buffer,
-                res
-              );
-            }
-
-            if (
-              !res.writableEnded
-            ) {
-              res.write(
-                "event: done\n" +
-                "data: " +
-                JSON.stringify({
-                  success:
-                    true
-                }) +
-                "\n\n"
-              );
-
-              res.end();
-            }
-
-            console.log(
-              "Gemini stream finished."
-            );
-          }
-        );
-
-
-        /* =====================
-           STREAM ERROR
-        ===================== */
-
-        geminiRes.on(
-          "error",
-          error => {
-            console.error(
-              "Gemini stream error:",
-              error
-            );
-
-            if (
-              !res.writableEnded
-            ) {
-              res.write(
-                "event: error\n" +
-                "data: " +
-                JSON.stringify({
-                  success:
-                    false,
-
-                  error:
-                    "انقطع الاتصال مع Gemini"
-                }) +
-                "\n\n"
-              );
-
-              res.end();
-            }
-          }
-        );
-      }
-    );
-
-
-  /* =========================
-     REQUEST TIMEOUT
-  ========================= */
-
-  request.on(
-    "timeout",
-    () => {
-      request.destroy();
-
-      if (
-        !res.writableEnded
-      ) {
-        res.write(
-          "event: error\n" +
-          "data: " +
-          JSON.stringify({
-            success:
-              false,
-
-            error:
-              "انتهت مهلة الاتصال بـ Gemini"
-          }) +
-          "\n\n"
-        );
-
-        res.end();
-      }
-    }
-  );
-
-
-  /* =========================
-     REQUEST ERROR
-  ========================= */
-
-  request.on(
-    "error",
-    error => {
-      console.error(
-        "Gemini request error:",
-        error
       );
 
-      if (
-        !res.writableEnded
-      ) {
-        sendJSON(
-          res,
-          500,
-          {
-            success:
-              false,
+      request.setTimeout(120000, () => {
+        if (completed) return;
 
-            error:
-              "تعذر الاتصال بـ Gemini"
+        try {
+          request.destroy();
+        } catch {}
+
+        try {
+          res.write("event: error\n");
+          res.write(
+            `data: ${JSON.stringify({
+              message: "انتهت مهلة الاتصال مع Gemini",
+            })}\n\n`
+          );
+        } catch {}
+
+        finish();
+      });
+
+      request.on("error", (error) => {
+        if (completed) return;
+
+        console.error("GEMINI REQUEST ERROR:", error);
+
+        try {
+          if (!res.headersSent) {
+            sendJson(res, 502, {
+              success: false,
+              error: "GEMINI_CONNECTION_ERROR",
+              message: "تعذر الاتصال بخدمة Gemini",
+            });
+
+            completed = true;
+            resolve();
+            return;
           }
-        );
+
+          res.write("event: error\n");
+          res.write(
+            `data: ${JSON.stringify({
+              message: "تعذر الاتصال بخدمة Gemini",
+            })}\n\n`
+          );
+        } catch {}
+
+        finish();
+      });
+
+      request.write(payload);
+      request.end();
+    } catch (error) {
+      console.error("GEMINI SETUP ERROR:", error);
+
+      if (!res.headersSent) {
+        sendJson(res, 500, {
+          success: false,
+          error: "GEMINI_ERROR",
+          message: "حدث خطأ أثناء تشغيل Gemini",
+        });
       }
+
+      completed = true;
+      resolve();
     }
-  );
-
-
-  request.write(
-    requestData
-  );
-
-  request.end();
+  });
 }
 
+/*
+ * /api/chat
+ *
+ * Normal request:
+ * {
+ *   message,
+ *   conversationId
+ * }
+ *
+ * Build request can also use:
+ * {
+ *   message,
+ *   conversationId,
+ *   build: true
+ * }
+ */
+async function handleChat(req, res, user) {
+  const accessToken = getBearerToken(req);
 
-/* =========================================================
-   PROCESS GEMINI SSE
-========================================================= */
+  let data;
 
-function processSSEEvent(
-  eventBlock,
-  res
-) {
-  if (
-    !eventBlock ||
-    res.writableEnded
-  ) {
+  try {
+    data = await readJsonBody(req);
+  } catch (error) {
+    if (error.message === "REQUEST_TOO_LARGE") {
+      sendJson(res, 413, {
+        success: false,
+        error: "REQUEST_TOO_LARGE",
+      });
+      return;
+    }
+
+    sendJson(res, 400, {
+      success: false,
+      error: "INVALID_JSON",
+      message: "البيانات المرسلة غير صحيحة",
+    });
+
     return;
   }
 
-  const lines =
-    eventBlock.split(
-      "\n"
-    );
+  const message = String(data.message || "").trim();
+  const conversationId = data.conversationId
+    ? String(data.conversationId)
+    : null;
 
-  let eventType =
-    "";
+  const isBuild = Boolean(data.build);
 
-  let dataText =
-    "";
+  if (!message && !conversationId) {
+    sendJson(res, 400, {
+      success: false,
+      error: "MESSAGE_REQUIRED",
+      message: "الرسالة مطلوبة",
+    });
 
-  for (
-    const line
-    of lines
-  ) {
-    if (
-      line.startsWith(
-        "event:"
-      )
-    ) {
-      eventType =
-        line
-          .slice(6)
-          .trim();
-    }
-
-    if (
-      line.startsWith(
-        "data:"
-      )
-    ) {
-      dataText +=
-        line
-          .slice(5)
-          .trim();
-    }
-  }
-
-  if (!dataText) {
     return;
   }
 
   try {
-    const data =
-      JSON.parse(
-        dataText
+    let conversation = null;
+    let history = [];
+
+    if (conversationId) {
+      conversation = await getConversation(
+        accessToken,
+        conversationId,
+        user.id
       );
 
-
-    /* =====================
-       ERROR
-    ===================== */
-
-    if (
-      eventType ===
-        "error" ||
-      data.event_type ===
-        "error"
-    ) {
-      res.write(
-        "event: error\n" +
-        "data: " +
-        JSON.stringify({
-          success:
-            false,
-
-          error:
-            data?.error
-              ?.message ||
-            "حدث خطأ أثناء التوليد"
-        }) +
-        "\n\n"
+      history = await getConversationMessages(
+        accessToken,
+        conversationId
       );
+    }
+
+    let currentMessage = message;
+
+    /*
+     * If Build is called without a new message,
+     * use the latest user message from the conversation.
+     */
+    if (!currentMessage && conversationId) {
+      const latestUserMessage = [...history]
+        .reverse()
+        .find((item) => item.role === "user");
+
+      currentMessage = latestUserMessage
+        ? String(latestUserMessage.content || "")
+        : "";
+    }
+
+    if (!currentMessage) {
+      sendJson(res, 400, {
+        success: false,
+        error: "MESSAGE_REQUIRED",
+        message: "لا توجد رسالة لبناء المشروع",
+      });
 
       return;
     }
 
-
-    /* =====================
-       TEXT
-    ===================== */
-
-    if (
-      eventType ===
-        "step.delta" ||
-      data.event_type ===
-        "step.delta"
-    ) {
-      const delta =
-        data.delta;
-
-      if (
-        delta?.type ===
-          "text" &&
-        delta.text
-      ) {
-        res.write(
-          "event: text\n" +
-          "data: " +
-          JSON.stringify({
-            text:
-              delta.text
-          }) +
-          "\n\n"
-        );
-      }
-
-      return;
-    }
-
-
-    /* =====================
-       COMPLETED
-    ===================== */
-
-    if (
-      eventType ===
-        "interaction.completed" ||
-      data.event_type ===
-        "interaction.completed"
-    ) {
-      res.write(
-        "event: complete\n" +
-        "data: " +
-        JSON.stringify({
-          success:
-            true
-        }) +
-        "\n\n"
-      );
-    }
-
-  } catch (error) {
-    console.error(
-      "SSE parse error:",
-      error
+    await askGeminiStream(
+      currentMessage,
+      res,
+      isBuild,
+      history
     );
+  } catch (error) {
+    console.error("CHAT ERROR:", error);
+
+    if (error.message === "CONVERSATION_NOT_FOUND") {
+      sendJson(res, 404, {
+        success: false,
+        error: "CONVERSATION_NOT_FOUND",
+        message: "المحادثة غير موجودة أو لا تملك صلاحية الوصول إليها",
+      });
+
+      return;
+    }
+
+    if (!res.headersSent) {
+      sendJson(res, 500, {
+        success: false,
+        error: "CHAT_ERROR",
+        message: "حدث خطأ أثناء معالجة الرسالة",
+      });
+    }
   }
 }
 
+/*
+ * /api/create
+ *
+ * This endpoint verifies the authenticated user
+ * and accepts a project/build request.
+ *
+ * Actual project rows can be created from the frontend
+ * through Supabase using RLS.
+ */
+async function handleCreate(req, res, user) {
+  let data;
 
-/* =========================================================
-   HTTP SERVER
-========================================================= */
+  try {
+    data = await readJsonBody(req);
+  } catch (error) {
+    if (error.message === "REQUEST_TOO_LARGE") {
+      sendJson(res, 413, {
+        success: false,
+        error: "REQUEST_TOO_LARGE",
+      });
+      return;
+    }
 
-const server =
-  http.createServer(
-    (req, res) => {
+    sendJson(res, 400, {
+      success: false,
+      error: "INVALID_JSON",
+      message: "البيانات المرسلة غير صحيحة",
+    });
 
-      setCORS(res);
+    return;
+  }
 
+  const idea = String(
+    data.idea || data.message || ""
+  ).trim();
 
-      /* =====================
-         OPTIONS
-      ===================== */
+  const type = String(
+    data.type || "Web"
+  ).trim();
 
-      if (
-        req.method ===
-        "OPTIONS"
-      ) {
-        res.writeHead(
-          204
-        );
+  if (!idea) {
+    sendJson(res, 400, {
+      success: false,
+      error: "IDEA_REQUIRED",
+      message: "فكرة المشروع مطلوبة",
+    });
 
-        res.end();
+    return;
+  }
+
+  sendJson(res, 200, {
+    success: true,
+    message: "تم استلام طلب بناء المشروع",
+    idea,
+    type,
+    user_id: user.id,
+  });
+}
+
+/*
+ * /api/me
+ *
+ * Useful for checking the currently authenticated
+ * Supabase user from the backend.
+ */
+async function handleMe(req, res, user) {
+  sendJson(res, 200, {
+    success: true,
+    user: {
+      id: user.id,
+      email: user.email || null,
+      phone: user.phone || null,
+      created_at: user.created_at || null,
+      display_name:
+        user.user_metadata?.display_name || "",
+      avatar_url:
+        user.user_metadata?.avatar_url || "",
+    },
+  });
+}
+
+/*
+ * Main HTTP server.
+ */
+const server = http.createServer(async (req, res) => {
+  setCors(res);
+
+  const method = req.method || "GET";
+  const pathname = (req.url || "/").split("?")[0];
+
+  /*
+   * CORS preflight
+   */
+  if (method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  /*
+   * Health check
+   */
+  if (
+    method === "GET" &&
+    pathname === "/api/health"
+  ) {
+    sendJson(res, 200, {
+      success: true,
+      status: "ok",
+      service: "Aizen AI Builder",
+      authenticated_backend: Boolean(
+        SUPABASE_URL && SUPABASE_ANON_KEY
+      ),
+      gemini_configured: Boolean(
+        GEMINI_API_KEY
+      ),
+    });
+
+    return;
+  }
+
+  /*
+   * Current user
+   */
+  if (
+    method === "GET" &&
+    pathname === "/api/me"
+  ) {
+    const user = await requireAuth(req, res);
+
+    if (!user) return;
+
+    await handleMe(req, res, user);
+    return;
+  }
+
+  /*
+   * Chat
+   */
+  if (
+    method === "POST" &&
+    pathname === "/api/chat"
+  ) {
+    const user = await requireAuth(req, res);
+
+    if (!user) return;
+
+    await handleChat(req, res, user);
+    return;
+  }
+
+  /*
+   * Build/Create
+   */
+  if (
+    method === "POST" &&
+    pathname === "/api/create"
+  ) {
+    const user = await requireAuth(req, res);
+
+    if (!user) return;
+
+    await handleCreate(req, res, user);
+    return;
+  }
+
+  /*
+   * Frontend
+   */
+  if (
+    method === "GET" &&
+    (pathname === "/" || pathname === "/index.html")
+  ) {
+    fs.readFile(FRONTEND_PATH, (error, content) => {
+      if (error) {
+        console.error("FRONTEND ERROR:", error);
+
+        sendJson(res, 500, {
+          success: false,
+          error: "FRONTEND_NOT_FOUND",
+          message: "لم يتم العثور على frontend/index.html",
+        });
 
         return;
       }
 
-
-      /* =====================
-         FRONTEND
-      ===================== */
-
-      if (
-        req.method ===
-          "GET" &&
-        req.url === "/"
-      ) {
-        const filePath =
-          path.join(
-            __dirname,
-            "../frontend/index.html"
-          );
-
-        return fs.readFile(
-          filePath,
-          "utf8",
-          (error, data) => {
-
-            if (error) {
-              return sendJSON(
-                res,
-                500,
-                {
-                  success:
-                    false,
-
-                  error:
-                    "Frontend Error"
-                }
-              );
-            }
-
-            res.writeHead(
-              200,
-              {
-                "Content-Type":
-                  "text/html; charset=utf-8"
-              }
-            );
-
-            res.end(
-              data
-            );
-          }
-        );
-      }
-
-
-      /* =====================
-         HEALTH
-      ===================== */
-
-      if (
-        req.method ===
-          "GET" &&
-        req.url ===
-          "/api/health"
-      ) {
-        return sendJSON(
-          res,
-          200,
-          {
-            success:
-              true,
-
-            name:
-              "Aizen AI Builder",
-
-            status:
-              "healthy",
-
-            model:
-              MODEL,
-
-            streaming:
-              true,
-
-            authentication:
-              "supabase"
-          }
-        );
-      }
-
-
-      /* =====================
-         CHAT
-      ===================== */
-
-      if (
-        req.method ===
-          "POST" &&
-        req.url ===
-          "/api/chat"
-      ) {
-        return requireAuth(
-          req,
-          res,
-          (
-            user,
-            token
-          ) => {
-
-            readBody(
-              req,
-              (
-                error,
-                data
-              ) => {
-
-                if (error) {
-                  return sendJSON(
-                    res,
-                    400,
-                    {
-                      success:
-                        false,
-
-                      error:
-                        "بيانات غير صحيحة"
-                    }
-                  );
-                }
-
-
-                const conversationId =
-                  String(
-                    data.conversationId ||
-                    ""
-                  ).trim();
-
-
-                const isBuild =
-                  Boolean(
-                    data.build
-                  );
-
-
-                let message =
-                  String(
-                    data.message ||
-                    ""
-                  ).trim();
-
-
-                /* =================
-                   CURRENT MESSAGE
-                ================= */
-
-                if (message) {
-
-                  return loadConversationMessages(
-                    conversationId,
-                    user.id,
-                    token,
-                    (
-                      historyError,
-                      history
-                    ) => {
-
-                      if (
-                        historyError
-                      ) {
-                        console.error(
-                          historyError
-                        );
-
-                        history =
-                          [];
-                      }
-
-                      askGeminiStream(
-                        message,
-                        res,
-                        isBuild,
-                        history
-                      );
-                    }
-                  );
-                }
-
-
-                /* =================
-                   BUILD MODE
-                   FRONTEND SENDS:
-                   conversationId
-                   build:true
-                ================= */
-
-                if (
-                  conversationId &&
-                  isBuild
-                ) {
-
-                  return loadLatestUserMessage(
-                    conversationId,
-                    user.id,
-                    token,
-                    (
-                      latestError,
-                      latestMessage
-                    ) => {
-
-                      if (
-                        latestError
-                      ) {
-                        console.error(
-                          latestError
-                        );
-
-                        return sendJSON(
-                          res,
-                          500,
-                          {
-                            success:
-                              false,
-
-                            error:
-                              "تعذر تحميل فكرة المشروع"
-                          }
-                        );
-                      }
-
-
-                      if (
-                        !latestMessage
-                      ) {
-                        return sendJSON(
-                          res,
-                          400,
-                          {
-                            success:
-                              false,
-
-                            error:
-                              "لا توجد فكرة مشروع لبنائها"
-                          }
-                        );
-                      }
-
-
-                      loadConversationMessages(
-                        conversationId,
-                        user.id,
-                        token,
-                        (
-                          historyError,
-                          history
-                        ) => {
-
-                          if (
-                            historyError
-                          ) {
-                            console.error(
-                              historyError
-                            );
-
-                            history =
-                              [];
-                          }
-
-                          askGeminiStream(
-                            latestMessage,
-                            res,
-                            true,
-                            history
-                          );
-                        }
-                      );
-                    }
-                  );
-                }
-
-
-                return sendJSON(
-                  res,
-                  400,
-                  {
-                    success:
-                      false,
-
-                    error:
-                      "اكتب رسالة أولاً"
-                  }
-                );
-              }
-            );
-          }
-        );
-      }
-
-
-      /* =====================
-         CREATE PROJECT
-      ===================== */
-
-      if (
-        req.method ===
-          "POST" &&
-        req.url ===
-          "/api/create"
-      ) {
-        return requireAuth(
-          req,
-          res,
-          (
-            user,
-            token
-          ) => {
-
-            readBody(
-              req,
-              (
-                error,
-                data
-              ) => {
-
-                if (error) {
-                  return sendJSON(
-                    res,
-                    400,
-                    {
-                      success:
-                        false,
-
-                      error:
-                        "بيانات غير صحيحة"
-                    }
-                  );
-                }
-
-
-                const idea =
-                  String(
-                    data.idea ||
-                    data.message ||
-                    ""
-                  ).trim();
-
-
-                const type =
-                  String(
-                    data.type ||
-                    "Web"
-                  ).trim();
-
-
-                if (!idea) {
-                  return sendJSON(
-                    res,
-                    400,
-                    {
-                      success:
-                        false,
-
-                      error:
-                        "أدخل فكرة المشروع"
-                    }
-                  );
-                }
-
-
-                return sendJSON(
-                  res,
-                  200,
-                  {
-                    success:
-                      true,
-
-                    message:
-                      "تم استلام المشروع",
-
-                    idea,
-
-                    type,
-
-                    user_id:
-                      user.id
-                  }
-                );
-              }
-            );
-          }
-        );
-      }
-
-
-      /* =====================
-         NOT FOUND
-      ===================== */
-
-      return sendJSON(
-        res,
-        404,
-        {
-          success:
-            false,
-
-          error:
-            "Not Found"
-        }
-      );
-    }
-  );
-
-
-/* =========================================================
-   START SERVER
-========================================================= */
-
-server.listen(
-  PORT,
-  () => {
-
-    console.log(
-      "Aizen Backend running on port " +
-      PORT
-    );
-
-    console.log(
-      "Gemini model: " +
-      MODEL
-    );
-
-    console.log(
-      "Supabase authentication: enabled"
-    );
-
+      res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-cache",
+      });
+
+      res.end(content);
+    });
+
+    return;
   }
-);
+
+  /*
+   * 404
+   */
+  sendJson(res, 404, {
+    success: false,
+    error: "NOT_FOUND",
+    message: "المسار غير موجود",
+  });
+});
+
+server.on("clientError", (error, socket) => {
+  console.error("CLIENT ERROR:", error.message);
+
+  try {
+    socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
+  } catch {}
+});
+
+server.listen(PORT, () => {
+  console.log("====================================");
+  console.log("Aizen AI Builder Backend");
+  console.log("====================================");
+  console.log(`Port: ${PORT}`);
+  console.log(`Supabase: ${SUPABASE_URL ? "configured" : "missing"}`);
+  console.log(`Gemini: ${GEMINI_API_KEY ? "configured" : "missing"}`);
+  console.log(`Frontend: ${FRONTEND_PATH}`);
+  console.log("====================================");
+});
