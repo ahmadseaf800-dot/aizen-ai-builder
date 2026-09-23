@@ -1,5 +1,6 @@
 const http = require("http");
 const https = require("https");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
@@ -11,6 +12,7 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const APP_ORIGIN = process.env.APP_ORIGIN || "*";
 
 const GEMINI_MODEL = "gemini-3.6-flash";
+const SECRET_ENCRYPTION_KEY = String(process.env.SECRET_ENCRYPTION_KEY || "");
 
 const FRONTEND_PATH = path.join(__dirname, "..", "frontend", "index.html");
 
@@ -877,6 +879,42 @@ async function handleChat(req, res, user) {
   }
 }
 
+function encryptSecret(value) {
+  if (!SECRET_ENCRYPTION_KEY) throw new Error("SECRET_ENCRYPTION_KEY_MISSING");
+  const key = crypto.createHash("sha256").update(SECRET_ENCRYPTION_KEY).digest();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const encrypted = Buffer.concat([cipher.update(String(value), "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, encrypted]).toString("base64");
+}
+
+async function handleProjectSecret(req, res, user) {
+  let data;
+  try { data = await readJsonBody(req, res, 64 * 1024); }
+  catch { sendJson(res, 400, {success:false,error:"INVALID_JSON",message:"البيانات المرسلة غير صحيحة"}); return; }
+  const projectId = String(data.projectId || "").trim();
+  const name = String(data.name || "").trim();
+  const value = String(data.value || "");
+  if (!projectId || !name || !value) { sendJson(res, 400, {success:false,error:"SECRET_FIELDS_REQUIRED",message:"المشروع واسم السر والتوكن مطلوبة"}); return; }
+  if (!/^[a-zA-Z0-9_.-]{1,80}$/.test(name)) { sendJson(res, 400, {success:false,error:"INVALID_SECRET_NAME",message:"اسم السر غير صالح"}); return; }
+  try {
+    const encryptedValue = encryptSecret(value);
+    const body = JSON.stringify({project_id:projectId,user_id:user.id,name,encrypted_value:encryptedValue,updated_at:new Date().toISOString()});
+    const url = new URL(SUPABASE_URL + "/rest/v1/project_secrets");
+    const response = await httpsRequest({hostname:url.hostname,path:url.pathname + "?on_conflict=project_id%2Cname",method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer " + getBearerToken(req),"Prefer":"resolution=merge-duplicates,return=minimal"}}, body);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      console.error("PROJECT SECRET SAVE ERROR:", response.statusCode, response.body);
+      sendJson(res, 500, {success:false,error:"SECRET_SAVE_FAILED",message:"تعذر حفظ السر بأمان"}); return;
+    }
+    sendJson(res, 200, {success:true,stored:true,name});
+  } catch (error) {
+    console.error("PROJECT SECRET ERROR:", error);
+    const missing = error.message === "SECRET_ENCRYPTION_KEY_MISSING";
+    sendJson(res, 500, {success:false,error:missing ? "SECRET_ENCRYPTION_KEY_MISSING" : "SECRET_SAVE_FAILED",message:missing ? "أضف SECRET_ENCRYPTION_KEY في إعدادات الاستضافة." : "تعذر حفظ السر بأمان"});
+  }
+}
+
 /*
  * /api/create
  *
@@ -1031,6 +1069,13 @@ const server = http.createServer(async (req, res) => {
   /*
    * Build/Create
    */
+  if (method === "POST" && pathname === "/api/project-secret") {
+    const user = await requireAuth(req, res);
+    if (!user) return;
+    await handleProjectSecret(req, res, user);
+    return;
+  }
+
   if (
     method === "POST" &&
     pathname === "/api/create"
