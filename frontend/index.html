@@ -2232,11 +2232,7 @@ async function sendMessage(){
       conversation &&
       conversation.build_used
     ){
-
-      showToast(
-        "تم استخدام Build لهذه المحادثة مسبقاً."
-      );
-
+      showToast("تم استخدام Build لهذه المحادثة مسبقاً. افتح محادثة جديدة لبناء مشروع آخر.");
       return;
     }
 
@@ -2590,7 +2586,14 @@ async function requestAI(
     generating = false;
 
     $("sendButton").disabled = false;
-    $("buildButton").disabled = false;
+
+    const activeConversation =
+      conversations.find(
+        c=>c.id === conversationId
+      );
+
+    $("buildButton").disabled =
+      Boolean(activeConversation?.build_used);
 
     $("stopButton").style.display =
       "none";
@@ -2655,6 +2658,14 @@ async function startBuild(){
             c=>c.id === currentConversationId
           )
         : null;
+
+    if(
+      conversation &&
+      conversation.build_used
+    ){
+      showToast("تم استخدام Build لهذه المحادثة مسبقاً. اضغط «محادثة جديدة» للمتابعة.");
+      return;
+    }
 
     if(!conversation){
 
