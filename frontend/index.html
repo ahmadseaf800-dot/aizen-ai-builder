@@ -756,6 +756,18 @@ button{cursor:pointer}
 .ai-avatar-small{width:34px;height:34px;min-width:34px;border-radius:10px;object-fit:cover;background:#171a22;border:1px solid #30343e}
 .brand-ai-small{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px;letter-spacing:-1px}\n.profile-card{width:min(520px,100%);padding:0;overflow:hidden;border:1px solid #30343e;border-radius:20px;background:linear-gradient(180deg,#171a22,#101218);box-shadow:0 25px 70px rgba(0,0,0,.55)}
 .profile-head{padding:24px 22px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #292d36}.profile-head-avatar{width:64px;height:64px;border-radius:18px;object-fit:cover;background:#181b22;border:1px solid #3b3f4b}.profile-head h3{margin:0;font-size:20px}.profile-head p{margin:5px 0 0;color:#858b97;font-size:12px}.profile-body{padding:20px 22px}.profile-label{display:block;margin:0 0 7px;color:#aeb3bf;font-size:12px}.profile-footer{padding:14px 22px 20px;display:flex;gap:8px}.profile-footer button{flex:1}.build-description{min-height:130px;resize:vertical}.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.profile-stats>div{padding:10px;border:1px solid #30343e;border-radius:10px;background:#15181f;text-align:center;font-size:12px}.profile-stats span{display:block;color:#858b97;font-size:10px;margin-top:4px}.build-button:disabled,.send-button:disabled{opacity:.5;cursor:not-allowed}
+
+:root{--accent:#6d5dfc;--user-bubble:#28224d;--user-border:#40377a}
+body.theme-white{--user-bubble:#fff;--user-border:#d7dbe5}
+body.theme-white .message.user .message-content{color:#111;background:var(--user-bubble);border-color:var(--user-border)}
+body.theme-blue{--accent:#2f80ff;--user-bubble:#123d78;--user-border:#2468c7}
+body.theme-blue .new-chat-button,body.theme-blue .send-button,body.theme-blue .auth-primary{background:var(--accent)}
+body.theme-blue .message.user .message-content{background:var(--user-bubble);border-color:var(--user-border)}
+.thinking-message{opacity:.82;font-style:italic;display:flex;align-items:center;gap:8px}
+.thinking-message:after{content:"";width:7px;height:7px;border-radius:50%;background:#8f8aff;animation:aizenPulse 1s infinite}
+@keyframes aizenPulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+.settings-section{margin-top:16px;padding:12px;border:1px solid #30343e;border-radius:12px;background:#171a21}
+.theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.theme-choice{padding:11px;border:1px solid #30343e;border-radius:9px;background:#1b1e26;color:#fff}.theme-choice:hover{border-color:#6d5dfc}.theme-choice.wide{width:100%;margin-top:9px}
 </style>
 </head>
 
@@ -774,7 +786,7 @@ button{cursor:pointer}
     >☰</button>
 
     <div class="brand">
-      <div class="brand-logo" aria-label="Aizen AI Builder"><span>AI</span></div>
+      <div class="brand-logo" aria-label="Aizen AI Builder">A</div>
       <span>Aizen AI Builder</span>
     </div>
 
@@ -812,6 +824,7 @@ button{cursor:pointer}
     class="account-menu hidden"
   >
     <button onclick="openProfile()">👤 الحساب</button>
+    <button onclick="openSettings()">⚙️ الإعدادات</button>
     <button onclick="logout()">🚪 تسجيل الخروج</button>
   </div>
 
@@ -896,7 +909,7 @@ button{cursor:pointer}
 
     <div class="welcome">
 
-      <div class="ai-avatar brand-ai-avatar" aria-label="Aizen AI">AI</div>
+      <div class="ai-avatar brand-ai-avatar" aria-label="Aizen AI">A</div>
 
       <h1>مرحباً بك في Aizen AI Builder</h1>
 
@@ -1161,17 +1174,24 @@ button{cursor:pointer}
       <button type="button" class="build-type-card" onclick="confirmBuildType('game')"><div class="build-type-icon">🎮</div><div class="build-type-title">لعبة</div><div class="build-type-desc">ألعاب ويب ومنطق لعب وواجهة.</div></button>
       <button type="button" class="build-type-card" onclick="confirmBuildType('app')"><div class="build-type-icon">📱</div><div class="build-type-title">تطبيق</div><div class="build-type-desc">تطبيقات موبايل أو سطح مكتب.</div></button>
       <button type="button" class="build-type-card" onclick="confirmBuildType('automation')"><div class="build-type-icon">⚙️</div><div class="build-type-title">أتمتة</div><div class="build-type-desc">مهام آلية وربط الخدمات.</div></button>
-      <button type="button" class="build-type-card" onclick="confirmBuildType('extension')"><div class="build-type-icon">🧩</div><div class="build-type-title">إضافة متصفح</div><div class="build-type-desc">إضافات Chrome وEdge.</div></button>
+      <button type="button" class="build-type-card" onclick="confirmBuildType('extension')"><div class="build-type-icon">🧩</div><div class="build-type-title">إضافة للمتصفح</div><div class="build-type-desc">إضافات Chrome وEdge.</div></button>
       <button type="button" class="build-type-card" onclick="confirmBuildType('api')"><div class="build-type-icon">⚡</div><div class="build-type-title">API / Backend</div><div class="build-type-desc">خدمات خلفية وواجهات API.</div></button>
+      <button type="button" class="build-type-card" onclick="confirmBuildType('game_mod')"><div class="build-type-icon">🧱</div><div class="build-type-title">تطوير إضافات للألعاب</div><div class="build-type-desc">مودات وPlugins لماينكرافت، وإضافات وأفكار تقنية للألعاب.</div></button><button type="button" class="build-type-card" onclick="confirmBuildType('game_skin')"><div class="build-type-icon">🎨</div><div class="build-type-title">تصميم سكن للعبة</div><div class="build-type-desc">تصميم سكنات ومفاهيم بصرية للشخصيات في الألعاب.</div></button>
       <button type="button" class="build-type-card" onclick="confirmBuildType('other')"><div class="build-type-icon">✨</div><div class="build-type-title">مشروع مخصص</div><div class="build-type-desc">دع Aizen يحدد البنية المناسبة.</div></button>
     </div>
     <div class="modal-buttons"><button type="button" onclick="closeBuildTypeModal()">إلغاء</button></div>
   </div>
 </div>
-<div id="botTypeModal" class="modal hidden"><div class="modal-box"><h3>اختر نوع البوت</h3><div class="build-type-grid"><button type="button" class="build-type-card" onclick="confirmBotType('telegram')"><div class="build-type-icon">✈️</div><div class="build-type-title">Telegram</div><div class="build-type-desc">بوت Telegram.</div></button><button type="button" class="build-type-card" onclick="confirmBotType('discord')"><div class="build-type-icon">🎮</div><div class="build-type-title">Discord</div><div class="build-type-desc">بوت Discord.</div></button></div><div class="modal-buttons"><button type="button" onclick="closeBotTypeModal()">إلغاء</button></div></div></div><div id="botSecretModal" class="modal hidden" onclick="if(event.target===this) closeBotSecretModal()"><div class="modal-box"><h3 id="botSecretTitle">إعداد البوت</h3><div class="auth-subtitle">اكتب فكرة البوت والتوكن. التوكن لا يُرسل إلى نموذج الذكاء الاصطناعي ولا يظهر داخل المحادثة؛ يُحفظ مشفراً في مساحة أسرار المشروع.</div><textarea id="botIdeaInput" class="auth-input build-description" rows="5" placeholder="فكرة البوت والميزات والأوامر المطلوبة..."></textarea><input id="botTokenInput" class="auth-input" type="password" autocomplete="new-password" placeholder="توكن البوت السري"><div class="modal-buttons"><button type="button" class="primary" onclick="submitBotBuild()">بدء بناء البوت</button><button type="button" onclick="closeBotSecretModal()">إلغاء</button></div></div></div><div id="buildDescriptionModal" class="modal hidden" onclick="if(event.target===this) closeBuildDescriptionModal()"><div class="modal-box"><h3 id="buildDescriptionTitle">وصف المشروع</h3><div id="buildDescriptionHint" class="auth-subtitle">اكتب فكرة المشروع بالتفصيل.</div><textarea id="buildDescriptionInput" class="auth-input build-description" rows="6" placeholder="مثال: أريد موقع متجر حديث مع تسجيل دخول وسلة شراء ولوحة تحكم..."></textarea><div class="modal-buttons"><button class="primary" onclick="submitBuildDescription()">بدء البناء</button><button onclick="closeBuildDescriptionModal()">إلغاء</button></div></div></div><div id="toast" class="toast"></div>
+<div id="botTypeModal" class="modal hidden"><div class="modal-box"><h3>اختر نوع البوت</h3><div class="build-type-grid"><button type="button" class="build-type-card" onclick="confirmBotType('telegram')"><div class="build-type-icon">✈️</div><div class="build-type-title">Telegram</div><div class="build-type-desc">بوت Telegram.</div></button><button type="button" class="build-type-card" onclick="confirmBotType('discord')"><div class="build-type-icon">🎮</div><div class="build-type-title">Discord</div><div class="build-type-desc">بوت Discord.</div></button></div><div class="modal-buttons"><button type="button" onclick="closeBotTypeModal()">إلغاء</button></div></div></div><div id="botSecretModal" class="modal hidden" onclick="if(event.target===this) closeBotSecretModal()"><div class="modal-box"><h3 id="botSecretTitle">إعداد البوت</h3><div class="auth-subtitle">اكتب فكرة البوت والتوكن. التوكن لا يُرسل إلى نموذج الذكاء الاصطناعي ولا يظهر داخل المحادثة؛ يُحفظ مشفراً في مساحة أسرار المشروع.</div><textarea id="botIdeaInput" class="auth-input build-description" rows="5" placeholder="فكرة البوت والميزات والأوامر المطلوبة..."></textarea><input id="botTokenInput" class="auth-input" type="password" autocomplete="new-password" placeholder="توكن البوت السري"><div class="modal-buttons"><button type="button" class="primary" onclick="submitBotBuild()">بدء بناء البوت</button><button type="button" onclick="closeBotSecretModal()">إلغاء</button></div></div></div><div id="buildDescriptionModal" class="modal hidden" onclick="if(event.target===this) closeBuildDescriptionModal()"><div class="modal-box"><h3 id="buildDescriptionTitle">وصف المشروع</h3><input id="buildProjectName" class="auth-input" placeholder="اسم المشروع (اختياري — يحدده Aizen تلقائياً إذا تركته فارغاً)"><div id="buildDescriptionHint" class="auth-subtitle">اكتب فكرة المشروع بالتفصيل.</div><textarea id="buildDescriptionInput" class="auth-input build-description" rows="6" placeholder="مثال: أريد موقع متجر حديث مع تسجيل دخول وسلة شراء ولوحة تحكم..."></textarea><div class="modal-buttons"><button class="primary" onclick="submitBuildDescription()">بدء البناء</button><button onclick="closeBuildDescriptionModal()">إلغاء</button></div></div></div><div id="settingsModal" class="modal hidden" onclick="if(event.target===this) closeSettings()"><div class="modal-box"><h3>⚙️ إعدادات Aizen</h3><div class="auth-subtitle">خصص لون فقاعات رسائلك.</div><div class="settings-section"><b>لون المحادثة</b><div class="theme-grid"><button type="button" class="theme-choice" onclick="setChatTheme('blue')">🔵 أزرق</button><button type="button" class="theme-choice" onclick="setChatTheme('white')">⚪ أبيض</button></div></div><div class="modal-buttons"><button type="button" class="primary" onclick="closeSettings()">تم</button></div></div></div><div id="toast" class="toast"></div>
 
 
 <script>
+
+function openSettings(){ $("settingsModal").classList.remove("hidden"); }
+function closeSettings(){ $("settingsModal").classList.add("hidden"); }
+function setChatTheme(theme){ const safe=theme==="white"?"white":"blue"; document.body.classList.remove("theme-white","theme-blue"); document.body.classList.add("theme-"+safe); localStorage.setItem("aizen-chat-theme",safe); }
+function loadChatTheme(){ setChatTheme(localStorage.getItem("aizen-chat-theme") || "blue"); }
+
 /* =========================================================
    CONFIG
 ========================================================= */
@@ -2022,7 +2042,7 @@ function messageHTML(message){
     <div class="message ${user ? "user" : "assistant"}">
 
       <div class="message-avatar">
-        ${user ? "أنت" : '<div class="ai-avatar-small brand-ai-small" aria-label="Aizen AI">AI</div>'}
+        ${user ? "أنت" : '<div class="ai-avatar-small brand-ai-small" aria-label="Aizen AI">A</div>'}
       </div>
 
       <div class="message-content">
@@ -2385,11 +2405,7 @@ async function requestAI(
   $("stopButton").style.display =
     "inline-block";
 
-  setStatus(
-    isBuild
-      ? "Aizen يقوم ببناء المشروع..."
-      : "Aizen يفكر..."
-  );
+  setStatus(isBuild ? "Aizen يقوم ببناء المشروع..." : "يفكر...");
 
   abortController =
     new AbortController();
@@ -2397,7 +2413,7 @@ async function requestAI(
   const assistantElement =
     addMessageToUI(
       "assistant",
-      ""
+      "يفكر..."
     );
 
   const contentElement =
@@ -2406,6 +2422,7 @@ async function requestAI(
     );
 
   let fullText = "";
+  contentElement.classList.add("thinking-message");
 
   try{
 
@@ -2551,7 +2568,7 @@ async function requestAI(
           "";
 
         if(delta){
-
+          contentElement.classList.remove("thinking-message");
           fullText +=
             String(delta);
 
@@ -2683,18 +2700,20 @@ function openBotTypeModal(){closeBuildTypeModal();$("botTypeModal").classList.re
 function closeBotTypeModal(){$("botTypeModal").classList.add("hidden");}
 function confirmBotType(type){closeBotTypeModal();confirmBuildType(type==="discord"?"discord_bot":"telegram_bot");}
 function confirmBuildType(type){
-  const labels={website:"موقع ويب",telegram_bot:"بوت Telegram",discord_bot:"بوت Discord",game:"لعبة",app:"تطبيق",api:"API / Backend",automation:"أتمتة",extension:"إضافة متصفح",other:"مشروع مخصص"};
+  const labels={website:"موقع ويب",telegram_bot:"بوت Telegram",discord_bot:"بوت Discord",game:"لعبة",app:"تطبيق",api:"API / Backend",automation:"أتمتة",extension:"إضافة للمتصفح",game_mod:"تطوير إضافات للألعاب",game_skin:"تصميم سكن للعبة",other:"مشروع مخصص"};
   selectedBuildType=type;selectedBuildLabel=labels[type]||"مشروع مخصص";
   closeBuildTypeModal();
   $("buildDescriptionTitle").textContent="وصف "+selectedBuildLabel;
   $("buildDescriptionHint").textContent="اكتب فكرة المشروع الآن، وسيستخدمها Aizen لبناء "+selectedBuildLabel+".";
   $("buildDescriptionInput").value="";
+  if($("buildProjectName")) $("buildProjectName").value="";
   $("buildDescriptionModal").classList.remove("hidden");
   setTimeout(()=>$("buildDescriptionInput").focus(),50);
 }
 function closeBuildDescriptionModal(){$("buildDescriptionModal").classList.add("hidden");}
 function submitBuildDescription(){
   const description=$("buildDescriptionInput").value.trim();
+  const projectName=($("buildProjectName")?.value || "").trim();
   if(!description){showToast("اكتب فكرة المشروع أولاً.");$("buildDescriptionInput").focus();return;}
   closeBuildDescriptionModal();
   if(selectedBuildType==="telegram_bot" || selectedBuildType==="discord_bot"){
@@ -2705,7 +2724,7 @@ function submitBuildDescription(){
     setTimeout(()=>$("botTokenInput").focus(),50);
     return;
   }
-  runBuild(selectedBuildType,selectedBuildLabel,description,"");
+  runBuild(selectedBuildType,selectedBuildLabel,description,"",projectName);
 }
 function closeBotSecretModal(){$("botSecretModal").classList.add("hidden");}
 async function submitBotBuild(){
@@ -2714,9 +2733,9 @@ async function submitBotBuild(){
   if(!idea){showToast("اكتب فكرة البوت أولاً.");return;}
   if(!token){showToast("ضع توكن البوت السري أولاً.");$("botTokenInput").focus();return;}
   closeBotSecretModal();
-  await runBuild(selectedBuildType,selectedBuildLabel,idea,token);
+  await runBuild(selectedBuildType,selectedBuildLabel,idea,token,($("buildProjectName")?.value || "").trim());
 }
-async function runBuild(type,typeLabel,description,secretToken=""){
+async function runBuild(type,typeLabel,description,secretToken="",projectName=""){
 
   if(generating) return;
 
@@ -2850,10 +2869,11 @@ async function runBuild(type,typeLabel,description,secretToken=""){
       clearAttachments();
     }
 
+    const finalProjectName=(String(projectName||"").trim() || text.slice(0,60) || (typeLabel + " جديد")).slice(0,60);
     const {data:createdProject,error:projectError} =
       await supabaseClient.from("projects").insert({
         user_id:currentUser.id,
-        name:(text.slice(0,60) || (typeLabel + " جديد")),
+        name:finalProjectName,
         type:typeLabel,
         description:text,
         status:"building"
@@ -3002,11 +3022,7 @@ function renderProjects(){
     `).join("");
 }
 
-function openProjectModal(){
-  $("projectModal")
-    .classList
-    .remove("hidden");
-}
+function openProjectModal(){ openBuildTypeModal(); }
 
 function closeProjectModal(){
   $("projectModal")
@@ -3404,6 +3420,8 @@ function autoResizeTextarea(){
 /* =========================================================
    START
 ========================================================= */
+
+loadChatTheme();
 
 (async function init(){
 
