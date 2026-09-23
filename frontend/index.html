@@ -10,658 +10,458 @@
 <style>
 *{box-sizing:border-box}
 
-body{
+html,body{
   margin:0;
-  background:#0b0d12;
-  color:#f4f4f5;
-  font-family:Arial,Tahoma,sans-serif;
-  height:100vh;
-  overflow:hidden
+  width:100%;
+  height:100%;
 }
 
-button,input,textarea{font-family:inherit}
+body{
+  font-family:Arial,"Segoe UI",sans-serif;
+  background:#0b0d12;
+  color:#f4f5f7;
+  overflow:hidden;
+}
+
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
 
 .app{
+  width:100%;
   height:100vh;
   display:flex;
-  flex-direction:column
+  flex-direction:column;
 }
 
-header{
-  height:64px;
-  min-height:64px;
-  border-bottom:1px solid #242730;
+/* HEADER */
+
+.header{
+  height:58px;
+  min-height:58px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:0 16px;
-  background:#0d0f14;
-  z-index:20
+  padding:0 14px;
+  background:#101218;
+  border-bottom:1px solid #252832;
+  position:relative;
+  z-index:30;
 }
 
-.header-right,
-.header-left{
+.header-left,
+.header-right{
   display:flex;
   align-items:center;
-  gap:9px
+  gap:8px;
+}
+
+.menu-button,
+.header-button{
+  width:38px;
+  height:38px;
+  border:1px solid #30343e;
+  border-radius:10px;
+  background:#181b22;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
 .brand{
   display:flex;
   align-items:center;
   gap:9px;
-  font-size:18px;
-  font-weight:bold
+  font-weight:700;
 }
 
-.logo,.welcome-logo{
+.brand-logo{
+  width:32px;
+  height:32px;
+  border-radius:9px;
   display:flex;
   align-items:center;
   justify-content:center;
-  background:linear-gradient(135deg,#8b5cf6,#4f46e5)
+  background:linear-gradient(135deg,#7c5cff,#4b8cff);
+  font-weight:900;
 }
 
-.logo{
-  width:34px;
-  height:34px;
-  border-radius:10px
+.account-name{
+  max-width:130px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:13px;
 }
 
-.header-btn,
-.new-chat{
-  border:1px solid #30333d;
-  background:#151821;
-  color:#ddd;
-  padding:9px 12px;
-  border-radius:9px;
-  cursor:pointer
+/* MAIN */
+
+.main{
+  flex:1;
+  min-height:0;
+  display:flex;
+  position:relative;
 }
 
-.header-btn{
-  display:none
-}
+/* SIDEBAR */
 
 .sidebar{
-  position:fixed;
-  top:0;
-  right:0;
-  width:285px;
-  height:100vh;
+  width:280px;
+  min-width:280px;
   background:#101218;
-  border-left:1px solid #292c36;
-  z-index:100;
+  border-left:1px solid #252832;
   display:flex;
   flex-direction:column;
-  transform:translateX(100%);
-  transition:.2s ease;
-  box-shadow:-15px 0 50px rgba(0,0,0,.35)
 }
 
-.sidebar.open{
-  transform:translateX(0)
-}
-
-.sidebar-head{
-  height:64px;
-  min-height:64px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 14px;
-  border-bottom:1px solid #292c36
-}
-
-.sidebar-title{
-  font-weight:bold;
-  font-size:17px
-}
-
-.close-sidebar{
-  border:1px solid #30333d;
-  background:#191c24;
-  color:#aaa;
-  width:36px;
-  height:36px;
-  border-radius:9px;
-  cursor:pointer
-}
-
-.sidebar-actions{
+.sidebar-top{
   padding:12px;
-  display:flex;
-  gap:7px
 }
 
-.side-action{
-  flex:1;
-  border:1px solid #30333d;
-  background:#191c24;
-  color:#ddd;
-  padding:10px 7px;
-  border-radius:9px;
-  cursor:pointer
-}
-
-.side-action.active{
-  background:#292040;
-  border-color:#7657db
+.new-chat-button{
+  width:100%;
+  padding:11px;
+  border:0;
+  border-radius:11px;
+  background:#6d5dfc;
+  color:#fff;
+  font-weight:700;
 }
 
 .search-box{
-  margin:0 12px 10px
+  margin-top:10px;
 }
 
 .search-box input{
   width:100%;
-  background:#181b23;
-  border:1px solid #30333d;
-  color:#fff;
+  padding:10px;
+  border:1px solid #30343e;
+  border-radius:10px;
   outline:none;
+  background:#181b22;
+  color:#fff;
+}
+
+.sidebar-tabs{
+  display:flex;
+  gap:5px;
+  padding:0 12px 10px;
+}
+
+.sidebar-tab{
+  flex:1;
+  padding:8px 5px;
+  border:1px solid #30343e;
   border-radius:9px;
-  padding:10px
+  background:#181b22;
+  color:#aeb3bf;
 }
 
-.sidebar-section{
-  padding:7px 12px;
-  color:#777b86;
-  font-size:12px
+.sidebar-tab.active{
+  background:#242132;
+  color:#fff;
+  border-color:#6d5dfc;
 }
 
-.conversation-list,
-.project-list{
+.sidebar-content{
+  flex:1;
+  min-height:0;
   overflow-y:auto;
-  padding:0 8px 10px
+  padding:0 8px 10px;
 }
 
-.conversation-item,
-.project-item{
-  width:100%;
-  border:0;
-  background:transparent;
-  color:#ddd;
-  text-align:right;
-  padding:11px 10px;
-  border-radius:9px;
-  cursor:pointer;
-  margin-bottom:2px;
+.empty-state{
+  padding:25px 10px;
+  text-align:center;
+  color:#777d89;
+  font-size:13px;
+}
+
+/* CONVERSATIONS */
+
+.conversation-item{
   display:flex;
   align-items:center;
-  gap:9px
+  gap:5px;
+  margin-bottom:4px;
+  border-radius:10px;
 }
 
 .conversation-item:hover,
-.project-item:hover{
-  background:#1b1e27
-}
-
 .conversation-item.active{
-  background:#25202f
+  background:#20242d;
 }
 
-.item-text{
+.conversation-main{
+  flex:1;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:10px;
+  cursor:pointer;
+}
+
+.conversation-icon{
+  width:30px;
+  min-width:30px;
+  height:30px;
+  border-radius:8px;
+  background:#181b22;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.conversation-info{
+  min-width:0;
+  flex:1;
+}
+
+.conversation-title{
   overflow:hidden;
   white-space:nowrap;
   text-overflow:ellipsis;
-  flex:1
+  font-size:13px;
 }
 
-.item-delete{
-  opacity:0;
+.conversation-date{
+  margin-top:3px;
+  color:#777d89;
+  font-size:10px;
+}
+
+.conversation-menu{
+  width:34px;
+  height:34px;
   border:0;
+  border-radius:8px;
   background:transparent;
-  color:#777;
-  cursor:pointer
+  color:#888e9a;
 }
 
-.conversation-item:hover .item-delete{
-  opacity:1
+/* PROJECTS */
+
+.project-list{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
 }
 
-.sidebar-empty{
-  color:#666b76;
-  text-align:center;
-  padding:25px 10px;
-  font-size:13px
+.project-item{
+  padding:11px;
+  border:1px solid #2a2e38;
+  border-radius:10px;
+  background:#15181f;
 }
 
-.main-layout{
+.project-name{
+  font-size:13px;
+  font-weight:700;
+}
+
+.project-type{
+  margin-top:4px;
+  color:#858b97;
+  font-size:10px;
+}
+
+.project-actions{
+  display:flex;
+  gap:5px;
+  margin-top:9px;
+}
+
+.project-actions button{
+  flex:1;
+  padding:6px;
+  border:1px solid #30343e;
+  border-radius:7px;
+  background:#1b1e26;
+  color:#fff;
+  font-size:11px;
+}
+
+/* CHAT */
+
+.chat-area{
+  flex:1;
+  min-width:0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+}
+
+.messages{
   flex:1;
   min-height:0;
-  position:relative
-}
-
-main{
-  height:100%;
   overflow-y:auto;
-  padding:25px 15px 155px
-}
-
-.chat{
-  width:min(900px,100%);
-  margin:auto
+  padding:24px 16px 160px;
 }
 
 .welcome{
+  min-height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
   text-align:center;
-  padding:70px 10px 40px
+  padding:30px;
 }
 
 .welcome-logo{
   width:65px;
   height:65px;
-  margin:auto;
-  border-radius:20px;
-  font-size:30px;
-  box-shadow:0 10px 40px rgba(90,70,255,.25)
-}
-
-.welcome h1{
-  margin:20px 0 8px;
-  font-size:30px
-}
-
-.welcome p{
-  color:#9699a3;
-  margin:0
-}
-
-.message{
-  display:flex;
-  gap:12px;
-  margin:25px 0;
-  line-height:1.75
-}
-
-.message.user{
-  flex-direction:row-reverse
-}
-
-.avatar{
-  width:36px;
-  height:36px;
-  min-width:36px;
-  border-radius:50%;
+  border-radius:18px;
   display:flex;
   align-items:center;
   justify-content:center;
-  background:#20232d
+  background:linear-gradient(135deg,#7c5cff,#4b8cff);
+  font-size:30px;
+  font-weight:900;
+  margin-bottom:18px;
 }
 
-.message.ai .avatar{
-  background:linear-gradient(135deg,#8b5cf6,#4f46e5)
+.welcome h1{
+  margin:0;
+  font-size:24px;
 }
 
-.bubble{
-  max-width:82%;
-  padding:12px 16px;
-  border-radius:15px;
-  white-space:pre-wrap;
-  word-break:break-word
+.welcome p{
+  color:#8c929e;
+  font-size:14px;
 }
 
-.message.user .bubble{
-  background:#272a34
+/* MESSAGE */
+
+.message{
+  width:min(900px,100%);
+  margin:0 auto 18px;
+  display:flex;
+  gap:10px;
 }
 
-.message.ai .bubble{
-  background:#151820;
-  border:1px solid #242731
+.message.user{
+  flex-direction:row-reverse;
 }
 
-.code-block{
-  direction:ltr;
-  text-align:left;
-  background:#090b10;
-  border:1px solid #30333d;
+.message-avatar{
+  width:34px;
+  min-width:34px;
+  height:34px;
   border-radius:10px;
-  margin:10px 0;
-  overflow:auto;
-  white-space:pre
-}
-
-.code-head{
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  background:#151820;
-  padding:7px 10px;
-  color:#858996;
-  font-size:11px
+  justify-content:center;
+  background:#20242d;
+  font-size:12px;
+  font-weight:700;
 }
 
-.copy-code{
-  border:1px solid #30333d;
-  background:#20232c;
-  color:#ddd;
-  padding:5px 8px;
-  border-radius:6px;
-  cursor:pointer
+.message.user .message-avatar{
+  background:#6d5dfc;
 }
 
-.code-content{
-  padding:12px;
-  font-family:monospace;
-  font-size:13px;
-  overflow:auto
+.message-content{
+  max-width:calc(100% - 45px);
+  padding:11px 13px;
+  border-radius:13px;
+  background:#15181f;
+  border:1px solid #282c35;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  line-height:1.55;
+  font-size:14px;
 }
 
-.thinking{
-  color:#9296a2;
-  display:flex;
-  align-items:center;
-  gap:8px
+.message.user .message-content{
+  background:#28224d;
+  border-color:#40377a;
 }
 
-.dots{
-  display:inline-flex;
-  gap:3px
-}
-
-.dots span{
-  width:5px;
-  height:5px;
-  border-radius:50%;
-  background:#9b9da5;
-  animation:blink 1.2s infinite
-}
-
-.dots span:nth-child(2){animation-delay:.2s}
-.dots span:nth-child(3){animation-delay:.4s}
-
-@keyframes blink{
-  0%,70%,100%{opacity:.25}
-  35%{opacity:1}
-}
+/* COMPOSER */
 
 .composer-wrap{
-  position:fixed;
+  position:absolute;
   left:0;
   right:0;
   bottom:0;
-  padding:15px;
-  background:linear-gradient(transparent,#0b0d12 25%);
-  z-index:10
+  padding:12px 15px 16px;
+  background:linear-gradient(to top,#0b0d12 70%,transparent);
+  pointer-events:none;
 }
 
 .composer{
   width:min(900px,100%);
   margin:auto;
-  background:#151820;
-  border:1px solid #30333e;
-  border-radius:17px;
-  padding:10px;
-  box-shadow:0 10px 40px rgba(0,0,0,.3)
+  padding:8px;
+  border:1px solid #343844;
+  border-radius:15px;
+  background:#15181f;
+  pointer-events:auto;
 }
 
-textarea{
+.composer textarea{
   width:100%;
-  resize:none;
-  min-height:48px;
+  min-height:45px;
   max-height:180px;
+  resize:none;
+  padding:10px;
   border:0;
-  outline:0;
+  outline:none;
   background:transparent;
-  color:white;
-  font-size:15px;
-  font-family:inherit;
-  padding:10px
-}
-
-textarea::placeholder{
-  color:#777b86
+  color:#fff;
+  line-height:1.5;
 }
 
 .composer-bottom{
   display:flex;
-  justify-content:space-between;
   align-items:center;
+  justify-content:space-between;
   gap:8px;
-  padding:5px
 }
 
-.left-buttons,
-.right-buttons{
+.composer-actions{
   display:flex;
-  gap:7px;
-  align-items:center
+  gap:6px;
 }
 
-.icon-btn,
-.build-btn,
-.send-btn{
-  border:1px solid #30333e;
-  background:#1c1f28;
-  color:#ddd;
-  border-radius:9px;
-  padding:9px 12px;
-  cursor:pointer
-}
-
-.build-btn{
-  background:#29204a;
-  border-color:#5c43a8;
-  color:#d9ceff
-}
-
-.build-btn.used{
-  background:#171922;
-  border-color:#292c35;
-  color:#686c77
-}
-
-.send-btn{
-  width:42px;
+.composer-button,
+.send-button,
+.stop-button{
+  width:38px;
   height:38px;
-  padding:0;
-  font-size:18px;
-  background:#eee;
-  color:#111
-}
-
-.send-btn:disabled,
-.build-btn:disabled{
-  opacity:.4;
-  cursor:not-allowed
-}
-
-.status{
-  width:min(900px,100%);
-  margin:7px auto 0;
-  text-align:center;
-  font-size:11px;
-  color:#686c77
-}.modal-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.72);
-  backdrop-filter:blur(7px);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-  z-index:1000
-}
-
-.modal-overlay.show{
-  display:flex
-}
-
-.build-modal,
-.projects-modal,
-.auth-modal{
-  width:min(650px,100%);
-  max-height:90vh;
-  overflow:auto;
-  background:#12151c;
-  border:1px solid #30333e;
-  border-radius:20px;
-  padding:22px;
-  box-shadow:0 25px 80px rgba(0,0,0,.55);
-  animation:modalIn .18s ease
-}
-
-.auth-modal{
-  width:min(440px,100%)
-}
-
-@keyframes modalIn{
-  from{
-    transform:translateY(15px) scale(.97);
-    opacity:0
-  }
-  to{
-    transform:translateY(0) scale(1);
-    opacity:1
-  }
-}
-
-.modal-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:20px
-}
-
-.modal-title{
-  font-size:22px;
-  font-weight:bold
-}
-
-.close-btn{
-  width:36px;
-  height:36px;
   border-radius:9px;
-  border:1px solid #30333e;
-  background:#1b1e27;
-  color:#aaa;
-  cursor:pointer;
-  font-size:18px
 }
 
-.build-subtitle{
-  color:#8e929e;
-  font-size:14px;
-  margin-bottom:18px
+.composer-button{
+  border:1px solid #30343e;
+  background:#1b1e26;
+  color:#fff;
 }
 
-.project-types{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:10px
-}
-
-.project-type{
-  border:1px solid #30333e;
-  background:#191c24;
-  color:white;
-  border-radius:13px;
-  padding:16px;
-  text-align:right;
-  cursor:pointer;
-  transition:.15s
-}
-
-.project-type:hover{
-  border-color:#7657db;
-  background:#211d31;
-  transform:translateY(-1px)
-}
-
-.project-type.selected{
-  border-color:#8b5cf6;
-  background:#282040;
-  box-shadow:0 0 0 1px #8b5cf6
-}
-
-.type-icon{
-  font-size:27px;
-  margin-bottom:8px
-}
-
-.type-name{
-  font-size:16px;
-  font-weight:bold
-}
-
-.type-description{
-  color:#888c98;
-  font-size:12px;
-  margin-top:4px
-}
-
-.project-description{
-  display:none;
-  margin-top:18px
-}
-
-.project-description.show{
-  display:block
-}
-
-.project-description label{
-  display:block;
-  margin-bottom:8px;
-  color:#ddd;
-  font-size:14px
-}
-
-.project-description textarea{
-  min-height:110px;
-  max-height:200px;
-  width:100%;
-  background:#0d1016;
-  border:1px solid #30333e;
-  border-radius:12px;
-  padding:13px;
-  resize:vertical
-}
-
-.start-build{
-  width:100%;
-  margin-top:15px;
-  padding:13px;
+.send-button{
   border:0;
-  border-radius:11px;
-  background:linear-gradient(135deg,#8b5cf6,#4f46e5);
-  color:white;
-  font-size:15px;
-  font-weight:bold;
-  cursor:pointer
+  background:#6d5dfc;
+  color:#fff;
 }
 
-.start-build:disabled{
-  opacity:.45;
-  cursor:not-allowed
-}
-
-.project-card{
-  border:1px solid #30333d;
-  background:#191c24;
-  padding:14px;
-  border-radius:12px;
-  margin-bottom:9px
-}
-
-.project-card-title{
-  font-weight:bold;
-  margin-bottom:6px
-}
-
-.project-card-type{
-  color:#8c91a0;
-  font-size:12px
-}
-
-.sidebar-overlay{
+.stop-button{
   display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.5);
-  z-index:90
+  border:0;
+  background:#a83d4b;
+  color:#fff;
 }
 
-.sidebar-overlay.show{
-  display:block
+.build-button{
+  padding:8px 13px;
+  border:1px solid #5148a0;
+  border-radius:9px;
+  background:#28224d;
+  color:#fff;
+  font-weight:700;
 }
 
 /* AUTH */
@@ -669,307 +469,211 @@ textarea::placeholder{
 .auth-overlay{
   position:fixed;
   inset:0;
-  background:rgba(5,7,12,.88);
-  backdrop-filter:blur(12px);
+  z-index:100;
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:18px;
-  z-index:5000
+  padding:20px;
+  background:rgba(0,0,0,.78);
 }
 
-.auth-overlay.hidden{
-  display:none
+.auth-box{
+  width:min(420px,100%);
+  padding:25px;
+  border:1px solid #30343e;
+  border-radius:18px;
+  background:#12151c;
 }
 
-.auth-brand{
-  text-align:center;
-  margin-bottom:22px
+.auth-box h2{
+  margin:0 0 8px;
 }
 
-.auth-logo{
-  width:64px;
-  height:64px;
-  border-radius:19px;
-  margin:0 auto 12px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:29px;
-  background:linear-gradient(135deg,#8b5cf6,#4f46e5);
-  box-shadow:0 12px 40px rgba(90,70,255,.28)
-}
-
-.auth-brand h2{
-  margin:0 0 6px;
-  font-size:24px
-}
-
-.auth-brand p{
-  margin:0;
-  color:#858a96;
-  font-size:13px
-}
-
-.auth-tabs{
-  display:flex;
-  gap:7px;
-  margin-bottom:16px
-}
-
-.auth-tab{
-  flex:1;
-  border:1px solid #30333d;
-  background:#191c24;
-  color:#aaa;
-  padding:10px;
-  border-radius:9px;
-  cursor:pointer
-}
-
-.auth-tab.active{
-  background:#292040;
-  border-color:#7657db;
-  color:#fff
-}
-
-.auth-field{
-  margin-bottom:12px
-}
-
-.auth-field label{
-  display:block;
-  color:#c9cbd2;
+.auth-subtitle{
+  color:#858b97;
   font-size:13px;
-  margin-bottom:6px
+  margin-bottom:18px;
 }
 
-.auth-field input{
+.auth-input{
+  width:100%;
+  margin-bottom:10px;
+  padding:12px;
+  border:1px solid #30343e;
+  border-radius:10px;
+  outline:none;
+  background:#191c23;
+  color:#fff;
+}
+
+.auth-primary{
   width:100%;
   padding:12px;
-  border-radius:10px;
-  border:1px solid #30333d;
-  background:#0d1016;
-  color:#fff;
-  outline:none
-}
-
-.auth-field input:focus{
-  border-color:#7657db
-}
-
-.auth-main-btn{
-  width:100%;
   border:0;
   border-radius:10px;
-  padding:12px;
-  margin-top:3px;
-  background:linear-gradient(135deg,#8b5cf6,#4f46e5);
+  background:#6d5dfc;
   color:#fff;
-  font-weight:bold;
-  cursor:pointer
-}
-
-.auth-main-btn:disabled{
-  opacity:.45;
-  cursor:not-allowed
-}
-
-.auth-forgot{
-  width:100%;
-  margin-top:10px;
-  border:0;
-  background:transparent;
-  color:#9b83ee;
-  cursor:pointer;
-  font-size:12px
-}
-
-.auth-divider{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  color:#666b76;
-  font-size:11px;
-  margin:17px 0
-}
-
-.auth-divider::before,
-.auth-divider::after{
-  content:"";
-  height:1px;
-  background:#2b2e37;
-  flex:1
+  font-weight:700;
 }
 
 .oauth-grid{
   display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:8px
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  margin-top:10px;
 }
 
-.oauth-btn{
-  border:1px solid #30333d;
-  background:#191c24;
-  color:#ddd;
-  border-radius:9px;
-  padding:10px 7px;
-  cursor:pointer
+.auth-oauth{
+  padding:10px;
+  border:1px solid #30343e;
+  border-radius:10px;
+  background:#191c23;
+  color:#fff;
 }
 
-.oauth-btn:hover{
-  background:#222631
-}
-
-.auth-message{
-  min-height:20px;
-  text-align:center;
+.auth-link{
   margin-top:12px;
-  color:#e2a8a8;
-  font-size:12px;
-  white-space:pre-wrap
+  color:#9b90ff;
+  text-align:center;
+  cursor:pointer;
+  font-size:13px;
 }
 
-.auth-message.success{
-  color:#9dd7b1
-}
-
-/* ACCOUNT */
-
-.account-area{
-  display:flex;
-  align-items:center;
-  gap:8px
-}
-
-.account-btn{
-  border:1px solid #30333d;
-  background:#151821;
-  color:#ddd;
-  border-radius:9px;
-  padding:8px 10px;
-  cursor:pointer
-}
+/* ACCOUNT MENU */
 
 .account-menu{
-  position:fixed;
-  top:58px;
-  left:12px;
-  width:250px;
-  background:#151820;
-  border:1px solid #30333d;
-  border-radius:13px;
-  padding:12px;
-  z-index:2000;
-  display:none;
-  box-shadow:0 15px 50px rgba(0,0,0,.45)
+  position:absolute;
+  top:52px;
+  left:14px;
+  width:190px;
+  padding:7px;
+  border:1px solid #30343e;
+  border-radius:12px;
+  background:#15181f;
+  box-shadow:0 12px 35px rgba(0,0,0,.4);
+  z-index:80;
 }
 
-.account-menu.show{
-  display:block
-}
-
-.account-user{
-  padding:8px;
-  border-bottom:1px solid #292c35;
-  margin-bottom:8px
-}
-
-.account-name{
-  font-weight:bold;
-  margin-bottom:4px
-}
-
-.account-email{
-  color:#858a96;
-  font-size:11px;
-  direction:ltr;
-  text-align:right;
-  overflow:hidden;
-  text-overflow:ellipsis
-}
-
-.account-id{
-  color:#666b76;
-  font-size:9px;
-  margin-top:5px;
-  direction:ltr;
-  overflow:hidden;
-  text-overflow:ellipsis
-}
-
-.account-action{
+.account-menu button{
   width:100%;
-  border:1px solid #30333d;
-  background:#1a1d25;
-  color:#ddd;
-  border-radius:8px;
   padding:9px;
-  margin-top:6px;
-  cursor:pointer;
-  text-align:right
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:#fff;
+  text-align:right;
 }
 
-.account-action.danger{
-  color:#ff9b9b
+.account-menu button:hover{
+  background:#242832;
 }
 
-.auth-required{
-  display:none
+/* MODAL */
+
+.modal{
+  position:fixed;
+  inset:0;
+  z-index:90;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(0,0,0,.7);
 }
 
-.auth-required.show{
-  display:block
+.modal-box{
+  width:min(500px,100%);
+  max-height:85vh;
+  overflow:auto;
+  padding:20px;
+  border:1px solid #30343e;
+  border-radius:15px;
+  background:#12151c;
 }
 
-@media(max-width:700px){
+.modal-box h3{
+  margin-top:0;
+}
 
-  .brand span{
-    display:none
+.modal-buttons{
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+}
+
+.modal-buttons button{
+  flex:1;
+  padding:10px;
+  border:1px solid #30343e;
+  border-radius:9px;
+  background:#191c23;
+  color:#fff;
+}
+
+.primary{
+  background:#6d5dfc!important;
+  border-color:#6d5dfc!important;
+}
+
+/* TOAST */
+
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:25px;
+  transform:translateX(-50%);
+  z-index:200;
+  padding:11px 16px;
+  border:1px solid #30343e;
+  border-radius:10px;
+  background:#181b22;
+  color:#fff;
+  display:none;
+  max-width:90%;
+  text-align:center;
+}
+
+/* MOBILE */
+
+@media(max-width:800px){
+
+  .sidebar{
+    position:fixed;
+    top:58px;
+    bottom:0;
+    right:0;
+    z-index:50;
+    transform:translateX(100%);
+    transition:transform .2s;
+    box-shadow:-10px 0 35px rgba(0,0,0,.4);
   }
 
-  .header-btn{
-    display:block
+  .sidebar.open{
+    transform:translateX(0);
   }
 
-  .project-types{
-    grid-template-columns:1fr
+  .brand{
+    font-size:14px;
   }
 
-  .build-modal,
-  .projects-modal,
-  .auth-modal{
-    padding:17px
+  .account-name{
+    display:none;
   }
 
-  .welcome{
-    padding-top:45px
+  .messages{
+    padding:18px 10px 150px;
+  }
+
+  .message-content{
+    font-size:13px;
   }
 
   .welcome h1{
-    font-size:25px
-  }
-
-  .bubble{
-    max-width:88%
+    font-size:20px;
   }
 
   .composer-wrap{
-    padding:10px
-  }
-
-  .sidebar{
-    width:88%;
-    max-width:320px
-  }
-
-  .oauth-grid{
-    grid-template-columns:1fr 1fr
-  }
-
-  .account-btn{
-    font-size:11px;
-    padding:7px
+    padding:8px 8px 10px;
   }
 }
 </style>
@@ -977,284 +681,97 @@ textarea::placeholder{
 
 <body>
 
-<div id="authOverlay" class="auth-overlay">
-
-  <div class="auth-modal">
-
-    <div class="auth-brand">
-
-      <div class="auth-logo">
-        🤖
-      </div>
-
-      <h2>
-        Aizen AI
-      </h2>
-
-      <p>
-        سجّل الدخول للمتابعة إلى Aizen AI Builder
-      </p>
-
-    </div>
-
-    <div class="auth-tabs">
-
-      <button
-        id="loginTab"
-        class="auth-tab active"
-        onclick="switchAuthMode('login')"
-      >
-        تسجيل الدخول
-      </button>
-
-      <button
-        id="signupTab"
-        class="auth-tab"
-        onclick="switchAuthMode('signup')"
-      >
-        إنشاء حساب
-      </button>
-
-    </div>
-
-    <form
-      id="authForm"
-      onsubmit="submitAuth(event)"
-    >
-
-      <div
-        id="displayNameField"
-        class="auth-field"
-        style="display:none"
-      >
-
-        <label>
-          اسم العرض
-        </label>
-
-        <input
-          id="displayNameInput"
-          type="text"
-          autocomplete="name"
-          placeholder="مثال: أحمد"
-        >
-
-      </div>
-
-      <div class="auth-field">
-
-        <label>
-          البريد الإلكتروني
-        </label>
-
-        <input
-          id="emailInput"
-          type="email"
-          autocomplete="email"
-          placeholder="name@example.com"
-          required
-        >
-
-      </div>
-
-      <div class="auth-field">
-
-        <label>
-          كلمة المرور
-        </label>
-
-        <input
-          id="passwordInput"
-          type="password"
-          autocomplete="current-password"
-          placeholder="••••••••"
-          minlength="6"
-          required
-        >
-
-      </div>
-
-      <button
-        id="authSubmit"
-        class="auth-main-btn"
-        type="submit"
-      >
-        تسجيل الدخول
-      </button>
-
-    </form>
-
-    <button
-      id="forgotBtn"
-      class="auth-forgot"
-      onclick="resetPassword()"
-    >
-      نسيت كلمة المرور؟
-    </button>
-
-    <div class="auth-divider">
-      أو تابع باستخدام
-    </div>
-
-    <div class="oauth-grid">
-
-      <button
-        class="oauth-btn"
-        onclick="oauthLogin('google')"
-      >
-        🔵 Google
-      </button>
-
-      <button
-        class="oauth-btn"
-        onclick="oauthLogin('github')"
-      >
-        ⚫ GitHub
-      </button>
-
-      <button
-        class="oauth-btn"
-        onclick="oauthLogin('discord')"
-      >
-        🟣 Discord
-      </button>
-
-      <button
-        class="oauth-btn"
-        onclick="oauthLogin('apple')"
-      >
-         Apple
-      </button>
-
-    </div>
-
-    <div
-      id="authMessage"
-      class="auth-message"
-    ></div>
-
-  </div>
-
-</div>
-
 <div class="app">
 
-<header>
-
-  <div class="header-right">
-
-    <button
-      class="header-btn"
-      onclick="toggleSidebar()"
-    >
-      ☰
-    </button>
-
-    <div class="brand">
-      <div class="logo">🤖</div>
-      <span>Aizen AI</span>
-    </div>
-
-  </div>
+<header class="header">
 
   <div class="header-left">
 
-    <div class="account-area">
+    <button
+      class="menu-button"
+      type="button"
+      onclick="toggleSidebar()"
+    >☰</button>
 
-      <button
-        id="accountBtn"
-        class="account-btn"
-        onclick="toggleAccountMenu()"
-      >
-        👤 الحساب
-      </button>
-
+    <div class="brand">
+      <div class="brand-logo">A</div>
+      <span>Aizen AI Builder</span>
     </div>
 
+  </div>
+
+  <div class="header-right">
+
+    <span
+      id="accountName"
+      class="account-name hidden"
+    ></span>
+
     <button
-      class="new-chat"
-      onclick="newChat()"
+      id="loginButton"
+      class="header-button"
+      type="button"
+      onclick="openAuth()"
     >
-      ＋ محادثة جديدة
+      دخول
     </button>
 
+    <button
+      id="accountButton"
+      class="header-button hidden"
+      type="button"
+      onclick="toggleAccountMenu()"
+    >
+      👤
+    </button>
+
+  </div>
+
+  <div
+    id="accountMenu"
+    class="account-menu hidden"
+  >
+    <button onclick="openProfile()">👤 الحساب</button>
+    <button onclick="logout()">🚪 تسجيل الخروج</button>
   </div>
 
 </header>
 
-<div
-  id="accountMenu"
-  class="account-menu"
->
 
-  <div class="account-user">
-
-    <div
-      id="accountName"
-      class="account-name"
-    >
-      المستخدم
-    </div>
-
-    <div
-      id="accountEmail"
-      class="account-email"
-    ></div>
-
-    <div
-      id="accountId"
-      class="account-id"
-    ></div>
-
-  </div>
-
-  <button
-    class="account-action"
-    onclick="closeAccountMenu();newChat()"
-  >
-    💬 محادثة جديدة
-  </button>
-
-  <button
-    class="account-action danger"
-    onclick="logout()"
-  >
-    🚪 تسجيل الخروج
-  </button>
-
-</div>
-
-<div
-  id="sidebarOverlay"
-  class="sidebar-overlay"
-  onclick="closeSidebar()"
-></div>
+<main class="main">
 
 <aside
   id="sidebar"
   class="sidebar"
 >
 
-  <div class="sidebar-head">
-
-    <div class="sidebar-title">
-      Aizen
-    </div>
+  <div class="sidebar-top">
 
     <button
-      class="close-sidebar"
-      onclick="closeSidebar()"
+      class="new-chat-button"
+      onclick="newChat()"
     >
-      ×
+      ＋ محادثة جديدة
     </button>
+
+    <div class="search-box">
+
+      <input
+        id="searchInput"
+        type="search"
+        placeholder="بحث في المحادثات..."
+      >
+
+    </div>
 
   </div>
 
-  <div class="sidebar-actions">
+
+  <div class="sidebar-tabs">
 
     <button
       id="chatTab"
-      class="side-action active"
+      class="sidebar-tab active"
       onclick="showSidebarTab('chats')"
     >
       💬 المحادثات
@@ -1262,7 +779,7 @@ textarea::placeholder{
 
     <button
       id="projectTab"
-      class="side-action"
+      class="sidebar-tab"
       onclick="showSidebarTab('projects')"
     >
       📁 المشاريع
@@ -1270,112 +787,46 @@ textarea::placeholder{
 
   </div>
 
-  <div id="chatSidebar">
 
-    <div class="search-box">
-
-      <input
-        id="searchInput"
-        placeholder="🔎 بحث في المحادثات..."
-        oninput="renderConversations()"
-      >
-
-    </div>
-
-    <div class="sidebar-section">
-      المحادثات
-    </div>
-
-    <div
-      id="conversationList"
-      class="conversation-list"
-    ></div>
-
+  <div
+    id="chatSidebar"
+    class="sidebar-content"
+  >
+    <div id="conversationList"></div>
   </div>
+
 
   <div
     id="projectSidebar"
+    class="sidebar-content"
     style="display:none"
   >
-
-    <div class="sidebar-section">
-      مشاريعك
-    </div>
-
-    <div
-      id="projectList"
-      class="project-list"
-    ></div>
-
+    <div id="projectList" class="project-list"></div>
   </div>
 
-</aside><main class="main">
+</aside>
 
-  <section
-    id="welcomeScreen"
-    class="welcome"
+
+<section class="chat-area">
+
+  <div
+    id="messages"
+    class="messages"
   >
 
-    <div class="welcome-icon">
-      ✨
-    </div>
+    <div class="welcome">
 
-    <h1>
-      مرحباً بك في Aizen AI
-    </h1>
+      <div class="welcome-logo">A</div>
 
-    <p>
-      ماذا تريد أن نبني اليوم؟
-    </p>
+      <h1>مرحباً بك في Aizen AI Builder</h1>
 
-    <div class="suggestions">
-
-      <button onclick="useSuggestion('أنشئ لي موقع متجر إلكتروني حديث')">
-        🛒 متجر إلكتروني
-      </button>
-
-      <button onclick="useSuggestion('أنشئ لي لوحة تحكم إدارية كاملة')">
-        📊 لوحة تحكم
-      </button>
-
-      <button onclick="useSuggestion('أنشئ لي تطبيق دردشة حديث')">
-        💬 تطبيق دردشة
-      </button>
-
-      <button onclick="useSuggestion('أنشئ لي موقع شخصي احترافي')">
-        👤 موقع شخصي
-      </button>
+      <p>
+        اكتب فكرتك وسيساعدك Aizen في بناء مشروعك.
+      </p>
 
     </div>
 
-  </section>
-
-
-  <section
-    id="chatScreen"
-    class="chat-screen"
-    style="display:none"
-  >
-
-    <div
-      id="messages"
-      class="messages"
-    ></div>
-
-    <div
-      id="typingIndicator"
-      class="typing"
-      style="display:none"
-    >
-      <span></span>
-      <span></span>
-      <span></span>
-      <label>
-        Aizen يفكر...
-      </label>
-    </div>
-
-  </section>
+  </div>
 
 
   <div class="composer-wrap">
@@ -1384,55 +835,46 @@ textarea::placeholder{
 
       <textarea
         id="messageInput"
+        placeholder="اكتب فكرتك هنا..."
         rows="1"
-        placeholder="اكتب فكرتك لـ Aizen..."
-        onkeydown="handleInputKey(event)"
-        oninput="autoResize(this)"
       ></textarea>
+
 
       <div class="composer-bottom">
 
-        <div class="composer-tools">
+        <div class="composer-actions">
 
           <button
-            class="tool-btn"
-            onclick="openBuildModal()"
-            title="إنشاء مشروع"
-          >
-            ＋ مشروع
-          </button>
-
-          <button
-            class="tool-btn"
+            class="composer-button"
             onclick="triggerFileUpload()"
-            title="إرفاق ملف"
           >
             📎
           </button>
 
-          <input
-            id="fileInput"
-            type="file"
-            hidden
-            onchange="handleFileUpload(event)"
+          <button
+            id="buildButton"
+            class="build-button"
+            onclick="startBuild()"
           >
+            Build
+          </button>
 
         </div>
 
-        <div class="send-area">
+
+        <div>
 
           <button
-            id="stopBtn"
-            class="stop-btn"
+            id="stopButton"
+            class="stop-button"
             onclick="stopGeneration()"
-            style="display:none"
           >
-            ■ إيقاف
+            ■
           </button>
 
           <button
-            id="sendBtn"
-            class="send-btn"
+            id="sendButton"
+            class="send-button"
             onclick="sendMessage()"
           >
             ➤
@@ -1444,250 +886,245 @@ textarea::placeholder{
 
     </div>
 
-    <div class="status">
-      Aizen AI يمكنه مساعدتك في البرمجة وبناء المشاريع.
+
+    <div
+      id="status"
+      class="status"
+    >
+      Aizen AI جاهز للعمل.
     </div>
 
   </div>
+
+</section>
 
 </main>
+</div>
 
 
-<!-- BUILD MODAL -->
-
-<div
-  id="buildOverlay"
-  class="modal-overlay"
-  onclick="closeBuildOutside(event)"
+<input
+  id="fileInput"
+  type="file"
+  multiple
+  hidden
 >
 
-  <div class="build-modal">
 
-    <div class="modal-header">
+<!-- AUTH -->
 
-      <div class="modal-title">
-        🚀 إنشاء مشروع جديد
-      </div>
+<div
+  id="authOverlay"
+  class="auth-overlay hidden"
+>
 
-      <button
-        class="close-btn"
-        onclick="closeBuildModal()"
-      >
-        ×
-      </button>
+  <div class="auth-box">
 
-    </div>
-
-    <div class="build-subtitle">
-      اختر نوع المشروع الذي تريد من Aizen بناءه.
-    </div>
-
-
-    <div class="project-types">
-
-      <button
-        class="project-type"
-        data-type="website"
-        onclick="selectProjectType(this)"
-      >
-
-        <div class="type-icon">
-          🌐
-        </div>
-
-        <div class="type-name">
-          موقع ويب
-        </div>
-
-        <div class="type-description">
-          مواقع وصفحات ويب حديثة ومتجاوبة
-        </div>
-
-      </button>
-
-
-      <button
-        class="project-type"
-        data-type="webapp"
-        onclick="selectProjectType(this)"
-      >
-
-        <div class="type-icon">
-          ⚡
-        </div>
-
-        <div class="type-name">
-          Web App
-        </div>
-
-        <div class="type-description">
-          تطبيق ويب كامل مع وظائف تفاعلية
-        </div>
-
-      </button>
-
-
-      <button
-        class="project-type"
-        data-type="dashboard"
-        onclick="selectProjectType(this)"
-      >
-
-        <div class="type-icon">
-          📊
-        </div>
-
-        <div class="type-name">
-          لوحة تحكم
-        </div>
-
-        <div class="type-description">
-          Dashboard احترافي لإدارة البيانات
-        </div>
-
-      </button>
-
-
-      <button
-        class="project-type"
-        data-type="bot"
-        onclick="selectProjectType(this)"
-      >
-
-        <div class="type-icon">
-          🤖
-        </div>
-
-        <div class="type-name">
-          Bot
-        </div>
-
-        <div class="type-description">
-          بوتات Telegram و Discord وغيرها
-        </div>
-
-      </button>
-
-
-      <button
-        class="project-type"
-        data-type="api"
-        onclick="selectProjectType(this)"
-      >
-
-        <div class="type-icon">
-          🔌
-        </div>
-
-        <div class="type-name">
-          API
-        </div>
-
-        <div class="type-description">
-          Backend وواجهات API
-        </div>
-
-      </button>
-
-
-      <button
-        class="project-type"
-        data-type="other"
-        onclick="selectProjectType(this)"
-      >
-
-        <div class="type-icon">
-          🧩
-        </div>
-
-        <div class="type-name">
-          مشروع آخر
-        </div>
-
-        <div class="type-description">
-          أي فكرة أو مشروع مخصص
-        </div>
-
-      </button>
-
-    </div>
-
+    <h2 id="authTitle">تسجيل الدخول</h2>
 
     <div
-      id="projectDescription"
-      class="project-description"
+      id="authSubtitle"
+      class="auth-subtitle"
     >
-
-      <label>
-        وصف المشروع
-      </label>
-
-      <textarea
-        id="buildDescription"
-        placeholder="اشرح بالتفصيل ماذا تريد أن يبني Aizen..."
-      ></textarea>
-
+      سجّل الدخول للمتابعة إلى Aizen AI Builder.
     </div>
 
+    <input
+      id="nameInput"
+      class="auth-input hidden"
+      placeholder="اسمك"
+    >
+
+    <input
+      id="emailInput"
+      class="auth-input"
+      type="email"
+      placeholder="البريد الإلكتروني"
+    >
+
+    <input
+      id="passwordInput"
+      class="auth-input"
+      type="password"
+      placeholder="كلمة المرور"
+    >
 
     <button
-      id="startBuildBtn"
-      class="start-build"
-      onclick="startBuild()"
-      disabled
+      id="authPrimary"
+      class="auth-primary"
+      onclick="submitAuth()"
     >
-      🚀 ابدأ البناء
+      دخول
     </button>
 
-  </div>
-
-</div>
-
-
-<!-- PROJECTS MODAL -->
-
-<div
-  id="projectsOverlay"
-  class="modal-overlay"
-  onclick="closeProjectsOutside(event)"
->
-
-  <div class="projects-modal">
-
-    <div class="modal-header">
-
-      <div class="modal-title">
-        📁 مشاريعك
-      </div>
+    <div class="oauth-grid">
 
       <button
-        class="close-btn"
-        onclick="closeProjectsModal()"
+        class="auth-oauth"
+        onclick="oauthLogin('google')"
       >
-        ×
+        Google
+      </button>
+
+      <button
+        class="auth-oauth"
+        onclick="oauthLogin('github')"
+      >
+        GitHub
+      </button>
+
+      <button
+        class="auth-oauth"
+        onclick="oauthLogin('discord')"
+      >
+        Discord
+      </button>
+
+      <button
+        class="auth-oauth"
+        onclick="oauthLogin('apple')"
+      >
+        Apple
       </button>
 
     </div>
 
     <div
-      id="projectsContainer"
-    ></div>
+      id="authSwitch"
+      class="auth-link"
+      onclick="switchAuthMode()"
+    >
+      إنشاء حساب جديد
+    </div>
+
+    <div
+      class="auth-link"
+      onclick="forgotPassword()"
+    >
+      نسيت كلمة المرور؟
+    </div>
+
+    <div
+      class="auth-link"
+      onclick="closeAuth()"
+    >
+      إغلاق
+    </div>
 
   </div>
 
 </div>
+
+
+<!-- PROFILE -->
+
+<div
+  id="profileModal"
+  class="modal hidden"
+>
+
+  <div class="modal-box">
+
+    <h3>الحساب</h3>
+
+    <input
+      id="profileName"
+      class="auth-input"
+      placeholder="اسم العرض"
+    >
+
+    <input
+      id="profileAvatar"
+      class="auth-input"
+      placeholder="رابط الصورة"
+    >
+
+    <div class="modal-buttons">
+
+      <button
+        class="primary"
+        onclick="saveProfile()"
+      >
+        حفظ
+      </button>
+
+      <button onclick="closeProfile()">
+        إلغاء
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- PROJECT -->
+
+<div
+  id="projectModal"
+  class="modal hidden"
+>
+
+  <div class="modal-box">
+
+    <h3>مشروع جديد</h3>
+
+    <input
+      id="projectName"
+      class="auth-input"
+      placeholder="اسم المشروع"
+    >
+
+    <input
+      id="projectType"
+      class="auth-input"
+      placeholder="النوع - Web / App / Bot"
+    >
+
+    <textarea
+      id="projectDescription"
+      class="auth-input"
+      rows="4"
+      placeholder="وصف المشروع"
+    ></textarea>
+
+    <div class="modal-buttons">
+
+      <button
+        class="primary"
+        onclick="createProject()"
+      >
+        إنشاء
+      </button>
+
+      <button onclick="closeProjectModal()">
+        إلغاء
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<div id="toast" class="toast"></div>
 
 
 <script>
-
-const BACKEND_URL =
-  "https://aizen-ai-builder.onrender.com";
+/* =========================================================
+   CONFIG
+========================================================= */
 
 const SUPABASE_URL =
   "https://krazsdizsiexwrokqwjh.supabase.co";
 
 const SUPABASE_ANON_KEY =
-  "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IkpXVCJ9.eyJzdWIiOiJr...";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyYXpzZGl6c2lleHdyb2txd2poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwOTI2MzksImV4cCI6MjEwNTY2ODYzOX0.hjikiUy3-iPaaxCSTTDLRqDKZB09nO8H0ChBjp8YHes";
+
+const BACKEND_URL =
+  "https://aizen-ai-builder.onrender.com";
+
 
 const supabaseClient =
   window.supabase.createClient(
@@ -1696,1215 +1133,857 @@ const supabaseClient =
   );
 
 
-let currentUser = null;
+/* =========================================================
+   STATE
+========================================================= */
 
+let currentUser = null;
 let currentSession = null;
 
-let authMode = "login";
-
-let selectedProjectType = null;
-
-let currentConversationId = null;
-
-let isGenerating = false;
-
-let abortController = null;
-
-let buildUsed = false;
-
 let conversations = [];
-
 let projects = [];
 
-let uploadedFiles = [];
+let currentConversationId = null;
+let currentProjectId = null;
+
+let authMode = "login";
+let generating = false;
+let abortController = null;
 
 
-/* =========================
-   AUTH INITIALIZATION
-========================= */
+/* =========================================================
+   HELPERS
+========================================================= */
 
-async function initAuth(){
+function $(id){
+  return document.getElementById(id);
+}
+
+function escapeHTML(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function showToast(message){
+  const toast = $("toast");
+
+  toast.textContent = message;
+  toast.style.display = "block";
+
+  clearTimeout(window.toastTimer);
+
+  window.toastTimer =
+    setTimeout(()=>{
+      toast.style.display = "none";
+    },3000);
+}
+
+function setStatus(message){
+  $("status").textContent = message;
+}
+
+function formatDate(date){
+  if(!date) return "";
+
+  try{
+    return new Date(date).toLocaleString(
+      "ar",
+      {
+        day:"2-digit",
+        month:"2-digit",
+        hour:"2-digit",
+        minute:"2-digit"
+      }
+    );
+  }catch{
+    return "";
+  }
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+function toggleSidebar(){
+  $("sidebar").classList.toggle("open");
+}
+
+function closeSidebar(){
+  $("sidebar").classList.remove("open");
+}
+
+function showSidebarTab(tab){
+
+  const chats =
+    tab === "chats";
+
+  $("chatSidebar").style.display =
+    chats ? "block" : "none";
+
+  $("projectSidebar").style.display =
+    chats ? "none" : "block";
+
+  $("chatTab").classList.toggle(
+    "active",
+    chats
+  );
+
+  $("projectTab").classList.toggle(
+    "active",
+    !chats
+  );
+}
+
+
+/* =========================================================
+   AUTH UI
+========================================================= */
+
+function openAuth(){
+  if(currentUser){
+    toggleAccountMenu();
+    return;
+  }
+
+  $("authOverlay").classList.remove("hidden");
+}
+
+function closeAuth(){
+  $("authOverlay").classList.add("hidden");
+}
+
+function switchAuthMode(){
+
+  authMode =
+    authMode === "login"
+      ? "signup"
+      : "login";
+
+  const signup =
+    authMode === "signup";
+
+  $("authTitle").textContent =
+    signup
+      ? "إنشاء حساب"
+      : "تسجيل الدخول";
+
+  $("authSubtitle").textContent =
+    signup
+      ? "أنشئ حسابك في Aizen AI Builder."
+      : "سجّل الدخول للمتابعة.";
+
+  $("nameInput")
+    .classList
+    .toggle("hidden",!signup);
+
+  $("authPrimary").textContent =
+    signup
+      ? "إنشاء الحساب"
+      : "دخول";
+
+  $("authSwitch").textContent =
+    signup
+      ? "لدي حساب بالفعل"
+      : "إنشاء حساب جديد";
+}
+
+async function submitAuth(){
+
+  const email =
+    $("emailInput").value.trim();
+
+  const password =
+    $("passwordInput").value;
+
+  const name =
+    $("nameInput").value.trim();
+
+  if(!email || !password){
+    showToast("أدخل البريد وكلمة المرور.");
+    return;
+  }
 
   try{
 
-    const result =
-      await supabaseClient.auth.getSession();
+    if(authMode === "signup"){
 
-    currentSession =
-      result.data.session;
+      if(!name){
+        showToast("أدخل اسمك.");
+        return;
+      }
 
-    currentUser =
-      currentSession?.user || null;
+      const {data,error} =
+        await supabaseClient.auth.signUp({
+          email,
+          password,
+          options:{
+            data:{
+              display_name:name
+            }
+          }
+        });
 
-    if(currentUser){
+      if(error) throw error;
 
-      showAuthenticated();
+      if(data.session){
+        showToast("تم إنشاء الحساب.");
+      }else{
+        showToast(
+          "تم إنشاء الحساب. تحقق من بريدك الإلكتروني إذا طُلب منك ذلك."
+        );
+      }
 
     }else{
 
-      showLoggedOut();
-
-    }
-
-    supabaseClient.auth.onAuthStateChange(
-      async (event, session) => {
-
-        currentSession = session;
-
-        currentUser =
-          session?.user || null;
-
-        if(currentUser){
-
-          showAuthenticated();
-
-        }else{
-
-          showLoggedOut();
-
-        }
-
-      }
-    );
-
-  }catch(error){
-
-    console.error(
-      "Auth initialization error:",
-      error
-    );
-
-    showAuthMessage(
-      "تعذر تهيئة تسجيل الدخول"
-    );
-
-  }
-
-}
-
-
-/* =========================
-   SHOW AUTHENTICATED
-========================= */
-
-function showAuthenticated(){
-
-  const overlay =
-    document.getElementById(
-      "authOverlay"
-    );
-
-  if(overlay){
-
-    overlay.classList.add(
-      "hidden"
-    );
-
-  }
-
-  updateAccountUI();
-
-  loadLocalData();
-
-  renderConversations();
-
-  renderProjects();
-
-}
-
-
-/* =========================
-   SHOW LOGGED OUT
-========================= */
-
-function showLoggedOut(){
-
-  const overlay =
-    document.getElementById(
-      "authOverlay"
-    );
-
-  if(overlay){
-
-    overlay.classList.remove(
-      "hidden"
-    );
-
-  }
-
-  currentUser = null;
-
-  currentSession = null;
-
-  conversations = [];
-
-  projects = [];
-
-  currentConversationId = null;
-
-  renderConversations();
-
-  renderProjects();
-
-}
-
-
-/* =========================
-   AUTH MODE
-========================= */
-
-function switchAuthMode(mode){
-
-  authMode = mode;
-
-  const loginTab =
-    document.getElementById(
-      "loginTab"
-    );
-
-  const signupTab =
-    document.getElementById(
-      "signupTab"
-    );
-
-  const displayNameField =
-    document.getElementById(
-      "displayNameField"
-    );
-
-  const submit =
-    document.getElementById(
-      "authSubmit"
-    );
-
-  const forgot =
-    document.getElementById(
-      "forgotBtn"
-    );
-
-  if(mode === "login"){
-
-    loginTab.classList.add(
-      "active"
-    );
-
-    signupTab.classList.remove(
-      "active"
-    );
-
-    displayNameField.style.display =
-      "none";
-
-    submit.textContent =
-      "تسجيل الدخول";
-
-    forgot.style.display =
-      "block";
-
-  }else{
-
-    signupTab.classList.add(
-      "active"
-    );
-
-    loginTab.classList.remove(
-      "active"
-    );
-
-    displayNameField.style.display =
-      "block";
-
-    submit.textContent =
-      "إنشاء الحساب";
-
-    forgot.style.display =
-      "none";
-
-  }
-
-  clearAuthMessage();
-
-}
-
-
-/* =========================
-   AUTH MESSAGE
-========================= */
-
-function showAuthMessage(
-  message,
-  success = false
-){
-
-  const element =
-    document.getElementById(
-      "authMessage"
-    );
-
-  if(!element) return;
-
-  element.textContent =
-    message || "";
-
-  element.className =
-    success
-      ? "auth-message success"
-      : "auth-message";
-
-}
-
-
-function clearAuthMessage(){
-
-  showAuthMessage("");
-
-}
-
-
-/* =========================
-   EMAIL AUTH
-========================= */
-
-async function submitAuth(event){
-
-  event.preventDefault();
-
-  clearAuthMessage();
-
-  const email =
-    document.getElementById(
-      "emailInput"
-    ).value.trim();
-
-  const password =
-    document.getElementById(
-      "passwordInput"
-    ).value;
-
-  const displayName =
-    document.getElementById(
-      "displayNameInput"
-    ).value.trim();
-
-  const button =
-    document.getElementById(
-      "authSubmit"
-    );
-
-  if(!email || !password){
-
-    showAuthMessage(
-      "أدخل البريد الإلكتروني وكلمة المرور"
-    );
-
-    return;
-
-  }
-
-  if(authMode === "signup" && !displayName){
-
-    showAuthMessage(
-      "أدخل اسم العرض"
-    );
-
-    return;
-
-  }
-
-  button.disabled = true;
-
-  button.textContent =
-    authMode === "login"
-      ? "جارٍ تسجيل الدخول..."
-      : "جارٍ إنشاء الحساب...";
-
-
-  try{
-
-    let result;
-
-    if(authMode === "login"){
-
-      result =
+      const {error} =
         await supabaseClient.auth.signInWithPassword({
           email,
           password
         });
 
-    }else{
+      if(error) throw error;
 
-      result =
-        await supabaseClient.auth.signUp({
-
-          email,
-
-          password,
-
-          options:{
-            data:{
-              display_name:
-                displayName
-            }
-          }
-
-        });
-
-    }
-
-
-    if(result.error){
-
-      throw result.error;
-
-    }
-
-
-    if(authMode === "signup"){
-
-      if(!result.data.session){
-
-        showAuthMessage(
-          "تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتأكيد الحساب.",
-          true
-        );
-
-      }else{
-
-        showAuthMessage(
-          "تم إنشاء الحساب بنجاح!",
-          true
-        );
-
-      }
-
-    }else{
-
-      showAuthMessage(
-        "تم تسجيل الدخول بنجاح!",
-        true
-      );
-
+      showToast("تم تسجيل الدخول.");
     }
 
   }catch(error){
 
-    console.error(
-      "Authentication error:",
-      error
+    console.error(error);
+
+    showToast(
+      error.message || "حدث خطأ أثناء تسجيل الدخول."
     );
-
-    showAuthMessage(
-      translateAuthError(
-        error.message
-      )
-    );
-
-  }finally{
-
-    button.disabled = false;
-
-    button.textContent =
-      authMode === "login"
-        ? "تسجيل الدخول"
-        : "إنشاء الحساب";
-
   }
-
 }
-
-
-/* =========================
-   AUTH ERROR TRANSLATION
-========================= */
-
-function translateAuthError(message){
-
-  const text =
-    String(message || "");
-
-  if(
-    text.includes(
-      "Invalid login credentials"
-    )
-  ){
-
-    return "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
-
-  }
-
-  if(
-    text.includes(
-      "User already registered"
-    )
-  ){
-
-    return "هذا البريد الإلكتروني مسجل مسبقاً.";
-
-  }
-
-  if(
-    text.includes(
-      "Email not confirmed"
-    )
-  ){
-
-    return "يرجى تأكيد بريدك الإلكتروني أولاً.";
-
-  }
-
-  if(
-    text.includes(
-      "Password should be at least"
-    )
-  ){
-
-    return "كلمة المرور قصيرة جداً.";
-
-  }
-
-  if(
-    text.includes(
-      "Unable to validate email address"
-    )
-  ){
-
-    return "البريد الإلكتروني غير صالح.";
-
-  }
-
-  if(
-    text.includes(
-      "rate limit"
-    )
-  ){
-
-    return "تم تجاوز عدد المحاولات. حاول لاحقاً.";
-
-  }
-
-  return text || "حدث خطأ أثناء تسجيل الدخول.";
-
-}
-
-
-/* =========================
-   OAUTH
-========================= */
 
 async function oauthLogin(provider){
 
-  clearAuthMessage();
-
   try{
 
-    const result =
+    const {error} =
       await supabaseClient.auth.signInWithOAuth({
-
         provider,
-
         options:{
-          redirectTo:
-            window.location.origin +
-            window.location.pathname
+          redirectTo:window.location.origin
         }
-
       });
 
-    if(result.error){
-
-      throw result.error;
-
-    }
+    if(error) throw error;
 
   }catch(error){
 
-    console.error(
-      "OAuth error:",
-      error
+    showToast(
+      error.message ||
+      "تعذر تسجيل الدخول."
     );
-
-    showAuthMessage(
-      translateAuthError(
-        error.message
-      )
-    );
-
   }
-
 }
 
-
-/* =========================
-   PASSWORD RESET
-========================= */
-
-async function resetPassword(){
+async function forgotPassword(){
 
   const email =
-    document.getElementById(
-      "emailInput"
-    ).value.trim();
+    $("emailInput").value.trim();
 
   if(!email){
-
-    showAuthMessage(
-      "اكتب بريدك الإلكتروني أولاً."
-    );
-
+    showToast("اكتب بريدك الإلكتروني أولاً.");
     return;
-
   }
 
   try{
 
-    const result =
+    const {error} =
       await supabaseClient.auth.resetPasswordForEmail(
         email,
         {
           redirectTo:
-            window.location.origin +
-            window.location.pathname
+            window.location.origin
         }
       );
 
-    if(result.error){
+    if(error) throw error;
 
-      throw result.error;
-
-    }
-
-    showAuthMessage(
-      "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.",
-      true
+    showToast(
+      "تم إرسال رابط إعادة تعيين كلمة المرور."
     );
 
   }catch(error){
 
-    console.error(
-      "Password reset error:",
-      error
+    showToast(
+      error.message ||
+      "تعذر إرسال الرابط."
     );
-
-    showAuthMessage(
-      translateAuthError(
-        error.message
-      )
-    );
-
-  }/* =========================
-   ACCOUNT
-========================= */
-
-function updateAccountUI(){
-
-  if(!currentUser) return;
-
-  const metadata =
-    currentUser.user_metadata || {};
-
-  const name =
-    metadata.display_name ||
-    metadata.full_name ||
-    metadata.name ||
-    currentUser.email?.split("@")[0] ||
-    "المستخدم";
-
-  const email =
-    currentUser.email || "";
-
-  const nameEl =
-    document.getElementById("accountName");
-
-  const emailEl =
-    document.getElementById("accountEmail");
-
-  const idEl =
-    document.getElementById("accountId");
-
-  const btn =
-    document.getElementById("accountBtn");
-
-  if(nameEl){
-    nameEl.textContent = name;
   }
-
-  if(emailEl){
-    emailEl.textContent = email;
-  }
-
-  if(idEl){
-    idEl.textContent =
-      "ID: " + currentUser.id;
-  }
-
-  if(btn){
-    btn.textContent =
-      "👤 " + name;
-  }
-
 }
-
-
-/* =========================
-   ACCOUNT MENU
-========================= */
-
-function toggleAccountMenu(){
-
-  const menu =
-    document.getElementById(
-      "accountMenu"
-    );
-
-  if(!menu) return;
-
-  menu.classList.toggle("show");
-
-}
-
-
-function closeAccountMenu(){
-
-  const menu =
-    document.getElementById(
-      "accountMenu"
-    );
-
-  if(menu){
-    menu.classList.remove("show");
-  }
-
-}
-
-
-/* =========================
-   LOGOUT
-========================= */
 
 async function logout(){
 
-  closeAccountMenu();
-
   try{
-
-    const result =
-      await supabaseClient.auth.signOut();
-
-    if(result.error){
-
-      throw result.error;
-
-    }
-
-    currentUser = null;
-    currentSession = null;
-
-    conversations = [];
-    projects = [];
-
-    currentConversationId = null;
-
-    localStorage.removeItem(
-      getStorageKey("conversations")
-    );
-
-    localStorage.removeItem(
-      getStorageKey("projects")
-    );
-
-    showLoggedOut();
-
+    await supabaseClient.auth.signOut();
   }catch(error){
-
-    console.error(
-      "Logout error:",
-      error
-    );
-
-    alert(
-      "تعذر تسجيل الخروج: " +
-      error.message
-    );
-
+    console.error(error);
   }
 
+  currentUser = null;
+  currentSession = null;
+
+  conversations = [];
+  projects = [];
+
+  currentConversationId = null;
+
+  renderConversations();
+  renderProjects();
+  clearMessages();
+
+  updateAuthUI();
+
+  showToast("تم تسجيل الخروج.");
 }
 
 
-/* =========================
-   ACCESS TOKEN
-========================= */
+/* =========================================================
+   AUTH STATE
+========================================================= */
 
-async function getAccessToken(){
+async function loadSession(){
 
-  if(!currentUser){
-
-    return null;
-
-  }
-
-  const result =
+  const {data} =
     await supabaseClient.auth.getSession();
 
-  if(result.error){
+  currentSession =
+    data.session || null;
 
-    console.error(
-      "Session error:",
-      result.error
-    );
+  currentUser =
+    currentSession?.user || null;
 
-    return null;
+  updateAuthUI();
 
+  if(currentUser){
+    await ensureProfile();
+    await loadConversations();
+    await loadProjects();
   }
-
-  const session =
-    result.data.session;
-
-  if(!session){
-
-    currentUser = null;
-    currentSession = null;
-
-    showLoggedOut();
-
-    return null;
-
-  }
-
-  currentSession = session;
-
-  return session.access_token || null;
-
 }
 
+supabaseClient.auth.onAuthStateChange(
+  async (_event,session)=>{
 
-/* =========================
-   STORAGE KEY
-========================= */
+    currentSession = session;
+    currentUser = session?.user || null;
 
-function getStorageKey(name){
+    updateAuthUI();
 
-  if(!currentUser){
+    if(currentUser){
 
-    return "aizen_" + name;
+      await ensureProfile();
+      await loadConversations();
+      await loadProjects();
 
-  }
+    }else{
 
-  return (
-    "aizen_" +
-    currentUser.id +
-    "_" +
-    name
-  );
+      conversations = [];
+      projects = [];
 
-}
-
-
-/* =========================
-   LOCAL DATA
-========================= */
-
-function loadLocalData(){
-
-  if(!currentUser) return;
-
-  try{
-
-    const savedConversations =
-      localStorage.getItem(
-        getStorageKey(
-          "conversations"
-        )
-      );
-
-    const savedProjects =
-      localStorage.getItem(
-        getStorageKey(
-          "projects"
-        )
-      );
-
-    conversations =
-      savedConversations
-        ? JSON.parse(
-            savedConversations
-          )
-        : [];
-
-    projects =
-      savedProjects
-        ? JSON.parse(
-            savedProjects
-          )
-        : [];
-
-  }catch(error){
-
-    console.error(
-      "Local data error:",
-      error
-    );
-
-    conversations = [];
-    projects = [];
-
-  }
-
-}
-
-
-/* =========================
-   SAVE DATA
-========================= */
-
-function saveConversations(){
-
-  if(!currentUser) return;
-
-  try{
-
-    localStorage.setItem(
-      getStorageKey(
-        "conversations"
-      ),
-      JSON.stringify(
-        conversations
-      )
-    );
-
-  }catch(error){
-
-    console.error(
-      "Save conversations error:",
-      error
-    );
-
-  }
-
-}
-
-
-function saveProjects(){
-
-  if(!currentUser) return;
-
-  try{
-
-    localStorage.setItem(
-      getStorageKey(
-        "projects"
-      ),
-      JSON.stringify(
-        projects
-      )
-    );
-
-  }catch(error){
-
-    console.error(
-      "Save projects error:",
-      error
-    );
-
-  }
-
-}
-
-
-/* =========================
-   SIDEBAR
-========================= */
-
-function toggleSidebar(){
-
-  const sidebar =
-    document.getElementById(
-      "sidebar"
-    );
-
-  const overlay =
-    document.getElementById(
-      "sidebarOverlay"
-    );
-
-  sidebar?.classList.toggle(
-    "open"
-  );
-
-  overlay?.classList.toggle(
-    "show"
-  );
-
-}
-
-
-function closeSidebar(){
-
-  const sidebar =
-    document.getElementById(
-      "sidebar"
-    );
-
-  const overlay =
-    document.getElementById(
-      "sidebarOverlay"
-    );
-
-  sidebar?.classList.remove(
-    "open"
-  );
-
-  overlay?.classList.remove(
-    "show"
-  );
-
-}
-
-
-/* =========================
-   SIDEBAR TABS
-========================= */
-
-function showSidebarTab(tab){
-
-  const chatTab =
-    document.getElementById(
-      "chatTab"
-    );
-
-  const projectTab =
-    document.getElementById(
-      "projectTab"
-    );
-
-  const chatSidebar =
-    document.getElementById(
-      "chatSidebar"
-    );
-
-  const projectSidebar =
-    document.getElementById(
-      "projectSidebar"
-    );
-
-  if(tab === "chats"){
-
-    chatTab?.classList.add(
-      "active"
-    );
-
-    projectTab?.classList.remove(
-      "active"
-    );
-
-    if(chatSidebar){
-      chatSidebar.style.display =
-        "block";
+      renderConversations();
+      renderProjects();
     }
+  }
+);
 
-    if(projectSidebar){
-      projectSidebar.style.display =
-        "none";
-    }
+function updateAuthUI(){
+
+  if(currentUser){
+
+    $("loginButton")
+      .classList
+      .add("hidden");
+
+    $("accountButton")
+      .classList
+      .remove("hidden");
+
+    $("accountName")
+      .classList
+      .remove("hidden");
+
+    const metadata =
+      currentUser.user_metadata || {};
+
+    $("accountName").textContent =
+      metadata.display_name ||
+      currentUser.email ||
+      "حسابي";
+
+    closeAuth();
 
   }else{
 
-    projectTab?.classList.add(
-      "active"
-    );
+    $("loginButton")
+      .classList
+      .remove("hidden");
 
-    chatTab?.classList.remove(
-      "active"
-    );
+    $("accountButton")
+      .classList
+      .add("hidden");
 
-    if(chatSidebar){
-      chatSidebar.style.display =
-        "none";
-    }
-
-    if(projectSidebar){
-      projectSidebar.style.display =
-        "block";
-    }
-
+    $("accountName")
+      .classList
+      .add("hidden");
   }
-
 }
 
 
-/* =========================
+/* =========================================================
+   PROFILE
+========================================================= */
+
+async function ensureProfile(){
+
+  if(!currentUser) return;
+
+  try{
+
+    const {data,error} =
+      await supabaseClient
+        .from("profiles")
+        .select("*")
+        .eq("id",currentUser.id)
+        .maybeSingle();
+
+    if(error) throw error;
+
+    if(!data){
+
+      const name =
+        currentUser.user_metadata?.display_name ||
+        currentUser.email?.split("@")[0] ||
+        "User";
+
+      await supabaseClient
+        .from("profiles")
+        .insert({
+          id:currentUser.id,
+          display_name:name,
+          avatar_url:null
+        });
+    }
+
+  }catch(error){
+
+    console.error(
+      "Profile error:",
+      error
+    );
+  }
+}
+
+function openProfile(){
+
+  $("accountMenu")
+    .classList
+    .add("hidden");
+
+  if(!currentUser) return;
+
+  $("profileName").value =
+    currentUser.user_metadata?.display_name || "";
+
+  $("profileAvatar").value =
+    currentUser.user_metadata?.avatar_url || "";
+
+  $("profileModal")
+    .classList
+    .remove("hidden");
+}
+
+function closeProfile(){
+  $("profileModal")
+    .classList
+    .add("hidden");
+}
+
+async function saveProfile(){
+
+  if(!currentUser) return;
+
+  const name =
+    $("profileName").value.trim();
+
+  const avatar =
+    $("profileAvatar").value.trim();
+
+  try{
+
+    const {error} =
+      await supabaseClient.auth.updateUser({
+        data:{
+          display_name:name,
+          avatar_url:avatar
+        }
+      });
+
+    if(error) throw error;
+
+    await supabaseClient
+      .from("profiles")
+      .upsert({
+        id:currentUser.id,
+        display_name:name,
+        avatar_url:avatar
+      });
+
+    updateAuthUI();
+
+    closeProfile();
+
+    showToast("تم تحديث الحساب.");
+
+  }catch(error){
+
+    showToast(
+      error.message ||
+      "تعذر تحديث الحساب."
+    );
+  }
+}
+
+
+/* =========================================================
+   ACCOUNT MENU
+========================================================= */
+
+function toggleAccountMenu(){
+  $("accountMenu")
+    .classList
+    .toggle("hidden");
+}
+
+
+/* =========================================================
    CONVERSATIONS
-========================= */
+========================================================= */
+
+async function loadConversations(){
+
+  if(!currentUser) return;
+
+  const {data,error} =
+    await supabaseClient
+      .from("conversations")
+      .select("*")
+      .eq("user_id",currentUser.id)
+      .eq("archived",false)
+      .order("pinned",{ascending:false})
+      .order("updated_at",{ascending:false});
+
+  if(error){
+
+    console.error(error);
+    showToast("تعذر تحميل المحادثات.");
+    return;
+  }
+
+  conversations = data || [];
+
+  renderConversations();
+
+  if(
+    currentConversationId &&
+    conversations.some(
+      c=>c.id === currentConversationId
+    )
+  ){
+    await loadMessages(
+      currentConversationId
+    );
+  }
+}
 
 function renderConversations(){
 
-  const list =
-    document.getElementById(
-      "conversationList"
+  const container =
+    $("conversationList");
+
+  const search =
+    $("searchInput").value
+      .trim()
+      .toLowerCase();
+
+  let list =
+    conversations.filter(c =>
+      String(c.title || "محادثة جديدة")
+        .toLowerCase()
+        .includes(search)
     );
 
-  if(!list) return;
+  if(!list.length){
 
-  list.innerHTML = "";
+    container.innerHTML =
+      `<div class="empty-state">
+        لا توجد محادثات بعد.
+      </div>`;
+
+    return;
+  }
+
+  container.innerHTML =
+    list.map(c=>{
+
+      const title =
+        c.title ||
+        "محادثة جديدة";
+
+      return `
+        <div
+          class="conversation-item
+          ${c.id === currentConversationId ? "active" : ""}"
+        >
+
+          <div
+            class="conversation-main"
+            onclick="openConversation('${c.id}')"
+          >
+
+            <div class="conversation-icon">
+              ${c.pinned ? "📌" : "💬"}
+            </div>
+
+            <div class="conversation-info">
+
+              <div class="conversation-title">
+                ${escapeHTML(title)}
+              </div>
+
+              <div class="conversation-date">
+                ${formatDate(c.updated_at)}
+              </div>
+
+            </div>
+
+          </div>
+
+          <button
+            class="conversation-menu"
+            onclick="conversationMenu(event,'${c.id}')"
+          >
+            ⋮
+          </button>
+
+        </div>
+      `;
+
+    }).join("");
+}
+
+async function createConversation(title="محادثة جديدة"){
 
   if(!currentUser){
 
-    list.innerHTML =
-      '<div class="empty-state">سجّل الدخول أولاً</div>';
-
-    return;
-
+    openAuth();
+    throw new Error("AUTH_REQUIRED");
   }
 
-  const search =
-    document.getElementById(
-      "searchInput"
-    )?.value
-      .trim()
-      .toLowerCase() || "";
+  const {data,error} =
+    await supabaseClient
+      .from("conversations")
+      .insert({
+        user_id:currentUser.id,
+        title,
+        pinned:false,
+        archived:false,
+        build_used:false
+      })
+      .select()
+      .single();
 
-  let filtered =
-    conversations.filter(
-      conversation => {
+  if(error) throw error;
 
-        const title =
-          String(
-            conversation.title ||
-            ""
-          ).toLowerCase();
+  conversations.unshift(data);
 
-        return title.includes(
-          search
-        );
+  currentConversationId = data.id;
 
-      }
-    );
+  renderConversations();
 
+  clearMessages();
 
-  filtered.sort(
-    (a,b) => {
+  return data;
+}
 
-      if(
-        Boolean(a.pinned) !==
-        Boolean(b.pinned)
-      ){
+async function newChat(){
 
-        return a.pinned ? -1 : 1;
+  if(!currentUser){
 
-      }
-
-      return (
-        Number(
-          b.updatedAt || 0
-        ) -
-        Number(
-          a.updatedAt || 0
-        )
-      );
-
-    }
-  );
-
-
-  if(filtered.length === 0){
-
-    list.innerHTML =
-      '<div class="empty-state">لا توجد محادثات بعد</div>';
-
+    openAuth();
+    showToast("سجّل الدخول أولاً.");
     return;
-
   }
 
+  try{
 
-  filtered.forEach(
-    conversation => {
+    await createConversation();
 
-      const item =
-        document.createElement(
-          "div"
-        );
+    closeSidebar();
 
-      item.className =
-        "conversation-item" +
-        (
-          conversation.id ===
-          currentConversationId
-            ? " active"
-            : ""
-        );
+    setStatus("محادثة جديدة.");
 
+  }catch(error){
 
-      item.innerHTML = `
+    console.error(error);
 
-        <div
-          class="conversation-main"
-          onclick="openConversation('${conversation.id}')"
-        >
+    showToast("تعذر إنشاء المحادثة.");
+  }
+}
 
-          <div class="conversation-icon">
-            ${conversation.pinned ? "📌" : "💬"}
-          </div>
+async function openConversation(id){
 
-          <div class="conversation-info">
+  if(!currentUser) return;
 
-            <div class="conversation-title">
-              ${escapeHTML(
-                conversation.title ||
-                "محادثة جديدة"
-              )}
-            </div>
+  currentConversationId = id;
 
-            <div class="conversation-date">
-              ${formatDate(
-                conversation.updatedAt
-              )}
-            </div>
+  renderConversations();
 
-          </div>
+  await loadMessages(id);
 
-        </div>
+  closeSidebar();
+}
 
-        <button
-          class="conversation-menu"
-          onclick="showConversationMenu(event,'${conversation.id}')"
-        >
-          ⋮
-        </button>
+async function loadMessages(conversationId){
 
-      `;
+  if(!currentUser) return;
 
-      list.appendChild(item);
+  const {data,error} =
+    await supabaseClient
+      .from("messages")
+      .select("*")
+      .eq("conversation_id",conversationId)
+      .eq("user_id",currentUser.id)
+      .order("created_at",{ascending:true});
 
-    }
-  );
+  if(error){
 
+    console.error(error);
+    showToast("تعذر تحميل الرسائل.");
+    return;
+  }
+
+  renderMessages(data || []);
+}
+
+function clearMessages(){
+
+  $("messages").innerHTML = `
+    <div class="welcome">
+      <div class="welcome-logo">A</div>
+      <h1>مرحباً بك في Aizen AI Builder</h1>
+      <p>
+        اكتب فكرتك وسيساعدك Aizen في بناء مشروعك.
+      </p>
+    </div>
+  `;
+}
+
+function renderMessages(messages){
+
+  const container =
+    $("messages");
+
+  if(!messages.length){
+
+    clearMessages();
+    return;
+  }
+
+  container.innerHTML =
+    messages.map(messageHTML).join("");
+
+  scrollMessages();
+}
+
+function messageHTML(message){
+
+  const user =
+    message.role === "user";
+
+  return `
+    <div class="message ${user ? "user" : "assistant"}">
+
+      <div class="message-avatar">
+        ${user ? "أنت" : "A"}
+      </div>
+
+      <div class="message-content">
+        ${escapeHTML(message.content)}
+      </div>
+
+    </div>
+  `;
+}
+
+function addMessageToUI(role,content){
+
+  const welcome =
+    $("messages").querySelector(".welcome");
+
+  if(welcome) welcome.remove();
+
+  const div =
+    document.createElement("div");
+
+  div.className =
+    `message ${role === "user" ? "user" : "assistant"}`;
+
+  div.innerHTML = `
+    <div class="message-avatar">
+      ${role === "user" ? "أنت" : "A"}
+    </div>
+
+    <div class="message-content"></div>
+  `;
+
+  div.querySelector(
+    ".message-content"
+  ).textContent = content;
+
+  $("messages").appendChild(div);
+
+  scrollMessages();
+
+  return div;
+}
+
+function scrollMessages(){
+
+  const box =
+    $("messages");
+
+  box.scrollTop =
+    box.scrollHeight;
 }
 
 
-/* =========================
-   CONVERSATION MENU
-========================= */
+/* =========================================================
+   CONVERSATION ACTIONS
+========================================================= */
 
-function showConversationMenu(
-  event,
-  id
-){
+async function conversationMenu(event,id){
 
   event.stopPropagation();
 
   const conversation =
     conversations.find(
-      item => item.id === id
+      c=>c.id === id
     );
 
   if(!conversation) return;
 
   const action =
     prompt(
-      "اكتب: rename أو pin أو delete",
-      conversation.pinned
-        ? "unpin"
-        : "pin"
+      "اكتب:\nrename لإعادة التسمية\npin للتثبيت\nunpin لإلغاء التثبيت\ndelete للحذف"
     );
 
   if(!action) return;
@@ -2916,592 +1995,311 @@ function showConversationMenu(
 
     const title =
       prompt(
-        "اسم المحادثة الجديد:",
+        "الاسم الجديد:",
         conversation.title
       );
 
-    if(
-      title &&
-      title.trim()
-    ){
+    if(!title) return;
 
-      conversation.title =
-        title.trim();
+    await updateConversation(
+      id,
+      {title:title.trim()}
+    );
 
-      conversation.updatedAt =
-        Date.now();
+  }else if(normalized === "pin"){
 
-      saveConversations();
+    await updateConversation(
+      id,
+      {pinned:true}
+    );
 
-      renderConversations();
+  }else if(normalized === "unpin"){
 
-    }
+    await updateConversation(
+      id,
+      {pinned:false}
+    );
 
-    return;
-
-  }
-
-
-  if(
-    normalized === "pin" ||
-    normalized === "unpin"
-  ){
-
-    conversation.pinned =
-      normalized === "pin";
-
-    conversation.updatedAt =
-      Date.now();
-
-    saveConversations();
-
-    renderConversations();
-
-    return;
-
-  }
-
-
-  if(normalized === "delete"){
+  }else if(normalized === "delete"){
 
     if(
       !confirm(
         "هل تريد حذف هذه المحادثة؟"
       )
-    ){
+    ) return;
 
-      return;
-
-    }
-
-    conversations =
-      conversations.filter(
-        item =>
-          item.id !== id
-      );
-
-    if(
-      currentConversationId === id
-    ){
-
-      currentConversationId =
-        null;
-
-      showWelcome();
-
-    }
-
-    saveConversations();
-
-    renderConversations();
-
+    await deleteConversation(id);
   }
-
 }
 
+async function updateConversation(id,updates){
 
-/* =========================
-   OPEN CONVERSATION
-========================= */
+  const {data,error} =
+    await supabaseClient
+      .from("conversations")
+      .update(updates)
+      .eq("id",id)
+      .eq("user_id",currentUser.id)
+      .select()
+      .single();
 
-function openConversation(id){
+  if(error){
 
-  const conversation =
-    conversations.find(
-      item => item.id === id
+    showToast("تعذر تحديث المحادثة.");
+    return;
+  }
+
+  const index =
+    conversations.findIndex(
+      c=>c.id === id
     );
 
-  if(!conversation) return;
+  if(index !== -1){
+    conversations[index] = data;
+  }
 
-  currentConversationId = id;
+  renderConversations();
+}
 
-  buildUsed =
-    Boolean(
-      conversation.buildUsed
+async function deleteConversation(id){
+
+  const {error:messageError} =
+    await supabaseClient
+      .from("messages")
+      .delete()
+      .eq("conversation_id",id)
+      .eq("user_id",currentUser.id);
+
+  if(messageError){
+
+    console.error(messageError);
+  }
+
+  const {error} =
+    await supabaseClient
+      .from("conversations")
+      .delete()
+      .eq("id",id)
+      .eq("user_id",currentUser.id);
+
+  if(error){
+
+    showToast("تعذر حذف المحادثة.");
+    return;
+  }
+
+  conversations =
+    conversations.filter(
+      c=>c.id !== id
     );
 
-  showChat();
+  if(currentConversationId === id){
 
-  renderMessages(
-    conversation.messages || []
-  );
+    currentConversationId = null;
+    clearMessages();
+  }
 
   renderConversations();
 
-  closeSidebar();
-
+  showToast("تم حذف المحادثة.");
 }
 
 
-/* =========================
-   NEW CHAT
-========================= */
-
-function newChat(){
-
-  if(isGenerating){
-
-    stopGeneration();
-
-  }
-
-  currentConversationId = null;
-
-  buildUsed = false;
-
-  uploadedFiles = [];
-
-  clearMessages();
-
-  showWelcome();
-
-  closeAccountMenu();
-
-  closeSidebar();
-
-  document.getElementById(
-    "messageInput"
-  )?.focus();
-
-  }
-
-}/* =========================
-   CHAT UI
-========================= */
-
-function showWelcome(){
-
-  const welcome =
-    document.getElementById(
-      "welcomeScreen"
-    );
-
-  const chat =
-    document.getElementById(
-      "chatScreen"
-    );
-
-  if(welcome){
-    welcome.style.display =
-      "flex";
-  }
-
-  if(chat){
-    chat.style.display =
-      "none";
-  }
-
-}
-
-
-function showChat(){
-
-  const welcome =
-    document.getElementById(
-      "welcomeScreen"
-    );
-
-  const chat =
-    document.getElementById(
-      "chatScreen"
-    );
-
-  if(welcome){
-    welcome.style.display =
-      "none";
-  }
-
-  if(chat){
-    chat.style.display =
-      "flex";
-  }
-
-}
-
-
-function clearMessages(){
-
-  const messages =
-    document.getElementById(
-      "messages"
-    );
-
-  if(messages){
-    messages.innerHTML = "";
-  }
-
-}
-
-
-function renderMessages(
-  messages
-){
-
-  clearMessages();
-
-  if(!messages || !messages.length){
-
-    showWelcome();
-
-    return;
-
-  }
-
-  showChat();
-
-  messages.forEach(
-    message => {
-
-      appendMessage(
-        message.role,
-        message.content,
-        false
-      );
-
-    }
-  );
-
-  scrollMessages();
-
-}
-
-
-/* =========================
-   ADD MESSAGE
-========================= */
-
-function appendMessage(
-  role,
-  content,
-  scroll = true
-){
-
-  const container =
-    document.getElementById(
-      "messages"
-    );
-
-  if(!container) return null;
-
-  showChat();
-
-  const wrapper =
-    document.createElement(
-      "div"
-    );
-
-  wrapper.className =
-    "message " +
-    (
-      role === "user"
-        ? "user-message"
-        : "ai-message"
-    );
-
-
-  const avatar =
-    document.createElement(
-      "div"
-    );
-
-  avatar.className =
-    "message-avatar";
-
-  avatar.textContent =
-    role === "user"
-      ? "👤"
-      : "🤖";
-
-
-  const bubble =
-    document.createElement(
-      "div"
-    );
-
-  bubble.className =
-    "bubble";
-
-
-  if(role === "user"){
-
-    bubble.textContent =
-      content || "";
-
-  }else{
-
-    bubble.innerHTML =
-      formatAIText(
-        content || ""
-      );
-
-  }
-
-
-  wrapper.appendChild(
-    avatar
-  );
-
-  wrapper.appendChild(
-    bubble
-  );
-
-  container.appendChild(
-    wrapper
-  );
-
-
-  if(scroll){
-
-    scrollMessages();
-
-  }
-
-  return bubble;
-
-}
-
-
-/* =========================
-   AI TEXT FORMAT
-========================= */
-
-function formatAIText(text){
-
-  let value =
-    escapeHTML(
-      String(text || "")
-    );
-
-  value =
-    value.replace(
-      /```([\s\S]*?)```/g,
-      "<pre><code>$1</code></pre>"
-    );
-
-  value =
-    value.replace(
-      /`([^`]+)`/g,
-      "<code>$1</code>"
-    );
-
-  value =
-    value.replace(
-      /\*\*(.*?)\*\*/g,
-      "<strong>$1</strong>"
-    );
-
-  value =
-    value.replace(
-      /\n/g,
-      "<br>"
-    );
-
-  return value;
-
-}
-
-
-/* =========================
+/* =========================================================
    SEND MESSAGE
-========================= */
+========================================================= */
 
 async function sendMessage(){
 
-  if(isGenerating){
-
-    return;
-
-  }
+  if(generating) return;
 
   if(!currentUser){
 
-    showLoggedOut();
-
+    openAuth();
+    showToast("سجّل الدخول أولاً.");
     return;
-
   }
-
 
   const input =
-    document.getElementById(
-      "messageInput"
-    );
+    $("messageInput");
 
-  if(!input) return;
-
-
-  const message =
+  const text =
     input.value.trim();
 
-  if(!message){
+  if(!text) return;
 
-    return;
+  try{
 
-  }
+    let conversation;
 
+    if(currentConversationId){
 
-  const token =
-    await getAccessToken();
+      conversation =
+        conversations.find(
+          c=>c.id === currentConversationId
+        );
+    }
 
-  if(!token){
+    if(!conversation){
 
-    showLoggedOut();
+      conversation =
+        await createConversation(
+          text.slice(0,60)
+        );
+    }
 
-    return;
+    const conversationId =
+      conversation.id;
 
-  }
+    const {error:insertError} =
+      await supabaseClient
+        .from("messages")
+        .insert({
+          conversation_id:conversationId,
+          user_id:currentUser.id,
+          role:"user",
+          content:text,
+          metadata:{}
+        });
 
+    if(insertError)
+      throw insertError;
 
-  let conversation =
-    getCurrentConversation();
-
-
-  if(!conversation){
-
-    conversation =
-      createConversation(
-        message
-      );
-
-  }
-
-
-  conversation.messages =
-    conversation.messages || [];
-
-
-  conversation.messages.push({
-
-    role:
+    addMessageToUI(
       "user",
+      text
+    );
 
-    content:
-      message,
+    input.value = "";
+    autoResizeTextarea();
 
-    createdAt:
-      Date.now()
+    if(
+      !conversation.title ||
+      conversation.title === "محادثة جديدة"
+    ){
 
-  });
-
-
-  conversation.updatedAt =
-    Date.now();
-
-
-  if(
-    !conversation.title ||
-    conversation.title ===
-      "محادثة جديدة"
-  ){
-
-    conversation.title =
-      createConversationTitle(
-        message
+      await updateConversation(
+        conversationId,
+        {
+          title:text.slice(0,60)
+        }
       );
+    }
 
+    await requestAI(
+      conversationId,
+      false
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+    showToast(
+      error.message ||
+      "تعذر إرسال الرسالة."
+    );
+  }
+}
+
+
+/* =========================================================
+   AI REQUEST / SSE
+========================================================= */
+
+async function requestAI(
+  conversationId,
+  isBuild
+){
+
+  if(!currentSession){
+
+    const {data} =
+      await supabaseClient.auth.getSession();
+
+    currentSession =
+      data.session;
   }
 
+  if(!currentSession){
 
-  currentConversationId =
-    conversation.id;
+    showToast("انتهت جلسة الدخول.");
+    return;
+  }
 
+  generating = true;
 
-  saveConversations();
+  $("sendButton").disabled = true;
+  $("buildButton").disabled = true;
 
-  renderConversations();
+  $("stopButton").style.display =
+    "inline-block";
 
-  appendMessage(
-    "user",
-    message
+  setStatus(
+    isBuild
+      ? "Aizen يقوم ببناء المشروع..."
+      : "Aizen يفكر..."
   );
-
-
-  input.value = "";
-
-  autoResize(input);
-
-
-  isGenerating = true;
 
   abortController =
     new AbortController();
 
-
-  setGeneratingUI(true);
-
-
-  const aiBubble =
-    appendMessage(
+  const assistantElement =
+    addMessageToUI(
       "assistant",
       ""
     );
 
+  const contentElement =
+    assistantElement.querySelector(
+      ".message-content"
+    );
 
-  let fullResponse = "";
-
+  let fullText = "";
 
   try{
 
     const response =
       await fetch(
-        BACKEND_URL +
-        "/api/chat",
+        `${BACKEND_URL}/api/chat`,
         {
-
-          method:
-            "POST",
+          method:"POST",
 
           headers:{
             "Content-Type":
               "application/json",
 
             "Authorization":
-              "Bearer " + token
+              `Bearer ${currentSession.access_token}`
           },
 
-          body:
-            JSON.stringify({
-              message
-            }),
+          body:JSON.stringify({
+            conversationId,
+            build:isBuild
+          }),
 
           signal:
             abortController.signal
-
         }
       );
 
-
     if(!response.ok){
 
-      let errorText =
-        "حدث خطأ أثناء الاتصال بالخادم.";
-
-      try{
-
-        const errorData =
-          await response.json();
-
-        errorText =
-          errorData.error ||
-          errorText;
-
-      }catch{}
+      const errorText =
+        await response.text();
 
       throw new Error(
-        errorText
+        errorText ||
+        `HTTP ${response.status}`
       );
-
     }
-
 
     if(!response.body){
 
       throw new Error(
         "الخادم لم يرجع Stream."
       );
-
     }
-
 
     const reader =
       response.body.getReader();
@@ -3511,3345 +2309,518 @@ async function sendMessage(){
 
     let buffer = "";
 
-
     while(true){
 
-      const {
-        value,
-        done
-      } =
+      const {value,done} =
         await reader.read();
 
-
       if(done) break;
-
 
       buffer +=
         decoder.decode(
           value,
-          {
-            stream:true
-          }
+          {stream:true}
         );
 
-
-      const events =
-        buffer.split(
-          "\n\n"
-        );
-
+      const parts =
+        buffer.split("\n");
 
       buffer =
-        events.pop() || "";
-
+        parts.pop() || "";
 
       for(
-        const eventBlock
-        of events
+        const line of parts
       ){
 
-        const parsed =
-          parseSSE(
-            eventBlock
-          );
+        if(!line.startsWith("data:"))
+          continue;
 
+        const raw =
+          line.slice(5).trim();
 
-        if(!parsed) continue;
+        if(!raw) continue;
 
+        if(raw === "[DONE]")
+          continue;
 
-        if(
-          parsed.event ===
-          "text"
-        ){
+        try{
 
-          let text =
-            parsed.data?.text ||
+          const data =
+            JSON.parse(raw);
+
+          const delta =
+            data.text ??
+            data.delta ??
+            data.content ??
             "";
 
-          fullResponse +=
-            text;
+          if(delta){
 
+            fullText += delta;
 
-          if(aiBubble){
+            contentElement.textContent =
+              fullText;
 
-            aiBubble.innerHTML =
-              formatAIText(
-                fullResponse
-              );
-
+            scrollMessages();
           }
 
+        }catch{
+
+          fullText +=
+            raw;
+
+          contentElement.textContent =
+            fullText;
 
           scrollMessages();
-
         }
-
-
-        if(
-          parsed.event ===
-          "error"
-        ){
-
-          throw new Error(
-            parsed.data?.error ||
-            "حدث خطأ أثناء التوليد."
-          );
-
-        }
-
       }
-
     }
 
+    if(!fullText){
 
-    if(
-      buffer.trim()
-    ){
+      fullText =
+        "لم يصل رد من Aizen.";
 
-      const parsed =
-        parseSSE(
-          buffer
-        );
-
-
-      if(
-        parsed &&
-        parsed.event ===
-          "text"
-      ){
-
-        const text =
-          parsed.data?.text ||
-          "";
-
-        fullResponse +=
-          text;
-
-        if(aiBubble){
-
-          aiBubble.innerHTML =
-            formatAIText(
-              fullResponse
-            );
-
-        }
-
-      }
-
+      contentElement.textContent =
+        fullText;
     }
 
+    const {error:saveError} =
+      await supabaseClient
+        .from("messages")
+        .insert({
+          conversation_id:conversationId,
+          user_id:currentUser.id,
+          role:"assistant",
+          content:fullText,
+          metadata:{
+            build:isBuild
+          }
+        });
 
-    if(!fullResponse.trim()){
+    if(saveError)
+      console.error(saveError);
 
-      fullResponse =
-        "لم يتم توليد رد.";
+    await supabaseClient
+      .from("conversations")
+      .update({
+        updated_at:
+          new Date().toISOString(),
+        ...(isBuild
+          ? {
+              build_used:true,
+              build_used_at:
+                new Date().toISOString()
+            }
+          : {})
+      })
+      .eq("id",conversationId)
+      .eq("user_id",currentUser.id);
 
-      if(aiBubble){
+    await loadConversations();
 
-        aiBubble.innerHTML =
-          formatAIText(
-            fullResponse
-          );
-
-      }
-
-    }
-
-
-    conversation.messages.push({
-
-      role:
-        "assistant",
-
-      content:
-        fullResponse,
-
-      createdAt:
-        Date.now()
-
-    });
-
-
-    conversation.updatedAt =
-      Date.now();
-
-
-    saveConversations();
-
-    renderConversations();
-
+    setStatus(
+      isBuild
+        ? "اكتمل البناء."
+        : "تم الرد."
+    );
 
   }catch(error){
 
-    if(
-      error.name ===
-      "AbortError"
-    ){
+    if(error.name === "AbortError"){
 
-      if(
-        fullResponse.trim()
-      ){
+      setStatus("تم إيقاف التوليد.");
 
-        conversation.messages.push({
-
-          role:
-            "assistant",
-
-          content:
-            fullResponse,
-
-          createdAt:
-            Date.now()
-
-        });
-
-        conversation.updatedAt =
-          Date.now();
-
-        saveConversations();
-
-      }
-
-    }else{
-
-      console.error(
-        "Chat error:",
-        error
-      );
-
-
-      const errorMessage =
-        "❌ " +
-        (
-          error.message ||
-          "حدث خطأ غير معروف."
-        );
-
-
-      if(aiBubble){
-
-        aiBubble.innerHTML =
-          formatAIText(
-            errorMessage
-          );
-
-      }else{
-
-        appendMessage(
-          "assistant",
-          errorMessage
-        );
-
-      }
-
+      return;
     }
 
+    console.error(error);
+
+    contentElement.textContent =
+      `حدث خطأ: ${error.message}`;
+
+    setStatus("حدث خطأ.");
   }finally{
 
-    isGenerating = false;
+    generating = false;
+
+    $("sendButton").disabled = false;
+    $("buildButton").disabled = false;
+
+    $("stopButton").style.display =
+      "none";
 
     abortController = null;
-
-    setGeneratingUI(false);
-
   }
-
 }
 
 
-/* =========================
-   PARSE SSE
-========================= */
+/* =========================================================
+   BUILD
+========================================================= */
 
-function parseSSE(
-  block
-){
+async function startBuild(){
 
-  if(!block) return null;
+  if(generating) return;
 
-  const lines =
-    block.split("\n");
+  if(!currentUser){
 
-  let event =
-    "";
+    openAuth();
+    showToast("سجّل الدخول أولاً.");
+    return;
+  }
 
-  let data =
-    "";
+  if(!currentConversationId){
 
+    showToast(
+      "اكتب فكرة المشروع أولاً."
+    );
 
-  for(
-    const line
-    of lines
+    return;
+  }
+
+  const conversation =
+    conversations.find(
+      c=>c.id === currentConversationId
+    );
+
+  if(
+    conversation &&
+    conversation.build_used
   ){
 
-    if(
-      line.startsWith(
-        "event:"
-      )
-    ){
+    showToast(
+      "تم استخدام Build لهذه المحادثة مسبقاً."
+    );
 
-      event =
-        line.slice(6).trim();
-
-    }
-
-
-    if(
-      line.startsWith(
-        "data:"
-      )
-    ){
-
-      data +=
-        line.slice(5).trim();
-
-    }
-
+    return;
   }
 
-
-  if(!data){
-
-    return null;
-
-  }
-
-
-  try{
-
-    return {
-
-      event,
-
-      data:
-        JSON.parse(data)
-
-    };
-
-  }catch{
-
-    return null;
-
-  }
-
+  await requestAI(
+    currentConversationId,
+    true
+  );
 }
-
-
-/* =========================
-   GENERATING UI
-========================= */
-
-function setGeneratingUI(
-  generating
-){
-
-  const send =
-    document.getElementById(
-      "sendBtn"
-    );
-
-  const stop =
-    document.getElementById(
-      "stopBtn"
-    );
-
-  const input =
-    document.getElementById(
-      "messageInput"
-    );
-
-  if(send){
-
-    send.disabled =
-      generating;
-
-  }
-
-  if(stop){
-
-    stop.style.display =
-      generating
-        ? "block"
-        : "none";
-
-  }
-
-  if(input){
-
-    input.disabled =
-      generating;
-
-  }
-
-
-  const indicator =
-    document.getElementById(
-      "typingIndicator"
-    );
-
-  if(indicator){
-
-    indicator.style.display =
-      generating
-        ? "flex"
-        : "none";
-
-  }
-
-}
-
-
-/* =========================
-   STOP GENERATION
-========================= */
 
 function stopGeneration(){
 
   if(
+    generating &&
     abortController
   ){
 
     abortController.abort();
-
   }
-
-  isGenerating = false;
-
-  setGeneratingUI(false);
-
 }
 
 
-/* =========================
-   CURRENT CONVERSATION
-========================= */
-
-function getCurrentConversation(){
-
-  if(!currentConversationId){
-
-    return null;
-
-  }
-
-  return conversations.find(
-    conversation =>
-      conversation.id ===
-      currentConversationId
-  ) || null;
-
-}
-
-
-/* =========================
-   CREATE CONVERSATION
-========================= */
-
-function createConversation(
-  firstMessage = ""
-){
-
-  const conversation = {
-
-    id:
-      generateId(),
-
-    title:
-      createConversationTitle(
-        firstMessage
-      ),
-
-    pinned:
-      false,
-
-    archived:
-      false,
-
-    buildUsed:
-      false,
-
-    buildUsedAt:
-      null,
-
-    createdAt:
-      Date.now(),
-
-    updatedAt:
-      Date.now(),
-
-    messages: []
-
-  };
-
-
-  conversations.unshift(
-    conversation
-  );
-
-
-  currentConversationId =
-    conversation.id;
-
-
-  saveConversations();
-
-  return conversation;
-
-}
-
-
-/* =========================
-   TITLE
-========================= */
-
-function createConversationTitle(
-  text
-){
-
-  const clean =
-    String(
-      text || ""
-    )
-      .replace(
-        /\s+/g,
-        " "
-      )
-      .trim();
-
-
-  if(!clean){
-
-    return "محادثة جديدة";
-
-  }
-
-
-  if(clean.length <= 34){
-
-    return clean;
-
-  }
-
-
-  return (
-    clean.slice(
-      0,
-      34
-    ) +
-    "..."
-  );
-
-  }/* =========================
-   BUILD SYSTEM
-========================= */
-
-function openBuildModal(){
-
-  if(!currentUser){
-
-    showLoggedOut();
-
-    return;
-
-  }
-
-  const overlay =
-    document.getElementById(
-      "buildOverlay"
-    );
-
-  if(!overlay) return;
-
-  overlay.classList.add(
-    "show"
-  );
-
-  selectedProjectType = null;
-
-  document
-    .querySelectorAll(
-      ".project-type"
-    )
-    .forEach(
-      button =>
-        button.classList.remove(
-          "selected"
-        )
-    );
-
-  const description =
-    document.getElementById(
-      "projectDescription"
-    );
-
-  const start =
-    document.getElementById(
-      "startBuildBtn"
-    );
-
-  if(description){
-
-    description.classList.remove(
-      "show"
-    );
-
-  }
-
-  if(start){
-
-    start.disabled = true;
-
-  }
-
-}
-
-
-function closeBuildModal(){
-
-  document
-    .getElementById(
-      "buildOverlay"
-    )
-    ?.classList.remove(
-      "show"
-    );
-
-}
-
-
-function closeBuildOutside(event){
-
-  if(
-    event.target ===
-    event.currentTarget
-  ){
-
-    closeBuildModal();
-
-  }
-
-}
-
-
-/* =========================
-   PROJECT TYPE
-========================= */
-
-function selectProjectType(
-  button
-){
-
-  if(!button) return;
-
-  selectedProjectType =
-    button.dataset.type ||
-    null;
-
-
-  document
-    .querySelectorAll(
-      ".project-type"
-    )
-    .forEach(
-      item =>
-        item.classList.remove(
-          "selected"
-        )
-    );
-
-
-  button.classList.add(
-    "selected"
-  );
-
-
-  const description =
-    document.getElementById(
-      "projectDescription"
-    );
-
-  const start =
-    document.getElementById(
-      "startBuildBtn"
-    );
-
-
-  if(description){
-
-    description.classList.add(
-      "show"
-    );
-
-  }
-
-
-  if(start){
-
-    start.disabled =
-      !selectedProjectType;
-
-  }
-
-}
-
-
-/* =========================
-   START BUILD
-========================= */
-
-async function startBuild(){
-
-  if(!currentUser){
-
-    showLoggedOut();
-
-    return;
-
-  }
-
-
-  if(buildUsed){
-
-    alert(
-      "تم استخدام البناء الأساسي لهذه المحادثة. أنشئ محادثة جديدة لبناء مشروع آخر."
-    );
-
-    return;
-
-  }
-
-
-  if(!selectedProjectType){
-
-    return;
-
-  }
-
-
-  const description =
-    document.getElementById(
-      "buildDescription"
-    )?.value.trim() || "";
-
-
-  if(!description){
-
-    alert(
-      "اكتب وصف المشروع أولاً."
-    );
-
-    return;
-
-  }
-
-
-  const token =
-    await getAccessToken();
-
-
-  if(!token){
-
-    showLoggedOut();
-
-    return;
-
-  }
-
-
-  const conversation =
-    getCurrentConversation() ||
-    createConversation(
-      description
-    );
-
-
-  buildUsed = true;
-
-  conversation.buildUsed =
-    true;
-
-  conversation.buildUsedAt =
-    Date.now();
-
-  conversation.updatedAt =
-    Date.now();
-
-
-  saveConversations();
-
-  renderConversations();
-
-
-  const button =
-    document.getElementById(
-      "startBuildBtn"
-    );
-
-  if(button){
-
-    button.disabled = true;
-
-    button.textContent =
-      "⏳ جارٍ إنشاء المشروع...";
-
-  }
-
-
-  closeBuildModal();
-
-
-  const buildMessage =
-    [
-      "أنشئ مشروعاً جديداً.",
-
-      "نوع المشروع: " +
-        selectedProjectType,
-
-      "الوصف:",
-
-      description
-    ].join("\n");
-
-
-  appendMessage(
-    "user",
-    "🚀 إنشاء مشروع: " +
-      description
-  );
-
-
-  conversation.messages =
-    conversation.messages || [];
-
-
-  conversation.messages.push({
-
-    role:
-      "user",
-
-    content:
-      "🚀 إنشاء مشروع: " +
-      description,
-
-    createdAt:
-      Date.now()
-
-  });
-
-
-  try{
-
-    const response =
-      await fetch(
-        BACKEND_URL +
-        "/api/create",
-        {
-
-          method:
-            "POST",
-
-          headers:{
-            "Content-Type":
-              "application/json",
-
-            "Authorization":
-              "Bearer " +
-              token
-          },
-
-          body:
-            JSON.stringify({
-
-              idea:
-                description,
-
-              type:
-                selectedProjectType
-
-            })
-
-          }
-
-        }
-      );
-
-
-    const data =
-      await response.json()
-        .catch(
-          () => ({})
-        );
-
-
-    if(!response.ok){
-
-      throw new Error(
-        data.error ||
-        "فشل إنشاء المشروع."
-      );
-
-    }
-
-
-    const project = {
-
-      id:
-        generateId(),
-
-      name:
-        createProjectName(
-          description
-        ),
-
-      type:
-        selectedProjectType,
-
-      description,
-
-      status:
-        "building",
-
-      createdAt:
-        Date.now(),
-
-      updatedAt:
-        Date.now(),
-
-      repositoryUrl:
-        "",
-
-      deploymentUrl:
-        ""
-
-    };
-
-
-    projects.unshift(
-      project
-    );
-
-
-    saveProjects();
-
-    renderProjects();
-
-
-    const successMessage =
-      "✅ تم إرسال المشروع إلى Aizen Builder.\n\n" +
-      "النوع: " +
-      selectedProjectType +
-      "\n" +
-      "الحالة: جارٍ البناء.";
-
-
-    appendMessage(
-      "assistant",
-      successMessage
-    );
-
-
-    conversation.messages.push({
-
-      role:
-        "assistant",
-
-      content:
-        successMessage,
-
-      createdAt:
-        Date.now()
-
-    });
-
-
-    conversation.updatedAt =
-      Date.now();
-
-
-    saveConversations();
-
-    renderConversations();
-
-
-  }catch(error){
-
-    console.error(
-      "Build error:",
-      error
-    );
-
-
-    buildUsed = false;
-
-    conversation.buildUsed =
-      false;
-
-    conversation.buildUsedAt =
-      null;
-
-
-    saveConversations();
-
-
-    appendMessage(
-      "assistant",
-      "❌ " +
-      (
-        error.message ||
-        "فشل إنشاء المشروع."
-      )
-    );
-
-  }finally{
-
-    if(button){
-
-      button.disabled =
-        buildUsed;
-
-      button.textContent =
-        "🚀 ابدأ البناء";
-
-    }
-
-  }
-
-}
-
-
-/* =========================
-   PROJECT NAME
-========================= */
-
-function createProjectName(
-  description
-){
-
-  const text =
-    String(
-      description || ""
-    )
-      .replace(
-        /\s+/g,
-        " "
-      )
-      .trim();
-
-
-  if(!text){
-
-    return "مشروع جديد";
-
-  }
-
-
-  return text.length > 28
-    ? text.slice(0,28) + "..."
-    : text;
-
-}
-
-
-/* =========================
+/* =========================================================
    PROJECTS
-========================= */
+========================================================= */
+
+async function loadProjects(){
+
+  if(!currentUser) return;
+
+  const {data,error} =
+    await supabaseClient
+      .from("projects")
+      .select("*")
+      .eq("user_id",currentUser.id)
+      .order("updated_at",{ascending:false});
+
+  if(error){
+
+    console.error(error);
+    showToast("تعذر تحميل المشاريع.");
+    return;
+  }
+
+  projects =
+    data || [];
+
+  renderProjects();
+}
 
 function renderProjects(){
 
-  const list =
-    document.getElementById(
-      "projectList"
-    );
-
   const container =
-    document.getElementById(
-      "projectsContainer"
-    );
-
-
-  if(list){
-
-    list.innerHTML = "";
-
-    if(!currentUser){
-
-      list.innerHTML =
-        '<div class="empty-state">سجّل الدخول أولاً</div>';
-
-    }else if(
-      projects.length === 0
-    ){
-
-      list.innerHTML =
-        '<div class="empty-state">لا توجد مشاريع بعد</div>';
-
-    }else{
-
-      projects.forEach(
-        project => {
-
-          list.appendChild(
-            createProjectElement(
-              project
-            )
-          );
-
-        }
-      );
-
-    }
-
-  }
-
-
-  if(container){
-
-    container.innerHTML = "";
-
-    if(projects.length === 0){
-
-      container.innerHTML =
-        '<div class="empty-state">لا توجد مشاريع بعد.</div>';
-
-    }else{
-
-      projects.forEach(
-        project => {
-
-          container.appendChild(
-            createProjectElement(
-              project
-            )
-          );
-
-        }
-      );
-
-    }
-
-  }
-
-}
-
-
-/* =========================
-   PROJECT ELEMENT
-========================= */
-
-function createProjectElement(
-  project
-){
-
-  const card =
-    document.createElement(
-      "div"
-    );
-
-  card.className =
-    "project-card";
-
-
-  const status =
-    project.status ===
-    "building"
-      ? "⏳ جارٍ البناء"
-      : project.status ===
-        "ready"
-        ? "🟢 جاهز"
-        : "⚪ " +
-          (
-            project.status ||
-            "غير معروف"
-          );
-
-
-  card.innerHTML = `
-
-    <div class="project-card-title">
-      ${escapeHTML(
-        project.name ||
-        "مشروع"
-      )}
-    </div>
-
-    <div class="project-card-type">
-      ${escapeHTML(
-        project.type ||
-        "custom"
-      )}
-      ·
-      ${status}
-    </div>
-
-    <div
-      style="
-        margin-top:9px;
-        color:#888c98;
-        font-size:12px;
-      "
-    >
-      ${escapeHTML(
-        project.description ||
-        ""
-      )}
-    </div>
-
-    <div
-      style="
-        display:flex;
-        gap:7px;
-        margin-top:10px;
-      "
-    >
-
-      <button
-        class="account-action"
-        onclick="openProject('${project.id}')"
-      >
-        فتح المشروع
-      </button>
-
-      <button
-        class="account-action danger"
-        onclick="deleteProject('${project.id}')"
-      >
-        حذف
-      </button>
-
-    </div>
-
-  `;
-
-
-  return card;
-
-}
-
-
-/* =========================
-   PROJECT ACTIONS
-========================= */
-
-function openProject(
-  id
-){
-
-  const project =
-    projects.find(
-      item =>
-        item.id === id
-    );
-
-
-  if(!project) return;
-
-
-  closeProjectsModal();
-
-  showSidebarTab(
-    "projects"
-  );
-
-
-  const message =
-    "📁 المشروع: " +
-    project.name +
-    "\n\n" +
-    "النوع: " +
-    project.type +
-    "\n" +
-    "الحالة: " +
-    project.status;
-
-
-  appendMessage(
-    "assistant",
-    message
-  );
-
-
-  showChat();
-
-}
-
-
-function deleteProject(
-  id
-){
-
-  const project =
-    projects.find(
-      item =>
-        item.id === id
-    );
-
-
-  if(!project) return;
-
-
-  if(
-    !confirm(
-      "هل تريد حذف المشروع؟"
-    )
-  ){
+    $("projectList");
+
+  if(!projects.length){
+
+    container.innerHTML = `
+      <div class="empty-state">
+        لا توجد مشاريع.
+        <br><br>
+        يمكنك إنشاء مشروع جديد.
+        <br><br>
+        <button
+          class="build-button"
+          onclick="openProjectModal()"
+        >
+          ＋ مشروع
+        </button>
+      </div>
+    `;
 
     return;
-
   }
 
+  container.innerHTML =
+    projects.map(project=>`
 
-  projects =
-    projects.filter(
-      item =>
-        item.id !== id
-    );
+      <div class="project-item">
 
+        <div
+          class="project-name"
+          onclick="openProject('${project.id}')"
+        >
+          📁 ${escapeHTML(project.name)}
+        </div>
 
-  saveProjects();
+        <div class="project-type">
+          ${escapeHTML(project.type || "Project")}
+        </div>
 
-  renderProjects();
+        <div class="project-actions">
 
+          <button
+            onclick="openProject('${project.id}')"
+          >
+            فتح
+          </button>
+
+          <button
+            onclick="deleteProject('${project.id}')"
+          >
+            حذف
+          </button>
+
+        </div>
+
+      </div>
+
+    `).join("");
 }
 
+function openProjectModal(){
+  $("projectModal")
+    .classList
+    .remove("hidden");
+}
 
-/* =========================
-   PROJECTS MODAL
-========================= */
+function closeProjectModal(){
+  $("projectModal")
+    .classList
+    .add("hidden");
+}
 
-function openProjectsModal(){
+async function createProject(){
 
   if(!currentUser){
 
-    showLoggedOut();
+    openAuth();
+    return;
+  }
+
+  const name =
+    $("projectName").value.trim();
+
+  const type =
+    $("projectType").value.trim() ||
+    "Web";
+
+  const description =
+    $("projectDescription")
+      .value
+      .trim();
+
+  if(!name){
+
+    showToast("أدخل اسم المشروع.");
+    return;
+  }
+
+  try{
+
+    const {data,error} =
+      await supabaseClient
+        .from("projects")
+        .insert({
+          user_id:currentUser.id,
+          name,
+          type,
+          description,
+          status:"draft"
+        })
+        .select()
+        .single();
+
+    if(error) throw error;
+
+    projects.unshift(data);
+
+    renderProjects();
+
+    $("projectName").value = "";
+    $("projectType").value = "";
+    $("projectDescription").value = "";
+
+    closeProjectModal();
+
+    showSidebarTab("projects");
+
+    showToast("تم إنشاء المشروع.");
+
+  }catch(error){
+
+    console.error(error);
+
+    showToast(
+      error.message ||
+      "تعذر إنشاء المشروع."
+    );
+  }
+}
+
+function openProject(id){
+
+  const project =
+    projects.find(
+      p=>p.id === id
+    );
+
+  if(!project) return;
+
+  currentProjectId = id;
+
+  showSidebarTab("projects");
+
+  setStatus(
+    `المشروع الحالي: ${project.name}`
+  );
+
+  showToast(
+    `تم فتح ${project.name}`
+  );
+}
+
+async function deleteProject(id){
+
+  const project =
+    projects.find(
+      p=>p.id === id
+    );
+
+  if(!project) return;
+
+  if(
+    !confirm(
+      `حذف المشروع "${project.name}"؟`
+    )
+  ) return;
+
+  const {error} =
+    await supabaseClient
+      .from("projects")
+      .delete()
+      .eq("id",id)
+      .eq("user_id",currentUser.id);
+
+  if(error){
+
+    showToast(
+      error.message ||
+      "تعذر حذف المشروع."
+    );
 
     return;
-
   }
+
+  projects =
+    projects.filter(
+      p=>p.id !== id
+    );
+
+  if(currentProjectId === id)
+    currentProjectId = null;
 
   renderProjects();
 
-  document
-    .getElementById(
-      "projectsOverlay"
-    )
-    ?.classList.add(
-      "show"
-    );
-
+  showToast("تم حذف المشروع.");
 }
 
 
-function closeProjectsModal(){
-
-  document
-    .getElementById(
-      "projectsOverlay"
-    )
-    ?.classList.remove(
-      "show"
-    );
-
-}
-
-
-function closeProjectsOutside(
-  event
-){
-
-  if(
-    event.target ===
-    event.currentTarget
-  ){
-
-    closeProjectsModal();
-
-  }
-
-  }/* =========================
-   FILE UPLOAD
-========================= */
+/* =========================================================
+   FILE UPLOAD UI
+========================================================= */
 
 function triggerFileUpload(){
 
   if(!currentUser){
 
-    showLoggedOut();
-
+    openAuth();
+    showToast("سجّل الدخول أولاً.");
     return;
-
   }
 
-  const input =
-    document.getElementById(
-      "fileInput"
-    );
-
-  if(input){
-
-    input.click();
-
-  }
-
+  $("fileInput").click();
 }
 
+$("fileInput").addEventListener(
+  "change",
+  event=>{
 
-async function handleFileUpload(
-  event
-){
-
-  const input =
-    event.target;
-
-  const files =
-    Array.from(
-      input.files || []
-    );
-
-  if(!files.length){
-
-    return;
-
-  }
-
-
-  for(
-    const file
-    of files
-  ){
-
-    if(
-      file.size >
-      10 * 1024 * 1024
-    ){
-
-      alert(
-        "حجم الملف يجب أن يكون أقل من 10MB: " +
-        file.name
+    const files =
+      Array.from(
+        event.target.files || []
       );
 
-      continue;
+    if(!files.length) return;
 
-    }
+    const names =
+      files.map(
+        file=>file.name
+      ).join(", ");
 
-
-    uploadedFiles.push({
-
-      id:
-        generateId(),
-
-      name:
-        file.name,
-
-      size:
-        file.size,
-
-      type:
-        file.type,
-
-      file
-
-    });
-
-  }
-
-
-  input.value = "";
-
-  renderUploadedFiles();
-
-}
-
-
-function renderUploadedFiles(){
-
-  const old =
-    document.getElementById(
-      "uploadedFiles"
+    setStatus(
+      `تم اختيار: ${names}`
     );
 
-  if(old){
-
-    old.remove();
-
-  }
-
-
-  if(!uploadedFiles.length){
-
-    return;
-
-  }
-
-
-  const composer =
-    document.querySelector(
-      ".composer"
+    showToast(
+      `${files.length} ملف تم اختياره.`
     );
-
-  if(!composer){
-
-    return;
-
-  }
-
-
-  const container =
-    document.createElement(
-      "div"
-    );
-
-  container.id =
-    "uploadedFiles";
-
-  container.style.cssText =
-    `
-      display:flex;
-      flex-wrap:wrap;
-      gap:7px;
-      padding:8px;
-      border-top:1px solid #292c35;
-    `;
-
-
-  uploadedFiles.forEach(
-    item => {
-
-      const file =
-        document.createElement(
-          "div"
-        );
-
-      file.style.cssText =
-        `
-          display:flex;
-          align-items:center;
-          gap:7px;
-          padding:7px 9px;
-          background:#1a1d25;
-          border:1px solid #30333d;
-          border-radius:8px;
-          font-size:11px;
-          color:#ddd;
-        `;
-
-
-      file.innerHTML = `
-
-        <span>
-          📎
-        </span>
-
-        <span
-          style="
-            max-width:150px;
-            overflow:hidden;
-            text-overflow:ellipsis;
-            white-space:nowrap;
-          "
-        >
-          ${escapeHTML(
-            item.name
-          )}
-        </span>
-
-        <button
-          onclick="removeUploadedFile('${item.id}')"
-          style="
-            border:0;
-            background:transparent;
-            color:#ff8f8f;
-            cursor:pointer;
-          "
-        >
-          ×
-        </button>
-
-      `;
-
-
-      container.appendChild(
-        file
-      );
-
-    }
-  );
-
-
-  composer.prepend(
-    container
-  );
-
-}
-
-
-function removeUploadedFile(
-  id
-){
-
-  uploadedFiles =
-    uploadedFiles.filter(
-      item =>
-        item.id !== id
-    );
-
-  renderUploadedFiles();
-
-}
-
-
-/* =========================
-   SUGGESTIONS
-========================= */
-
-function useSuggestion(
-  text
-){
-
-  if(!currentUser){
-
-    showLoggedOut();
-
-    return;
-
-  }
-
-
-  const input =
-    document.getElementById(
-      "messageInput"
-    );
-
-  if(!input) return;
-
-  input.value =
-    text;
-
-  autoResize(input);
-
-  input.focus();
-
-}
-
-
-/* =========================
-   KEYBOARD
-========================= */
-
-function handleInputKey(
-  event
-){
-
-  if(
-    event.key ===
-      "Enter" &&
-    !event.shiftKey
-  ){
-
-    event.preventDefault();
-
-    sendMessage();
-
-  }
-
-}
-
-
-/* =========================
-   AUTO RESIZE
-========================= */
-
-function autoResize(
-  textarea
-){
-
-  if(!textarea) return;
-
-  textarea.style.height =
-    "auto";
-
-  textarea.style.height =
-    Math.min(
-      textarea.scrollHeight,
-      180
-    ) + "px";
-
-}
-
-
-/* =========================
-   SCROLL
-========================= */
-
-function scrollMessages(){
-
-  const container =
-    document.getElementById(
-      "messages"
-    );
-
-  if(!container) return;
-
-  requestAnimationFrame(
-    () => {
-
-      container.scrollTop =
-        container.scrollHeight;
-
-    }
-  );
-
-}
-
-
-/* =========================
-   UTILITIES
-========================= */
-
-function generateId(){
-
-  if(
-    window.crypto &&
-    crypto.randomUUID
-  ){
-
-    return crypto.randomUUID();
-
-  }
-
-
-  return (
-    Date.now().toString(36) +
-    Math.random()
-      .toString(36)
-      .slice(2)
-  );
-
-}
-
-
-function escapeHTML(
-  value
-){
-
-  return String(
-    value ?? ""
-  )
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-
-}
-
-
-function formatDate(
-  timestamp
-){
-
-  if(!timestamp){
-
-    return "";
-
-  }
-
-
-  const date =
-    new Date(
-      Number(timestamp)
-    );
-
-
-  if(
-    Number.isNaN(
-      date.getTime()
-    )
-  ){
-
-    return "";
-
-  }
-
-
-  const now =
-    new Date();
-
-
-  const diff =
-    now.getTime() -
-    date.getTime();
-
-
-  if(
-    diff <
-    60 * 1000
-  ){
-
-    return "الآن";
-
-  }
-
-
-  if(
-    diff <
-    60 * 60 * 1000
-  ){
-
-    return (
-      Math.floor(
-        diff /
-        (60 * 1000)
-      ) +
-      " د"
-    );
-
-  }
-
-
-  if(
-    diff <
-    24 * 60 * 60 * 1000
-  ){
-
-    return (
-      Math.floor(
-        diff /
-        (60 * 60 * 1000)
-      ) +
-      " س"
-    );
-
-  }
-
-
-  return date.toLocaleDateString(
-    "ar"
-  );
-
-}
-
-
-/* =========================
-   INITIALIZATION
-========================= */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
-
-    initAuth();
-
-    const input =
-      document.getElementById(
-        "messageInput"
-      );
-
-    if(input){
-
-      autoResize(input);
-
-    }
-
   }
 );
 
 
-/* =========================
-   OUTSIDE CLICK
-========================= */
-
-document.addEventListener(
-  "click",
-  event => {
-
-    const menu =
-      document.getElementById(
-        "accountMenu"
-      );
-
-    const button =
-      document.getElementById(
-        "accountBtn"
-      );
-
-
-    if(
-      menu &&
-      menu.classList.contains(
-        "show"
-      ) &&
-      !menu.contains(
-        event.target
-      ) &&
-      event.target !== button
-    ){
-
-      closeAccountMenu();
-
-    }
-
-  }
-);
-
-
-/* =========================
-   ESCAPE
-========================= */
-
-document.addEventListener(
-  "keydown",
-  event => {
-
-    if(
-      event.key !==
-      "Escape"
-    ){
-
-      return;
-
-    }
-
-    closeAccountMenu();
-
-    closeBuildModal();
-
-    closeProjectsModal();
-
-    closeSidebar();
-
-  }
-);
-
-</script>
-
-</body>
-</html>/* =========================
-   EXTRA CHAT ACTIONS
-========================= */
-
-function regenerateLastResponse(){
-
-  if(isGenerating){
-
-    return;
-
-  }
-
-  const conversation =
-    getCurrentConversation();
-
-  if(!conversation){
-
-    return;
-
-  }
-
-  const messages =
-    conversation.messages || [];
-
-  if(!messages.length){
-
-    return;
-
-  }
-
-
-  let lastUserMessage = null;
-
-  for(
-    let i = messages.length - 1;
-    i >= 0;
-    i--
-  ){
-
-    if(
-      messages[i].role ===
-      "user"
-    ){
-
-      lastUserMessage =
-        messages[i];
-
-      break;
-
-    }
-
-  }
-
-
-  if(!lastUserMessage){
-
-    return;
-
-  }
-
-
-  if(
-    messages.length &&
-    messages[messages.length - 1]
-      .role === "assistant"
-  ){
-
-    messages.pop();
-
-  }
-
-
-  clearMessages();
-
-  renderMessages(
-    messages
-  );
-
-
-  const input =
-    document.getElementById(
-      "messageInput"
-    );
-
-  if(input){
-
-    input.value =
-      lastUserMessage.content;
-
-  }
-
-
-  sendMessage();
-
-}
-
-
-/* =========================
-   COPY TEXT
-========================= */
-
-function copyText(
-  text
-){
-
-  if(
-    navigator.clipboard
-  ){
-
-    navigator.clipboard.writeText(
-      text
-    ).then(
-      () => {
-        alert("تم النسخ ✅");
-      }
-    ).catch(
-      () => {
-        fallbackCopy(text);
-      }
-    );
-
-  }else{
-
-    fallbackCopy(text);
-
-  }
-
-}
-
-
-function fallbackCopy(
-  text
-){
-
-  const textarea =
-    document.createElement(
-      "textarea"
-    );
-
-  textarea.value =
-    text;
-
-  textarea.style.position =
-    "fixed";
-
-  textarea.style.opacity =
-    "0";
-
-  document.body.appendChild(
-    textarea
-  );
-
-  textarea.select();
-
-  try{
-
-    document.execCommand(
-      "copy"
-    );
-
-    alert(
-      "تم النسخ ✅"
-    );
-
-  }catch{
-
-    alert(
-      "تعذر النسخ."
-    );
-
-  }
-
-  textarea.remove();
-
-}
-
-
-/* =========================
-   EXPORT CHAT
-========================= */
-
-function exportCurrentChat(){
-
-  const conversation =
-    getCurrentConversation();
-
-  if(!conversation){
-
-    alert(
-      "لا توجد محادثة مفتوحة."
-    );
-
-    return;
-
-  }
-
-
-  const lines = [];
-
-  lines.push(
-    "Aizen AI Builder"
-  );
-
-  lines.push(
-    "================"
-  );
-
-  lines.push(
-    conversation.title ||
-    "محادثة"
-  );
-
-  lines.push("");
-
-
-  (
-    conversation.messages ||
-    []
-  ).forEach(
-    message => {
-
-      const role =
-        message.role === "user"
-          ? "المستخدم"
-          : "Aizen AI";
-
-      lines.push(
-        role + ":"
-      );
-
-      lines.push(
-        message.content || ""
-      );
-
-      lines.push("");
-
-    }
-  );
-
-
-  const blob =
-    new Blob(
-      [
-        lines.join("\n")
-      ],
-      {
-        type:
-          "text/plain;charset=utf-8"
-      }
-    );
-
-
-  const url =
-    URL.createObjectURL(
-      blob
-    );
-
-
-  const link =
-    document.createElement(
-      "a"
-    );
-
-  link.href =
-    url;
-
-  link.download =
-    (
-      conversation.title ||
-      "aizen-chat"
-    )
-      .replace(
-        /[^\w\u0600-\u06FF-]+/g,
-        "_"
-      ) +
-    ".txt";
-
-
-  document.body.appendChild(
-    link
-  );
-
-  link.click();
-
-  link.remove();
-
-  URL.revokeObjectURL(
-    url
-  );
-
-}
-
-
-/* =========================
-   ARCHIVE
-========================= */
-
-function archiveConversation(
-  id
-){
-
-  const conversation =
-    conversations.find(
-      item =>
-        item.id === id
-    );
-
-  if(!conversation){
-
-    return;
-
-  }
-
-
-  conversation.archived =
-    true;
-
-  conversation.updatedAt =
-    Date.now();
-
-  saveConversations();
-
-  renderConversations();
-
-}
-
-
-/* =========================
-   UNARCHIVE
-========================= */
-
-function unarchiveConversation(
-  id
-){
-
-  const conversation =
-    conversations.find(
-      item =>
-        item.id === id
-    );
-
-  if(!conversation){
-
-    return;
-
-  }
-
-
-  conversation.archived =
-    false;
-
-  conversation.updatedAt =
-    Date.now();
-
-  saveConversations();
-
-  renderConversations();
-
-}
-
-
-/* =========================
+/* =========================================================
    SEARCH
-========================= */
-
-function searchConversations(
-  query
-){
-
-  const input =
-    document.getElementById(
-      "searchInput"
-    );
-
-  if(input){
-
-    input.value =
-      query || "";
-
-  }
-
-  renderConversations();
-
-}
-
-
-/* =========================
-   CLEAR SEARCH
-========================= */
-
-function clearSearch(){
-
-  const input =
-    document.getElementById(
-      "searchInput"
-    );
-
-  if(input){
-
-    input.value = "";
-
-  }
-
-  renderConversations();
-
-}
-
-
-/* =========================
-   OPEN FIRST CHAT
-========================= */
-
-function openLatestConversation(){
-
-  if(
-    !conversations.length
-  ){
-
-    newChat();
-
-    return;
-
-  }
-
-
-  const sorted =
-    [...conversations].sort(
-      (a,b) =>
-        Number(
-          b.updatedAt || 0
-        ) -
-        Number(
-          a.updatedAt || 0
-        )
-    );
-
-
-  if(sorted[0]){
-
-    openConversation(
-      sorted[0].id
-    );
-
-  }
-
-}
-
-
-/* =========================
-   PAGE VISIBILITY
-========================= */
-
-document.addEventListener(
-  "visibilitychange",
-  async () => {
-
-    if(
-      document.visibilityState !==
-      "visible"
-    ){
-
-      return;
-
-    }
-
-
-    if(!currentUser){
-
-      return;
-
-    }
-
-
-    try{
-
-      const result =
-        await supabaseClient.auth.getSession();
-
-      if(
-        result.data.session
-      ){
-
-        currentSession =
-          result.data.session;
-
-        currentUser =
-          result.data.session.user;
-
-        updateAccountUI();
-
-      }else{
-
-        showLoggedOut();
-
-      }
-
-    }catch(error){
-
-      console.error(
-        "Session refresh error:",
-        error
-      );
-
-    }
-
-  }
-);
-
-
-/* =========================
-   ONLINE STATUS
-========================= */
-
-function updateOnlineStatus(){
-
-  const status =
-    document.querySelector(
-      ".status"
-    );
-
-  if(!status) return;
-
-
-  if(
-    navigator.onLine
-  ){
-
-    status.textContent =
-      "Aizen AI متصل وجاهز للعمل.";
-
-  }else{
-
-    status.textContent =
-      "⚠️ لا يوجد اتصال بالإنترنت.";
-
-  }
-
-}
-
-
-window.addEventListener(
-  "online",
-  updateOnlineStatus
-);
-
-
-window.addEventListener(
-  "offline",
-  updateOnlineStatus
-);
-
-updateOnlineStatus();function clearMessages(){
-
-  const container =
-    document.getElementById(
-      "messages"
-    );
-
-  if(container){
-
-    container.innerHTML = "";
-
-  }
-
-}
-
-
-function renderMessages(
-  messages
-){
-
-  clearMessages();
-
-  if(
-    !messages ||
-    !messages.length
-  ){
-
-    showWelcome();
-
-    return;
-
-  }
-
-
-  messages.forEach(
-    message => {
-
-      appendMessage(
-        message.role,
-        message.content
-      );
-
-    }
-  );
-
-}
-
-
-function getCurrentConversation(){
-
-  if(!currentConversationId){
-
-    return null;
-
-  }
-
-  return conversations.find(
-    conversation =>
-      conversation.id ===
-      currentConversationId
-  ) || null;
-
-}
-
-
-function updateBuildButton(){
-
-  const button =
-    document.getElementById(
-      "buildButton"
-    );
-
-  if(!button){
-
-    return;
-
-  }
-
-
-  const conversation =
-    getCurrentConversation();
-
-
-  if(
-    conversation &&
-    conversation.buildUsed
-  ){
-
-    button.disabled = true;
-
-    button.textContent =
-      "تم استخدام Build ✓";
-
-  }else{
-
-    button.disabled = false;
-
-    button.textContent =
-      "Build";
-
-  }
-
-}
-
-
-function showWelcome(){
-
-  const container =
-    document.getElementById(
-      "messages"
-    );
-
-  if(!container){
-
-    return;
-
-  }
-
-
-  container.innerHTML = `
-    <div class="welcome">
-      <div class="logo">A</div>
-
-      <h1>
-        مرحباً بك في Aizen AI Builder
-      </h1>
-
-      <p>
-        اكتب فكرتك وسيساعدك Aizen
-        في بناء مشروعك.
-      </p>
-    </div>
-  `;
-
-}
-
-
-function updateConversationTitle(
-  conversation
-){
-
-  if(!conversation){
-
-    return;
-
-  }
-
-
-  if(
-    !conversation.title ||
-    conversation.title ===
-      "محادثة جديدة"
-  ){
-
-    const firstUserMessage =
-      (
-        conversation.messages || []
-      ).find(
-        message =>
-          message.role === "user"
-      );
-
-
-    if(firstUserMessage){
-
-      let title =
-        firstUserMessage.content
-          .replace(
-            /\s+/g,
-            " "
-          )
-          .trim();
-
-
-      if(title.length > 40){
-
-        title =
-          title.slice(
-            0,
-            40
-          ) +
-          "…";
-
-      }
-
-
-      if(title){
-
-        conversation.title =
-          title;
-
-      }
-
-    }
-
-  }
-
-}
-
-
-function addMessageToCurrentConversation(
-  role,
-  content
-){
-
-  const conversation =
-    getCurrentConversation();
-
-  if(!conversation){
-
-    return;
-
-  }
-
-
-  if(
-    !Array.isArray(
-      conversation.messages
-    )
-  ){
-
-    conversation.messages = [];
-
-  }
-
-
-  conversation.messages.push({
-
-    id:
-      generateId(),
-
-    role:
-      role,
-
-    content:
-      content,
-
-    createdAt:
-      Date.now()
-
-  });
-
-
-  conversation.updatedAt =
-    Date.now();
-
-
-  updateConversationTitle(
-    conversation
-  );
-
-  saveConversations();
-
-  renderConversations();
-
-}
-
-
-function setGenerating(
-  value
-){
-
-  isGenerating =
-    Boolean(value);
-
-
-  const sendButton =
-    document.getElementById(
-      "sendButton"
-    );
-
-  const stopButton =
-    document.getElementById(
-      "stopButton"
-    );
-
-
-  if(sendButton){
-
-    sendButton.disabled =
-      isGenerating;
-
-  }
-
-
-  if(stopButton){
-
-    stopButton.style.display =
-      isGenerating
-        ? "inline-flex"
-        : "none";
-
-  }
-
-}
-
-
-function showToast(
-  message
-){
-
-  const old =
-    document.querySelector(
-      ".aizen-toast"
-    );
-
-  if(old){
-
-    old.remove();
-
-  }
-
-
-  const toast =
-    document.createElement(
-      "div"
-    );
-
-  toast.className =
-    "aizen-toast";
-
-  toast.textContent =
-    message;
-
-
-  Object.assign(
-    toast.style,
-    {
-
-      position:
-        "fixed",
-
-      bottom:
-        "25px",
-
-      left:
-        "50%",
-
-      transform:
-        "translateX(-50%)",
-
-      zIndex:
-        "99999",
-
-      padding:
-        "10px 16px",
-
-      borderRadius:
-        "12px",
-
-      background:
-        "#111",
-
-      color:
-        "#fff",
-
-      fontSize:
-        "13px",
-
-      boxShadow:
-        "0 8px 30px rgba(0,0,0,.3)"
-
-    }
+========================================================= */
+
+$("searchInput")
+  .addEventListener(
+    "input",
+    renderConversations
   );
 
 
-  document.body.appendChild(
-    toast
+/* =========================================================
+   TEXTAREA
+========================================================= */
+
+$("messageInput")
+  .addEventListener(
+    "input",
+    autoResizeTextarea
   );
 
-
-  setTimeout(
-    () => {
-
-      toast.remove();
-
-    },
-    2500
-  );
-
-}
-
-
-function safeJsonParse(
-  value,
-  fallback = null
-){
-
-  try{
-
-    return JSON.parse(
-      value
-    );
-
-  }catch{
-
-    return fallback;
-
-  }
-
-}
-
-
-function normalizeUser(){
-
-  if(!currentUser){
-
-    return null;
-
-  }
-
-
-  return {
-
-    id:
-      currentUser.id,
-
-    email:
-      currentUser.email ||
-      "",
-
-    displayName:
-      currentUser.user_metadata
-        ?.display_name ||
-      currentUser.user_metadata
-        ?.full_name ||
-      currentUser.user_metadata
-        ?.name ||
-      currentUser.email?.split("@")[0] ||
-      "User",
-
-    avatar:
-      currentUser.user_metadata
-        ?.avatar_url ||
-      currentUser.user_metadata
-        ?.picture ||
-      ""
-
-  };
-
-}
-
-
-function getProvider(){
-
-  if(!currentUser){
-
-    return "";
-
-  }
-
-
-  return (
-    currentUser.app_metadata
-      ?.provider ||
-    ""
-  );
-
-}
-
-
-function isEmailVerified(){
-
-  if(!currentUser){
-
-    return false;
-
-  }
-
-
-  return Boolean(
-    currentUser.email_confirmed_at
-  );
-
-}
-
-
-async function refreshUser(){
-
-  try{
-
-    const result =
-      await supabaseClient.auth
-        .getUser();
-
-    if(
-      result.data &&
-      result.data.user
-    ){
-
-      currentUser =
-        result.data.user;
-
-      updateAccountUI();
-
-      return currentUser;
-
-    }
-
-  }catch(error){
-
-    console.error(
-      error
-    );
-
-  }
-
-
-  return null;
-
-}
-
-
-async function refreshSession(){
-
-  try{
-
-    const result =
-      await supabaseClient.auth
-        .refreshSession();
-
-    if(
-      result.data &&
-      result.data.session
-    ){
-
-      currentSession =
-        result.data.session;
-
-      currentUser =
-        result.data.session.user;
-
-      updateAccountUI();
-
-      return true;
-
-    }
-
-  }catch(error){
-
-    console.error(
-      error
-    );
-
-  }
-
-
-  return false;
-
-}
-
-
-function requireLogin(){
-
-  if(currentUser){
-
-    return true;
-
-  }
-
-
-  showLoggedOut();
-
-  showToast(
-    "سجّل الدخول أولاً."
-  );
-
-  return false;
-
-}
-
-
-/* =========================
-   AUTH STATE LISTENER
-========================= */
-
-supabaseClient.auth.onAuthStateChange(
-  async (
-    event,
-    session
-  ) => {
-
-    currentSession =
-      session || null;
-
-    currentUser =
-      session?.user || null;
-
-
-    if(session){
-
-      showAuthenticated();
-
-      updateAccountUI();
-
-      loadLocalData();
-
-      updateBuildButton();
-
-    }else{
-
-      showLoggedOut();
-
-    }
-
-  }
-);
-
-
-/* =========================
-   CHAT ACTION EVENTS
-========================= */
-
-document.addEventListener(
-  "click",
-  event => {
-
-    const copyButton =
-      event.target.closest(
-        "[data-copy]"
-      );
-
-
-    if(copyButton){
-
-      const value =
-        copyButton.getAttribute(
-          "data-copy"
-        );
-
-
-      if(value){
-
-        copyText(
-          value
-        );
-
-      }
-
-    }
-
-  }
-);
-
-
-/* =========================
-   PREVENT FORM RELOAD
-========================= */
-
-document.addEventListener(
-  "submit",
-  event => {
-
-    if(
-      event.target &&
-      event.target.id ===
-        "authForm"
-    ){
-
-      event.preventDefault();
-
-    }
-
-  }
-);
-
-
-/* =========================
-   FINAL UI STATE
-========================= */
-
-function refreshUI(){
-
-  if(currentUser){
-
-    showAuthenticated();
-
-    updateAccountUI();
-
-    renderConversations();
-
-    renderProjects();
-
-    updateBuildButton();
-
-  }else{
-
-    showLoggedOut();
-
-  }
-
-}<script>
-/* =========================
-   FINAL INITIALIZATION
-========================= */
-
-async function finalizeAizen(){
-
-  try{
-
-    await initAuth();
-
-  }catch(error){
-
-    console.error(
-      "Aizen initialization error:",
-      error
-    );
-
-    showLoggedOut();
-
-  }
-
-  updateOnlineStatus();
-
-}
-
-
-/* =========================
-   AUTH BUTTONS
-========================= */
-
-const loginButton =
-  document.getElementById(
-    "loginButton"
-  );
-
-if(loginButton){
-
-  loginButton.addEventListener(
-    "click",
-    () => {
-
-      showLoggedOut();
-
-    }
-  );
-
-}
-
-
-const logoutButton =
-  document.getElementById(
-    "logoutButton"
-  );
-
-if(logoutButton){
-
-  logoutButton.addEventListener(
-    "click",
-    logout
-  );
-
-}
-
-
-/* =========================
-   NEW CHAT BUTTONS
-========================= */
-
-document.querySelectorAll(
-  "[data-new-chat]"
-).forEach(
-  button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        if(requireLogin()){
-
-          newChat();
-
-        }
-
-      }
-    );
-
-  }
-);
-
-
-/* =========================
-   SEND BUTTON
-========================= */
-
-const sendButton =
-  document.getElementById(
-    "sendButton"
-  );
-
-if(sendButton){
-
-  sendButton.addEventListener(
-    "click",
-    sendMessage
-  );
-
-}
-
-
-/* =========================
-   STOP BUTTON
-========================= */
-
-const stopButton =
-  document.getElementById(
-    "stopButton"
-  );
-
-if(stopButton){
-
-  stopButton.addEventListener(
-    "click",
-    stopGeneration
-  );
-
-}
-
-
-/* =========================
-   BUILD BUTTON
-========================= */
-
-const buildButton =
-  document.getElementById(
-    "buildButton"
-  );
-
-if(buildButton){
-
-  buildButton.addEventListener(
-    "click",
-    () => {
-
-      if(requireLogin()){
-
-        openBuildModal();
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================
-   MESSAGE INPUT
-========================= */
-
-const messageInput =
-  document.getElementById(
-    "messageInput"
-  );
-
-if(messageInput){
-
-  messageInput.addEventListener(
+$("messageInput")
+  .addEventListener(
     "keydown",
-    event => {
+    event=>{
 
       if(
         event.key === "Enter" &&
@@ -6859,117 +2830,53 @@ if(messageInput){
         event.preventDefault();
 
         sendMessage();
-
       }
-
     }
   );
 
+function autoResizeTextarea(){
+
+  const textarea =
+    $("messageInput");
+
+  textarea.style.height =
+    "auto";
+
+  textarea.style.height =
+    Math.min(
+      textarea.scrollHeight,
+      180
+    ) + "px";
 }
 
 
-/* =========================
-   SEARCH INPUT
-========================= */
+/* =========================================================
+   START
+========================================================= */
 
-const searchInput =
-  document.getElementById(
-    "searchInput"
-  );
+(async function init(){
 
-if(searchInput){
+  try{
 
-  searchInput.addEventListener(
-    "input",
-    event => {
+    await loadSession();
 
-      searchConversations(
-        event.target.value
-      );
-
-    }
-  );
-
-}
-
-
-/* =========================
-   FILE INPUT
-========================= */
-
-const fileInput =
-  document.getElementById(
-    "fileInput"
-  );
-
-if(fileInput){
-
-  fileInput.addEventListener(
-    "change",
-    handleFileUpload
-  );
-
-}
-
-
-/* =========================
-   START APP
-========================= */
-
-if(
-  document.readyState ===
-  "loading"
-){
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    finalizeAizen,
-    {
-      once: true
-    }
-  );
-
-}else{
-
-  finalizeAizen();
-
-}
-
-
-/* =========================
-   GLOBAL ERROR HANDLER
-========================= */
-
-window.addEventListener(
-  "error",
-  event => {
-
-    console.error(
-      "Aizen error:",
-      event.error ||
-      event.message
+    setStatus(
+      currentUser
+        ? "Aizen AI جاهز للعمل."
+        : "سجّل الدخول لاستخدام Aizen AI."
     );
 
-  }
-);
+  }catch(error){
 
+    console.error(error);
 
-/* =========================
-   UNHANDLED PROMISE ERRORS
-========================= */
-
-window.addEventListener(
-  "unhandledrejection",
-  event => {
-
-    console.error(
-      "Aizen promise error:",
-      event.reason
+    setStatus(
+      "تعذر تهيئة التطبيق."
     );
-
   }
-);
 
+})();
 </script>
+
 </body>
-</html>
+  </html>
