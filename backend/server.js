@@ -918,6 +918,73 @@ function encryptSecret(value) {
   return Buffer.concat([iv, tag, encrypted]).toString("base64");
 }
 
+async function verifyBotToken(type, value) {
+  const token = String(value || "").trim();
+  if (!token) return { valid: false, message: "التوكن مطلوب." };
+
+  if (type === "telegram_bot") {
+    const safeToken = encodeURIComponent(token);
+    const url = new URL("https://api.telegram.org/bot" + safeToken + "/getMe");
+    const response = await httpsRequest({
+      hostname: url.hostname,
+      port: 443,
+      path: url.pathname,
+      method: "GET",
+      headers: { Accept: "application/json" }
+    }, null, 10000);
+    let data = null;
+    try { data = JSON.parse(response.body); } catch {}
+    if (response.statusCode === 200 && data?.ok === true && data?.result?.is_bot === true) {
+      return { valid: true, bot: { id: data.result.id, username: data.result.username || "", name: data.result.first_name || "" } };
+    }
+    return { valid: false, message: "هذا ليس توكن Telegram صالحاً لبوت. أنشئ التوكن من @BotFather ثم جرّبه مرة أخرى." };
+  }
+
+  if (type === "discord_bot") {
+    const url = new URL("https://discord.com/api/v10/users/@me");
+    const response = await httpsRequest({
+      hostname: url.hostname,
+      port: 443,
+      path: url.pathname,
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: "Bot " + token
+      }
+    }, null, 10000);
+    let data = null;
+    try { data = JSON.parse(response.body); } catch {}
+    if (response.statusCode === 200 && data?.id) {
+      return { valid: true, bot: { id: data.id, username: data.username || "", name: data.global_name || data.username || "" } };
+    }
+    return { valid: false, message: "هذا ليس توكن Discord صالحاً لبوت. أنشئ توكن البوت من Discord Developer Portal ثم جرّبه مرة أخرى." };
+  }
+
+  return { valid: false, message: "نوع البوت غير مدعوم." };
+}
+
+async function handleVerifyBotToken(req, res, user) {
+  let data;
+  try { data = await readJsonBody(req, res, 64 * 1024); }
+  catch { sendJson(res, 400, { success:false, error:"INVALID_JSON", message:"البيانات المرسلة غير صحيحة" }); return; }
+  const type = String(data.type || "").trim();
+  const token = String(data.token || "").trim();
+  if (!["telegram_bot","discord_bot"].includes(type) || !token) {
+    sendJson(res, 400, { success:false, error:"BOT_TOKEN_FIELDS_REQUIRED", message:"نوع البوت والتوكن مطلوبان" }); return;
+  }
+  try {
+    const result = await verifyBotToken(type, token);
+    if (!result.valid) {
+      sendJson(res, 422, { success:false, error:"INVALID_BOT_TOKEN", message:result.message });
+      return;
+    }
+    sendJson(res, 200, { success:true, verified:true, bot:result.bot });
+  } catch (error) {
+    console.error("BOT TOKEN VERIFY ERROR:", error.message);
+    sendJson(res, 502, { success:false, error:"BOT_TOKEN_VERIFY_FAILED", message:"تعذر التحقق من التوكن الآن. حاول مرة أخرى." });
+  }
+}
+
 async function handleProjectSecret(req, res, user) {
   let data;
   try { data = await readJsonBody(req, res, 64 * 1024); }
@@ -1098,7 +1165,7 @@ const server = http.createServer(async (req, res) => {
   /*
    * Build/Create
    */
-  if (method === "POST" && pathname === "/api/project-secret") {
+  if (method === "POST" && pathname === "/api/verify-bot-token") {\n    const user = await requireAuth(req, res);\n    if (!user) return;\n    await handleVerifyBotToken(req, res, user);\n    return;\n  }\n\n  if (method === "POST" && pathname === "/api/project-secret") {
     const user = await requireAuth(req, res);
     if (!user) return;
     await handleProjectSecret(req, res, user);
