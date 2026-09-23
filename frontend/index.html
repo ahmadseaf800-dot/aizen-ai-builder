@@ -2188,7 +2188,8 @@ async function sendMessage(){
 
     await requestAI(
       conversationId,
-      false
+      false,
+      text
     );
 
   }catch(error){
@@ -2209,7 +2210,8 @@ async function sendMessage(){
 
 async function requestAI(
   conversationId,
-  isBuild
+  isBuild,
+  currentMessage = ""
 ){
 
   if(!currentSession){
@@ -2275,6 +2277,7 @@ async function requestAI(
 
           body:JSON.stringify({
             conversationId,
+            message:String(currentMessage || ""),
             build:isBuild
           }),
 
@@ -2285,13 +2288,28 @@ async function requestAI(
 
     if(!response.ok){
 
-      const errorText =
-        await response.text();
+      let errorMessage = `HTTP ${response.status}`;
 
-      throw new Error(
-        errorText ||
-        `HTTP ${response.status}`
-      );
+      try{
+        const errorData =
+          await response.json();
+
+        errorMessage =
+          errorData?.message ||
+          errorData?.error ||
+          errorMessage;
+      }catch{
+        try{
+          const errorText =
+            await response.text();
+
+          if(errorText.trim()){
+            errorMessage = errorText;
+          }
+        }catch{}
+      }
+
+      throw new Error(errorMessage);
     }
 
     if(!response.body){
