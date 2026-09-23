@@ -403,6 +403,42 @@ button{cursor:pointer}
   pointer-events:auto;
 }
 
+.attachment-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  padding:2px 3px 6px;
+}
+
+.attachment-chip{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  max-width:100%;
+  padding:5px 8px;
+  border:1px solid #30343e;
+  border-radius:8px;
+  background:#1b1e26;
+  color:#cfd3dc;
+  font-size:11px;
+}
+
+.attachment-chip span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:220px;
+}
+
+.attachment-remove{
+  border:0;
+  background:transparent;
+  color:#aeb3bf;
+  padding:0 2px;
+  font-size:14px;
+  line-height:1;
+}
+
 .composer textarea{
   width:100%;
   min-height:45px;
@@ -833,6 +869,8 @@ button{cursor:pointer}
 
     <div class="composer">
 
+      <div id="attachmentList" class="attachment-list" aria-live="polite"></div>
+
       <textarea
         id="messageInput"
         placeholder="اكتب فكرتك هنا..."
@@ -1149,6 +1187,7 @@ let currentProjectId = null;
 let authMode = "login";
 let generating = false;
 let abortController = null;
+let pendingAttachments = [];
 
 
 /* =========================================================
@@ -2126,7 +2165,21 @@ async function sendMessage(){
   const text =
     input.value.trim();
 
-  if(!text) return;
+  const attachmentPrompt =
+    pendingAttachments.length
+      ? "\n\n[ملفات مرفقة]\n" +
+        pendingAttachments.map(
+          item =>
+            "--- FILE: " + item.name + " ---\n" +
+            item.content
+        ).join("\n\n") +
+        "\n[نهاية الملفات]"
+      : "";
+
+  const messageForAI =
+    text + attachmentPrompt;
+
+  if(!messageForAI) return;
 
   try{
 
@@ -2158,8 +2211,13 @@ async function sendMessage(){
           conversation_id:conversationId,
           user_id:currentUser.id,
           role:"user",
-          content:text,
-          metadata:{}
+          content:messageForAI,
+          metadata:{
+            attachments:
+              pendingAttachments.map(
+                item=>item.name
+              )
+          }
         });
 
     if(insertError)
@@ -2167,11 +2225,12 @@ async function sendMessage(){
 
     addMessageToUI(
       "user",
-      text
+      messageForAI
     );
 
     input.value = "";
     autoResizeTextarea();
+    clearAttachments();
 
     if(
       !conversation.title ||
@@ -2189,7 +2248,7 @@ async function sendMessage(){
     await requestAI(
       conversationId,
       false,
-      text
+      messageForAI
     );
 
   }catch(error){
@@ -2809,29 +2868,183 @@ function triggerFileUpload(){
 
 $("fileInput").addEventListener(
   "change",
-  event=>{
+  handleFileSelection
+);
 
-    const files =
-      Array.from(
-        event.target.files || []
-      );
+function isAllowedTextFile(file){
 
-    if(!files.length) return;
+  const name =
+    String(file.name || "").toLowerCase();
 
-    const names =
-      files.map(
-        file=>file.name
-      ).join(", ");
+  const blocked = [
+    ".env",
+    ".pem",
+    ".key",
+    ".p12",
+    ".pfx",
+    ".crt",
+    ".der"
+  ];
 
+  if(
+    blocked.some(ext =>
+      name === ext || name.endsWith(ext)
+    )
+  ){
+    return false;
+  }
+
+  const textExtensions = [
+    ".js",".mjs",".cjs",".ts",".tsx",".jsx",
+    ".html",".htm",".css",".scss",".sass",
+    ".json",".jsonc",".md",".txt",".xml",
+    ".yaml",".yml",".toml",".ini",
+    ".py",".java",".kt",".kts",".go",".rs",
+    ".c",".h",".cpp",".hpp",".cc",".cs",
+    ".php",".rb",".swift",".dart",
+    ".sql",".sh",".bash"
+  ];
+
+  return textExtensions.some(
+    ext => name.endsWith(ext)
+  );
+}
+
+async function handleFileSelection(event){
+
+  if(!currentUser){
+    openAuth();
+    event.target.value = "";
+    return;
+  }
+
+  const files =
+    Array.from(event.target.files || []);
+
+  event.target.value = "";
+
+  if(!files.length) return;
+
+  const maxFiles = 10;
+  const maxFileBytes = 300 * 1024;
+  const maxTotalBytes = 1024 * 1024;
+
+  let accepted = 0;
+
+  for(const file of files){
+
+    if(accepted >= maxFiles){
+      showToast("الحد الأقصى 10 ملفات في الرسالة.");
+      break;
+    }
+
+    if(!isAllowedTextFile(file)){
+      showToast("تم تجاهل الملف غير النصي أو الحساس: " + file.name);
+      continue;
+    }
+
+    if(file.size > maxFileBytes){
+      showToast("الملف كبير جداً: " + file.name);
+      continue;
+    }
+
+    if(
+      pendingAttachments.some(
+        item => item.name === file.name
+      )
+    ){
+      continue;
+    }
+
+    const nextTotal =
+      pendingAttachments.reduce(
+        (sum,item) => sum + item.size,
+        0
+      ) + file.size;
+
+    if(nextTotal > maxTotalBytes){
+      showToast("تجاوزت الملفات حد 1MB للرسالة.");
+      break;
+    }
+
+    try{
+
+      const content =
+        await file.text();
+
+      pendingAttachments.push({
+        name:file.name,
+        size:file.size,
+        content
+      });
+
+      accepted++;
+
+    }catch(error){
+
+      console.error(error);
+      showToast("تعذر قراءة الملف: " + file.name);
+    }
+  }
+
+  renderAttachments();
+
+  if(accepted){
     setStatus(
-      `تم اختيار: ${names}`
-    );
-
-    showToast(
-      `${files.length} ملف تم اختياره.`
+      "تمت إضافة " + accepted + " ملف للرسالة."
     );
   }
-);
+}
+
+function renderAttachments(){
+
+  const container =
+    $("attachmentList");
+
+  if(!container) return;
+
+  if(!pendingAttachments.length){
+    container.innerHTML = "";
+    return;
+  }
+
+  container.innerHTML =
+    pendingAttachments
+      .map((item,index)=>
+        '<div class="attachment-chip">' +
+          '<span title="' + escapeHTML(item.name) + '">' +
+            '📄 ' + escapeHTML(item.name) +
+          '</span>' +
+          '<button type="button" class="attachment-remove" ' +
+            'onclick="removeAttachment(' + index + ')" ' +
+            'aria-label="إزالة الملف">×</button>' +
+        '</div>'
+      )
+      .join("");
+}
+
+function removeAttachment(index){
+
+  if(
+    index < 0 ||
+    index >= pendingAttachments.length
+  ) return;
+
+  pendingAttachments.splice(index,1);
+  renderAttachments();
+
+  setStatus(
+    pendingAttachments.length
+      ? "متبقي " + pendingAttachments.length + " ملف."
+      : "Aizen AI جاهز للعمل."
+  );
+}
+
+function clearAttachments(){
+
+  pendingAttachments = [];
+  renderAttachments();
+}
 
 
 /* =========================================================
