@@ -23,6 +23,7 @@ const GROQ_API_KEY = String(process.env.GROQ_API_KEY || "");
 const GROQ_MODEL = String(process.env.GROQ_MODEL || "llama-3.3-70b-versatile");
 const AIZEN_LOCAL_MODEL_URL = String(process.env.AIZEN_LOCAL_MODEL_URL || "").replace(/\/$/, "");
 const AIZEN_LOCAL_MODEL_NAME = String(process.env.AIZEN_LOCAL_MODEL_NAME || "aizen-local");
+const AIZEN_LOCAL_ONLY = String(process.env.AIZEN_LOCAL_ONLY || "false").toLowerCase() === "true";
 const SECRET_ENCRYPTION_KEY = String(process.env.SECRET_ENCRYPTION_KEY || "");
 const AI_MAX_MESSAGE_CHARS = Number(process.env.AI_MAX_MESSAGE_CHARS || 120000);
 const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES || 40);
@@ -910,8 +911,12 @@ function askAizenLocalStream(currentMessage, res, isBuild, history = [], fallbac
 }
 
 function askAIStream(currentMessage, res, isBuild, history = []) {
+  if (AI_PROVIDER === "local") {
+    return askAizenLocalStream(currentMessage, res, isBuild, history);
+  }
+
   if (AI_PROVIDER === "auto") {
-    if (AIZEN_LOCAL_MODEL_URL) return askAizenLocalStream(currentMessage,res,isBuild,history,GEMINI_API_KEY?"gemini":(GROQ_API_KEY?"groq":"openrouter"));
+    if (AIZEN_LOCAL_MODEL_URL) return askAizenLocalStream(currentMessage,res,isBuild,history,AIZEN_LOCAL_ONLY ? null : (GEMINI_API_KEY?"gemini":(GROQ_API_KEY?"groq":"openrouter")));
     if (GEMINI_API_KEY) return askGeminiStream(currentMessage,res,isBuild,history,null,0,"groq");
     if (GROQ_API_KEY) return askGroqStream(currentMessage,res,isBuild,history,"openrouter");
     if (OPENROUTER_API_KEY) return askOpenRouterStream(currentMessage,res,isBuild,history);
@@ -1875,9 +1880,13 @@ const server = http.createServer(async (req, res) => {
       groq_configured: Boolean(
         GROQ_API_KEY
       ),
+      aizen_local_configured: Boolean(AIZEN_LOCAL_MODEL_URL),
+      aizen_local_only: AIZEN_LOCAL_ONLY,
+      aizen_local_model: AIZEN_LOCAL_MODEL_NAME,
       routing_mode: AI_PROVIDER === "auto" ? "smart-auto" : "manual",
       ai_modes: ["assistant","planner","reviewer","debugger","teacher","optimizer","security","tester","builder"],
       coding_agent: true,
+      ai_engine: AIZEN_LOCAL_MODEL_URL ? "aizen-local-compatible" : "provider-adapter",
       coding_agent_stages: ["analyze","plan","edit","review"],
       max_message_chars: AI_MAX_MESSAGE_CHARS,
       uptime_seconds: Math.floor(process.uptime()),
