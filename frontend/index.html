@@ -1312,6 +1312,7 @@ let currentProjectId = null;
 
 let authMode = "login";
 let generating = false;
+let sendingLock = false;
 let abortController = null;
 let pendingAttachments = [];
 
@@ -2317,7 +2318,10 @@ async function deleteConversation(id){
 
 async function sendMessage(){
 
-  if(generating) return;
+  // Fresh send lock: prevents duplicate submissions from rapid taps,
+  // touch/click double-events, or Enter + click arriving together.
+  if(generating || sendingLock) return;
+  sendingLock = true;
 
   if(!currentUser){
 
@@ -2424,6 +2428,8 @@ async function sendMessage(){
       error.message ||
       "تعذر إرسال الرسالة."
     );
+  } finally {
+    sendingLock = false;
   }
 }
 
