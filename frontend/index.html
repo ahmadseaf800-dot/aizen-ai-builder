@@ -775,7 +775,9 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
 .ai-mode-card b{display:block}.ai-mode-card span{display:block;margin-top:4px;color:#858b97;font-size:11px;line-height:1.4}
 .ai-active-mode{margin-top:7px;color:#9f97ff;font-size:11px;min-height:15px}
 @media(max-width:520px){.ai-mode-grid{grid-template-columns:1fr}.ai-mode-button{padding:0 8px}}
-.aizen-eye-logo{width:100%;height:100%;display:block;color:#fff;} .brand-logo .aizen-eye-logo{padding:5px;} .brand-ai-small .aizen-eye-logo{width:24px;height:24px;}</style>
+.aizen-eye-logo{width:100%;height:100%;display:block;color:#fff;} .brand-logo .aizen-eye-logo{padding:5px;} .brand-ai-small .aizen-eye-logo{width:24px;height:24px;}
+.aizen-mobile-chat-button{display:none;position:fixed;left:12px;bottom:92px;z-index:75;border:1px solid #6d5dfc;border-radius:12px;background:#201a45;color:#fff;padding:10px 13px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.35);touch-action:manipulation;pointer-events:auto}.aizen-mobile-chat-button:active{transform:scale(.97)}@media(max-width:800px){.aizen-mobile-chat-button{display:block}}
+</style>
 </head>
 
 <body>
@@ -3688,148 +3690,27 @@ function autoResizeTextarea(){
 
 
 /* =========================================================
-   START
-========================================================= */
-
-loadChatTheme();
-
-loadSiteLanguage();
-
-(async function init(){
-
-  try{
-
-    await loadSession();
-
-    setStatus(
-      currentUser
-        ? "Aizen AI جاهز للعمل."
-        : "سجّل الدخول لاستخدام Aizen AI."
-    );
-
-  }catch(error){
-
-    console.error(error);
-
-    setStatus(
-      "تعذر تهيئة التطبيق."
-    );
-  }
-
-})();
-</script>
-
-<script>
+   <script>
 (function(){
-  "use strict";
-  /* Aizen UI Action Layer v9: independent mobile-safe controls. */
-  const call=(name,...args)=>{
-    const fn=window[name];
-    if(typeof fn!=="function"){
-      console.error("AIZEN ACTION MISSING:",name);
-      return false;
-    }
-    try{
-      const result=fn(...args);
-      if(result && typeof result.catch==="function"){
-        result.catch(error=>{
-          console.error("AIZEN ACTION ERROR:",name,error);
-          window.showToast?.("تعذر تنفيذ العملية حالياً.");
-        });
-      }
-      return true;
-    }catch(error){
-      console.error("AIZEN ACTION ERROR:",name,error);
-      window.showToast?.("تعذر تنفيذ العملية حالياً.");
-      return false;
-    }
-  };
-
-  const direct={
-    menu:()=>call("toggleSidebar"),
-    login:()=>call("openAuth"),
-    account:()=>call("toggleAccountMenu"),
-    settings:()=>call("openSettings"),
-    profile:()=>call("openProfile"),
-    logout:()=>call("logout"),
-    newchat:()=>call("newChat"),
-    chats:()=>call("showSidebarTab","chats"),
-    projects:()=>call("showSidebarTab","projects"),
-    attach:()=>call("triggerFileUpload"),
-    aimode:()=>call("openAIModeModal"),
-    agent:()=>call("openCodingAgentModal"),
-    workspace:()=>call("openWorkspaceModal"),
-    build:()=>call("openBuildTypeModal"),
-    send:()=>call("sendMessage"),
-    stop:()=>call("stopGeneration"),
-    auth:()=>call("submitAuth"),
-    authswitch:()=>call("switchAuthMode"),
-    forgot:()=>call("forgotPassword"),
-    oauth_google:()=>call("oauthLogin","google"),
-    oauth_github:()=>call("oauthLogin","github"),
-    oauth_discord:()=>call("oauthLogin","discord"),
-    close_auth:()=>call("closeAuth"),
-    close_settings:()=>call("closeSettings"),
-    close_profile:()=>call("closeProfile"),
-    close_project:()=>call("closeProjectModal"),
-    create_project:()=>call("createProject"),
-    close_build_type:()=>call("closeBuildTypeModal"),
-    close_build_description:()=>call("closeBuildDescriptionModal"),
-    submit_build:()=>call("submitBuildDescription"),
-    close_bot_secret:()=>call("closeBotSecretModal"),
-    submit_bot_build:()=>call("submitBotBuild"),
-    close_ai_mode:()=>call("closeAIModeModal"),
-    close_agent:()=>call("closeCodingAgentModal"),
-    run_agent:()=>call("runCodingAgent"),
-    close_workspace:()=>call("closeWorkspaceModal"),
-    save_workspace:()=>call("saveWorkspaceFile"),
-    analyze_workspace:()=>call("analyzeWorkspaceFile")
-  };
-
-  const byId={
-    menuButton:"menu",
-    loginButton:"login",
-    accountButton:"account",
-    authPrimary:"auth",
-    authSwitch:"authswitch",
-    aiModeButton:"aimode",
-    codingAgentButton:"agent",
-    workspaceButton:"workspace",
-    buildButton:"build",
-    stopButton:"stop",
-    sendButton:"send"
-  };
-
-  function bind(){
-    Object.keys(byId).forEach(id=>{
-      const el=document.getElementById(id);
-      if(!el || el.dataset.aizenFreshBound==="1") return;
-      el.dataset.aizenFreshBound="1";
-      el.addEventListener("click",e=>{
-        e.preventDefault();
-        e.stopPropagation();
-        direct[byId[id]]?.();
-      });
-      el.addEventListener("touchend",e=>{
-        if(e.cancelable) e.preventDefault();
-      },{passive:false});
-    });
-
-    const selector=[
-      "#accountMenu button",
-      "#authOverlay .auth-oauth",
-      ".modal .modal-buttons button",
-      ".build-type-card",
-      ".ai-mode-card",
-      ".theme-choice",
-      ".conversation-menu>button",
-      ".conversation-actions button",
-      ".project-actions button",
-      ".attachment-remove"
-    ].join(",");
-
-    document.querySelectorAll(selector).forEach(el=>{
-      if(el.dataset.aizenFreshBound==="1") return;
+"use strict";
+const run=(fn,...args)=>{try{if(typeof fn!=="function")throw Error("Action unavailable");const r=fn(...args);if(r&&typeof r.catch==="function")r.catch(x=>{console.error(x);window.showToast?.("تعذر تنفيذ العملية حالياً.");});}catch(x){console.error("AIZEN UI:",x);window.showToast?.("تعذر تنفيذ العملية حالياً.");}};
+const actions={
+"new-chat":()=>run(window.newChat),"tab-chats":()=>run(window.showSidebarTab,"chats"),
+"tab-projects":()=>run(window.showSidebarTab,"projects"),"attach":()=>run(window.triggerFileUpload),
+"ai-mode":()=>run(window.openAIModeModal),"agent":()=>run(window.openCodingAgentModal),
+"workspace":()=>run(window.openWorkspaceModal),"build":()=>run(window.openBuildTypeModal),
+"send":()=>run(window.sendMessage),"stop":()=>run(window.stopGeneration),
+"open-chat":()=>run(window.focusAizenChat),"menu":()=>run(window.toggleSidebar),
+"login":()=>run(window.openAuth),"account":()=>run(window.toggleAccountMenu)
+};
+document.addEventListener("click",ev=>{const el=ev.target.closest?.("[data-aizen-action]");if(!el)return;const key=el.getAttribute("data-aizen-action");if(!actions[key])return;ev.preventDefault();ev.stopPropagation();actions[key]();},true);
+window.focusAizenChat=function(){const input=document.getElementById("messageInput");if(!input)return;input.focus({preventScroll:false});input.scrollIntoView({behavior:"smooth",block:"center"});try{input.click();}catch{}window.autoResizeTextarea?.();};
+function ensureMobileChatButton(){if(document.getElementById("aizenMobileChatButton"))return;const b=document.createElement("button");b.id="aizenMobileChatButton";b.type="button";b.className="aizen-mobile-chat-button";b.setAttribute("data-aizen-action","open-chat");b.textContent="💬 فتح الشات";document.body.appendChild(b);}
+function boot(){document.querySelectorAll("button,[role=button]").forEach(el=>{el.style.pointerEvents="auto";el.style.touchAction="manipulation";});ensureMobileChatButton();}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
+window.AizenUI={version:"10",ready:true,rebind:boot,call:(name,...args)=>actions[name]?.(...args)};
+})();
+</script>el.dataset.aizenFreshBound==="1") return;
       el.dataset.aizenFreshBound="1";
       el.style.pointerEvents="auto";
       el.style.touchAction="manipulation";
