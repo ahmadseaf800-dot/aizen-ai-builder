@@ -73,7 +73,7 @@ const AIZEN_KNOWLEDGE_PACK = [
   "الأسرار تبقى في متغيرات البيئة أو مخزن أسرار آمن."
 ].join("\n");
 
-function buildAizenCoreInstruction({ mode = "assistant", isBuild = false, userRequest = "", user = null } = {}) {
+function buildAizenCoreInstruction({ mode = "assistant", isBuild = false, userRequest = "", user = null, ownerVerified = false } = {}) {
   const modeText = {
     assistant: "وضع المساعد: أجب مباشرة وبوضوح.",
     planner: "وضع التخطيط: حوّل الطلب إلى خطوات وبنية ملفات ومعايير نجاح.",
