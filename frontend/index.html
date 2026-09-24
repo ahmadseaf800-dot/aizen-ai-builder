@@ -773,6 +773,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
 .settings-section{margin-top:16px;padding:12px;border:1px solid #30343e;border-radius:12px;background:#171a21}
 .theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.theme-choice{padding:11px;border:1px solid #30343e;border-radius:9px;background:#1b1e26;color:#fff}.theme-choice:hover{border-color:#6d5dfc}.theme-choice.wide{width:100%;margin-top:9px}
 /* Aizen AI command system */
+.coding-agent-button{border:1px solid #3d8cff;background:#17263d;color:#fff;border-radius:9px;padding:0 10px;height:38px;font-weight:700}.coding-agent-button:hover{border-color:#5da0ff;background:#1d3150}.coding-agent-modal .modal-box{width:min(650px,100%)}.coding-agent-status{margin-top:10px;color:#9f97ff;font-size:12px;min-height:18px}.coding-agent-result{margin-top:10px;padding:10px;border:1px solid #30343e;border-radius:9px;background:#171a21;color:#bfc5d1;font-size:12px;line-height:1.5}.coding-agent-select{width:100%;margin-bottom:10px;padding:11px;border:1px solid #30343e;border-radius:10px;background:#191c23;color:#fff}.coding-agent-text{min-height:130px;resize:vertical}
 .ai-mode-button{border:1px solid #30343e;background:#1b1e26;color:#fff;border-radius:9px;padding:0 10px;height:38px;font-weight:700}
 .ai-mode-button:hover{border-color:#6d5dfc}
 .ai-mode-modal .modal-box{width:min(560px,100%)}
@@ -968,6 +969,15 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
             title="وضع الذكاء الاصطناعي"
           >
             AI
+          </button>
+          <button
+            id="codingAgentButton"
+            class="coding-agent-button"
+            onclick="openCodingAgentModal()"
+            type="button"
+            title="وكيل البرمجة"
+          >
+            Agent
           </button>
 
           <button
@@ -1204,7 +1214,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
     <div class="modal-buttons"><button type="button" onclick="closeBuildTypeModal()">إلغاء</button></div>
   </div>
 </div>
-<div id="botTypeModal" class="modal hidden"><div class="modal-box"><h3>اختر نوع البوت</h3><div class="build-type-grid"><button type="button" class="build-type-card" onclick="confirmBotType('telegram')"><div class="build-type-icon">✈️</div><div class="build-type-title">Telegram</div><div class="build-type-desc">بوت Telegram.</div></button><button type="button" class="build-type-card" onclick="confirmBotType('discord')"><div class="build-type-icon">🎮</div><div class="build-type-title">Discord</div><div class="build-type-desc">بوت Discord.</div></button></div><div class="modal-buttons"><button type="button" onclick="closeBotTypeModal()">إلغاء</button></div></div></div><div id="botSecretModal" class="modal hidden" onclick="if(event.target===this) closeBotSecretModal()"><div class="modal-box"><h3 id="botSecretTitle">إعداد البوت</h3><div class="auth-subtitle">اكتب فكرة البوت والتوكن. التوكن لا يُرسل إلى نموذج الذكاء الاصطناعي ولا يظهر داخل المحادثة؛ يُحفظ مشفراً في مساحة أسرار المشروع.</div><textarea id="botIdeaInput" class="auth-input build-description" rows="5" placeholder="فكرة البوت والميزات والأوامر المطلوبة..."></textarea><input id="botTokenInput" class="auth-input" type="password" autocomplete="new-password" placeholder="توكن البوت السري"><div class="modal-buttons"><button type="button" class="primary" onclick="submitBotBuild()">بدء بناء البوت</button><button type="button" onclick="closeBotSecretModal()">إلغاء</button></div></div></div><div id="buildDescriptionModal" class="modal hidden" onclick="if(event.target===this) closeBuildDescriptionModal()"><div class="modal-box"><h3 id="buildDescriptionTitle">وصف المشروع</h3><input id="buildProjectName" class="auth-input" placeholder="اسم المشروع (اختياري — يحدده Aizen تلقائياً إذا تركته فارغاً)"><div id="buildDescriptionHint" class="auth-subtitle">اكتب فكرة المشروع بالتفصيل.</div><textarea id="buildDescriptionInput" class="auth-input build-description" rows="6" placeholder="مثال: أريد موقع متجر حديث مع تسجيل دخول وسلة شراء ولوحة تحكم..."></textarea><div class="modal-buttons"><button class="primary" onclick="submitBuildDescription()">بدء البناء</button><button onclick="closeBuildDescriptionModal()">إلغاء</button></div></div></div><div id="settingsModal" class="modal hidden" onclick="if(event.target===this) closeSettings()"><div class="modal-box"><h3>⚙️ إعدادات Aizen</h3><div class="auth-subtitle" data-i18n="settingsSubtitle">خصص مظهر المحادثة.</div><div class="settings-section"><b data-i18n="language">لغة الموقع</b><select id="siteLanguage" class="auth-input" onchange="setSiteLanguage(this.value)"><option value="auto">تلقائي (لغة المتصفح)</option><option value="ar">العربية</option><option value="en">English</option><option value="tr">Türkçe</option></select></div><div class="settings-section"><b id="themeLabel">لون المحادثة</b><div id="themeGrid" class="theme-grid"></div></div><div class="modal-buttons"><button type="button" class="primary" onclick="closeSettings()">تم</button></div></div></div><div id="aiModeModal" class="modal ai-mode-modal hidden" onclick="if(event.target===this) closeAIModeModal()"><div class="modal-box"><h3>🧠 وضع Aizen AI</h3><div class="auth-subtitle">اختر طريقة تفكير للمرة التالية. الوضع يغيّر تعليمات الذكاء الاصطناعي فعلياً.</div><div class="ai-mode-grid">
+<div id="botTypeModal" class="modal hidden"><div class="modal-box"><h3>اختر نوع البوت</h3><div class="build-type-grid"><button type="button" class="build-type-card" onclick="confirmBotType('telegram')"><div class="build-type-icon">✈️</div><div class="build-type-title">Telegram</div><div class="build-type-desc">بوت Telegram.</div></button><button type="button" class="build-type-card" onclick="confirmBotType('discord')"><div class="build-type-icon">🎮</div><div class="build-type-title">Discord</div><div class="build-type-desc">بوت Discord.</div></button></div><div class="modal-buttons"><button type="button" onclick="closeBotTypeModal()">إلغاء</button></div></div></div><div id="botSecretModal" class="modal hidden" onclick="if(event.target===this) closeBotSecretModal()"><div class="modal-box"><h3 id="botSecretTitle">إعداد البوت</h3><div class="auth-subtitle">اكتب فكرة البوت والتوكن. التوكن لا يُرسل إلى نموذج الذكاء الاصطناعي ولا يظهر داخل المحادثة؛ يُحفظ مشفراً في مساحة أسرار المشروع.</div><textarea id="botIdeaInput" class="auth-input build-description" rows="5" placeholder="فكرة البوت والميزات والأوامر المطلوبة..."></textarea><input id="botTokenInput" class="auth-input" type="password" autocomplete="new-password" placeholder="توكن البوت السري"><div class="modal-buttons"><button type="button" class="primary" onclick="submitBotBuild()">بدء بناء البوت</button><button type="button" onclick="closeBotSecretModal()">إلغاء</button></div></div></div><div id="buildDescriptionModal" class="modal hidden" onclick="if(event.target===this) closeBuildDescriptionModal()"><div class="modal-box"><h3 id="buildDescriptionTitle">وصف المشروع</h3><input id="buildProjectName" class="auth-input" placeholder="اسم المشروع (اختياري — يحدده Aizen تلقائياً إذا تركته فارغاً)"><div id="buildDescriptionHint" class="auth-subtitle">اكتب فكرة المشروع بالتفصيل.</div><textarea id="buildDescriptionInput" class="auth-input build-description" rows="6" placeholder="مثال: أريد موقع متجر حديث مع تسجيل دخول وسلة شراء ولوحة تحكم..."></textarea><div class="modal-buttons"><button class="primary" onclick="submitBuildDescription()">بدء البناء</button><button onclick="closeBuildDescriptionModal()">إلغاء</button></div></div></div><div id="settingsModal" class="modal hidden" onclick="if(event.target===this) closeSettings()"><div class="modal-box"><h3>⚙️ إعدادات Aizen</h3><div class="auth-subtitle" data-i18n="settingsSubtitle">خصص مظهر المحادثة.</div><div class="settings-section"><b data-i18n="language">لغة الموقع</b><select id="siteLanguage" class="auth-input" onchange="setSiteLanguage(this.value)"><option value="auto">تلقائي (لغة المتصفح)</option><option value="ar">العربية</option><option value="en">English</option><option value="tr">Türkçe</option></select></div><div class="settings-section"><b id="themeLabel">لون المحادثة</b><div id="themeGrid" class="theme-grid"></div></div><div class="modal-buttons"><button type="button" class="primary" onclick="closeSettings()">تم</button></div></div></div><div id="codingAgentModal" class="modal coding-agent-modal hidden" onclick="if(event.target===this) closeCodingAgentModal()"><div class="modal-box"><h3>🛠️ وكيل البرمجة</h3><div class="auth-subtitle">Aizen سيقرأ ملفات المشروع، يحلل الطلب، يقترح التعديل، يراجعه ثم يحفظ الملفات المعدلة فقط.</div><select id="codingAgentProject" class="coding-agent-select"></select><textarea id="codingAgentInstruction" class="auth-input coding-agent-text" rows="6" placeholder="مثال: أضف صفحة إعدادات مع حفظ الإعدادات في Supabase دون كسر تسجيل الدخول."></textarea><div id="codingAgentStatus" class="coding-agent-status"></div><div id="codingAgentResult" class="coding-agent-result hidden"></div><div class="modal-buttons"><button type="button" class="primary" onclick="runCodingAgent()">تشغيل الوكيل</button><button type="button" onclick="closeCodingAgentModal()">إغلاق</button></div></div></div><div id="aiModeModal" class="modal ai-mode-modal hidden" onclick="if(event.target===this) closeAIModeModal()"><div class="modal-box"><h3>🧠 وضع Aizen AI</h3><div class="auth-subtitle">اختر طريقة تفكير للمرة التالية. الوضع يغيّر تعليمات الذكاء الاصطناعي فعلياً.</div><div class="ai-mode-grid">
 <button class="ai-mode-card" onclick="selectAIMode('plan')"><b>📋 تخطيط</b><span>حوّل الفكرة إلى خطة وبنية وخطوات تنفيذ.</span></button>
 <button class="ai-mode-card" onclick="selectAIMode('review')"><b>🔎 مراجعة</b><span>حلّل الكود وابحث عن الأخطاء والثغرات ومشاكل الجودة.</span></button>
 <button class="ai-mode-card" onclick="selectAIMode('fix')"><b>🛠️ إصلاح</b><span>حدّد السبب الجذري وقدّم إصلاحاً عملياً.</span></button>
@@ -1220,6 +1230,70 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
 
 let aizenSelectedMode=localStorage.getItem("aizen-ai-mode")||"assistant";
 const AIZEN_MODE_LABELS={assistant:"الوضع العادي",plan:"التخطيط",review:"المراجعة",fix:"الإصلاح",explain:"الشرح",optimize:"التحسين",security:"الأمان",test:"الاختبار"};
+
+function renderCodingAgentProjects(){
+  const select=$("codingAgentProject");
+  if(!select) return;
+  const current=currentProjectId||"";
+  select.innerHTML=projects.length
+    ? projects.map(p=>'<option value="'+escapeHTML(p.id)+'">'+escapeHTML(p.name||"مشروع")+' — '+escapeHTML(p.type||"Project")+'</option>').join("")
+    : '<option value="">لا توجد مشاريع محفوظة</option>';
+  if(current && projects.some(p=>p.id===current)) select.value=current;
+}
+function openCodingAgentModal(){
+  if(!currentUser){openAuth();showToast("سجّل الدخول أولاً.");return;}
+  renderCodingAgentProjects();
+  const modal=$("codingAgentModal");
+  if(modal) modal.classList.remove("hidden");
+  const status=$("codingAgentStatus"); if(status) status.textContent="";
+  const result=$("codingAgentResult"); if(result){result.classList.add("hidden");result.textContent="";}
+  setTimeout(()=>$("codingAgentInstruction")?.focus(),50);
+}
+function closeCodingAgentModal(){$("codingAgentModal")?.classList.add("hidden");}
+async function runCodingAgent(){
+  if(generating){showToast("انتظر حتى ينتهي التوليد الحالي.");return;}
+  const projectId=$("codingAgentProject")?.value||"";
+  const instruction=$("codingAgentInstruction")?.value.trim()||"";
+  const status=$("codingAgentStatus");
+  const result=$("codingAgentResult");
+  if(!projectId){showToast("أنشئ مشروعاً أولاً ثم شغّل الوكيل.");return;}
+  if(!instruction){showToast("اكتب التعديل الذي تريده أولاً.");$("codingAgentInstruction")?.focus();return;}
+  const session=(await supabaseClient.auth.getSession()).data.session;
+  if(!session?.access_token){showToast("انتهت جلسة تسجيل الدخول.");return;}
+  const button=document.querySelector("#codingAgentModal .primary");
+  if(button){button.disabled=true;button.textContent="يعمل...";}
+  if(status) status.textContent="1/4 تحليل المشروع والملفات...";
+  if(result){result.classList.add("hidden");result.textContent="";}
+  try{
+    if(status) status.textContent="2/4 تخطيط التعديل ومراجعته...";
+    const response=await fetch(BACKEND_URL+"/api/agent",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token},
+      body:JSON.stringify({projectId,instruction})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||!data.success) throw new Error(data.message||"تعذر تشغيل وكيل البرمجة.");
+    if(status) status.textContent="3/4 تطبيق الملفات المعدلة...";
+    currentProjectId=projectId;
+    await loadProjects();
+    if(status) status.textContent="4/4 اكتملت المراجعة والحفظ.";
+    if(result){
+      result.classList.remove("hidden");
+      result.textContent=data.changed
+        ? "تم تعديل "+data.changed+" ملف: "+(data.files||[]).join(", ")
+        : (data.message||"لا توجد تغييرات.");
+    }
+    showToast(data.changed ? "اكتمل عمل وكيل البرمجة دون تغيير الملفات الأخرى." : "لم يحتج المشروع إلى تعديل.");
+    setStatus(data.changed ? "اكتمل وكيل البرمجة." : "تمت مراجعة المشروع.");
+  }catch(error){
+    console.error("CODING AGENT UI ERROR:",error);
+    if(status) status.textContent="توقف الوكيل قبل تطبيق تغيير غير مؤكد.";
+    if(result){result.classList.remove("hidden");result.textContent=error.message||"تعذر تشغيل الوكيل.";}
+    showToast(error.message||"تعذر تشغيل وكيل البرمجة.");
+  }finally{
+    if(button){button.disabled=false;button.textContent="تشغيل الوكيل";}
+  }
+}
 function openAIModeModal(){const m=$("aiModeModal");if(!m)return;m.classList.remove("hidden");const a=$("aiActiveMode");if(a)a.textContent="الوضع الحالي: "+(AIZEN_MODE_LABELS[aizenSelectedMode]||"الوضع العادي");}
 function closeAIModeModal(){$("aiModeModal")?.classList.add("hidden");}
 function selectAIMode(mode){aizenSelectedMode=AIZEN_MODE_LABELS[mode]?mode:"assistant";localStorage.setItem("aizen-ai-mode",aizenSelectedMode);const input=$("messageInput");if(input&&aizenSelectedMode!=="assistant"&&!input.value.trim()){const hints={plan:"اكتب ما تريد تخطيطه...",review:"أرسل الكود أو المشروع الذي تريد مراجعته...",fix:"أرسل المشكلة أو الكود الذي تريد إصلاحه...",explain:"اكتب ما تريد شرحه...",optimize:"أرسل الكود أو الفكرة التي تريد تحسينها...",security:"أرسل الجزء الذي تريد فحص أمانه...",test:"أرسل الكود أو الميزة التي تريد اختبارها..."};input.placeholder=hints[aizenSelectedMode]||"اكتب فكرتك هنا...";}else if(input){input.placeholder=aizenSelectedMode==="assistant"?"اكتب فكرتك هنا...":(AIZEN_MODE_LABELS[aizenSelectedMode]+" — اكتب طلبك هنا...");}closeAIModeModal();showToast("تم تفعيل وضع "+(AIZEN_MODE_LABELS[aizenSelectedMode]||"العادي")+" للمرة التالية.");}
