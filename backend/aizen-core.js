@@ -7,7 +7,7 @@
  * and structured instructions to whichever model provider is configured.
  */
 
-const AIZEN_CORE_VERSION = "1.0.0";
+const AIZEN_CORE_VERSION = "1.1.0";
 
 const AIZEN_IDENTITY = [
   "اسم النظام: Aizen AI",
