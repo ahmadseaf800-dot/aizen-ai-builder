@@ -497,8 +497,7 @@ function buildGeminiInput(messages, currentMessage) {
   let totalChars = 0;
   compacted = compacted.reverse().filter((item) => {
     const size = String(item.content || "").length;
-    if (totalChars + size > MAX_HISTORY_CHARS) return false;
-    totalChars += size;
+    if (totalChars + size > MAX_HISTORY_CHARS) return false;    totalChars += size;
     return true;
   }).reverse();
 
@@ -997,8 +996,7 @@ function askGeminiStream(currentMessage, res, isBuild, history = [], modelOverri
       ...historySteps,
       ...(String(currentMessage || "").trim()
         ? [{ type: "text", text: String(currentMessage).trim() }]
-        : []),
-    ];
+        : []),    ];
 
     const legacySystemInstruction = isBuild
       ? `
@@ -1497,8 +1495,7 @@ async function handleCodingAgent(req, res, user) {
     const proposed = extractAgentFileBlocks(firstPass);
     if (!proposed.length) {
       sendJson(res, 422, {success:false,error:"AGENT_NO_FILE_BLOCKS",message:"لم يُرجع الوكيل ملفات قابلة للتطبيق."});
-      return;
-    }
+      return;    }
 
     const proposedContext = compactProjectFiles(proposed, 120000);
     const reviewPrompt = [
@@ -1997,8 +1994,7 @@ const server = http.createServer(async (req, res) => {
     await handleMe(req, res, user);
     return;
   }
-  /*
-   * Aizen feature contracts
+  /*   * Aizen feature contracts
    */
   if (method === "POST" && pathname === "/api/features") {
     const user = await requireAuth(req, res);
@@ -2068,6 +2064,24 @@ const server = http.createServer(async (req, res) => {
     if (!user) return;
 
     await handleCreate(req, res, user);
+    return;
+  }
+
+  /*
+   * Independent frontend interaction layer
+   */
+  if (method === "GET" && pathname === "/interaction.js") {
+    fs.readFile(path.join(__dirname, "..", "frontend", "interaction.js"), (error, content) => {
+      if (error) {
+        sendJson(res, 500, { success: false, error: "INTERACTION_SCRIPT_NOT_FOUND" });
+        return;
+      }
+      res.writeHead(200, {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "no-cache",
+      });
+      res.end(content);
+    });
     return;
   }
 
