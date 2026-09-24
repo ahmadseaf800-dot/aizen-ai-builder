@@ -1294,6 +1294,189 @@ FILE: path/to/file.ext
   });
 }
 
+
+function runAIToText(currentMessage, isBuild = false, history = []) {
+  return new Promise((resolve, reject) => {
+    let output = "";
+    let errorPayload = null;
+    const capture = {
+      headersSent: false,
+      writableEnded: false,
+      writeHead() { this.headersSent = true; },
+      write(chunk) {
+        const events = String(chunk || "").split(/\r?\n\r?\n/);
+        for (const event of events) {
+          const lines = event.split(/\r?\n/);
+          let eventName = "";
+          let dataText = "";
+          for (const line of lines) {
+            if (line.startsWith("event:")) eventName = line.slice(6).trim();
+            if (line.startsWith("data:")) dataText += line.slice(5).trim();
+          }
+          if (!dataText || dataText === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(dataText);
+            if (eventName === "text" && typeof parsed?.text === "string") output += parsed.text;
+            if (eventName === "error") errorPayload = parsed?.message || "فشل تشغيل وكيل البرمجة.";
+          } catch {}
+        }
+      },
+      end() { this.writableEnded = true; }
+    };
+    askAIStream(currentMessage, capture, isBuild, history)
+      .then(() => errorPayload && !output.trim() ? reject(new Error(errorPayload)) : resolve(output.trim()))
+      .catch(reject);
+  });
+}
+
+function extractAgentFileBlocks(text) {
+  const source = String(text || "");
+  const fence = String.fromCharCode(96).repeat(3);
+  const re = new RegExp("FILE:\\s*([^\\r\\n]+)\\r?\\n\\s*" + fence + "(?:[^\\r\\n]*)\\r?\\n([\\s\\S]*?)" + fence, "g");
+  const blocks = [];
+  let match;
+  while ((match = re.exec(source)) !== null && blocks.length < 40) {
+    const filePath = String(match[1] || "").trim().replace(/^\/+/, "");
+    const content = String(match[2] || "").replace(/\r?\n$/, "");
+    if (!filePath || filePath.includes("..") || filePath.startsWith(".git/") || filePath.length > 240 || content.length > 500000) continue;
+    blocks.push({
+      path: filePath,
+      content,
+      file_type: filePath.includes(".") ? filePath.split(".").pop() : "text",
+      size_bytes: Buffer.byteLength(content, "utf8")
+    });
+  }
+  return blocks;
+}
+
+function compactProjectFiles(files, maxChars = 120000) {
+  const result = [];
+  let total = 0;
+  for (const file of (Array.isArray(files) ? files : [])) {
+    const pathName = String(file?.path || "").trim();
+    const content = String(file?.content || "");
+    if (!pathName || pathName.includes("..")) continue;
+    const remaining = maxChars - total;
+    if (remaining <= 0) break;
+    const clipped = content.length > remaining ? content.slice(0, remaining) : content;
+    result.push("FILE: " + pathName + "\n[CODE]\n" + clipped + "\n[/CODE]");
+    total += clipped.length;
+  }
+  return result.join("\n\n");
+}
+
+async function handleCodingAgent(req, res, user) {
+  let data;
+  try {
+    data = await readJsonBody(req, res, 2 * 1024 * 1024);
+  } catch (error) {
+    sendJson(res, error.message === "REQUEST_TOO_LARGE" ? 413 : 400, {
+      success: false,
+      error: error.message === "REQUEST_TOO_LARGE" ? "REQUEST_TOO_LARGE" : "INVALID_JSON",
+      message: "البيانات المرسلة غير صحيحة"
+    });
+    return;
+  }
+
+  const projectId = String(data.projectId || "").trim();
+  const instruction = String(data.instruction || "").trim();
+  if (!projectId || !instruction) {
+    sendJson(res, 400, { success:false, error:"AGENT_FIELDS_REQUIRED", message:"المشروع وتعليمات الوكيل مطلوبة" });
+    return;
+  }
+
+  try {
+    const token = getBearerToken(req);
+    const projectRows = await supabaseRequest("GET",
+      "/rest/v1/projects?id=eq." + encodeURIComponent(projectId) + "&user_id=eq." + encodeURIComponent(user.id) + "&select=id,name,type,description,status&limit=1",
+      token);
+    if (!Array.isArray(projectRows) || !projectRows.length) {
+      sendJson(res, 404, {success:false,error:"PROJECT_NOT_FOUND",message:"المشروع غير موجود أو لا تملك صلاحية الوصول إليه"});
+      return;
+    }
+
+    const projectFiles = await supabaseRequest("GET",
+      "/rest/v1/project_files?project_id=eq." + encodeURIComponent(projectId) + "&user_id=eq." + encodeURIComponent(user.id) + "&select=path,content,file_type,size_bytes&order=path.asc&limit=200",
+      token);
+    const files = Array.isArray(projectFiles) ? projectFiles : [];
+    const project = projectRows[0];
+    const context = compactProjectFiles(files);
+
+    const firstPrompt = [
+      "أنت Aizen Coding Agent. نفّذ: تحليل المتطلبات ثم خطة مختصرة ثم تعديل الملفات ثم مراجعة ذاتية.",
+      "لا تكسر الوظائف الموجودة. لا تحذف ملفات إلا إذا طلب المستخدم ذلك.",
+      "طلب المستخدم:", instruction,
+      "اسم المشروع:", project.name,
+      "النوع:", project.type || "custom",
+      "الوصف:", project.description || "",
+      "الملفات الحالية:", context || "(لا توجد ملفات محفوظة بعد)",
+      "أخرج فقط الملفات الجديدة أو المعدلة بصيغة FILE: path ثم code fence ومحتوى الملف الكامل.",
+      "إذا لا يوجد تغيير ضروري أخرج NO_CHANGES فقط. لا تضع أسراراً حقيقية. لا تدّعي تشغيل الاختبارات فعلياً.",
+      "راجع syntax وimports والمسارات والحالة والأمان قبل الإخراج."
+    ].join("\n");
+
+    const firstPass = await runAIToText(firstPrompt, false, []);
+    if (!firstPass || firstPass === "NO_CHANGES") {
+      sendJson(res, 200, {success:true,changed:0,stage:"reviewed",message:"حلّل Aizen المشروع ولم يجد تغييرات ضرورية."});
+      return;
+    }
+
+    const proposed = extractAgentFileBlocks(firstPass);
+    if (!proposed.length) {
+      sendJson(res, 422, {success:false,error:"AGENT_NO_FILE_BLOCKS",message:"لم يُرجع الوكيل ملفات قابلة للتطبيق."});
+      return;
+    }
+
+    const proposedContext = compactProjectFiles(proposed, 120000);
+    const reviewPrompt = [
+      "أنت المراجع النهائي داخل Aizen Coding Agent.",
+      "راجع التعديلات المقترحة مقارنة بطلب المستخدم والملفات الحالية.",
+      "صحح syntax/import/path/state/security/regression problems.",
+      "أعد فقط النسخة النهائية الكاملة للملفات التي يجب إنشاؤها أو تعديلها.",
+      "إذا كانت سليمة أعدها كما هي. لا تضف أسراراً حقيقية.",
+      "طلب المستخدم:", instruction,
+      "الملفات الحالية:", context || "(لا توجد ملفات محفوظة بعد)",
+      "التعديلات المقترحة:", proposedContext
+    ].join("\n");
+
+    const reviewed = await runAIToText(reviewPrompt, false, []);
+    const finalFiles = extractAgentFileBlocks(reviewed || firstPass);
+    if (!finalFiles.length) {
+      sendJson(res, 422, {success:false,error:"AGENT_REVIEW_NO_FILES",message:"فشلت المراجعة في إنتاج ملفات قابلة للتطبيق، ولم يتم تغيير المشروع."});
+      return;
+    }
+
+    const rows = finalFiles.map(file => ({
+      project_id: projectId,
+      user_id: user.id,
+      path: file.path,
+      content: file.content,
+      file_type: file.file_type,
+      size_bytes: file.size_bytes,
+      updated_at: new Date().toISOString()
+    }));
+
+    const saved = await supabaseRequest("POST",
+      "/rest/v1/project_files?on_conflict=project_id%2Cpath",
+      token, rows);
+
+    await supabaseRequest("PATCH",
+      "/rest/v1/projects?id=eq." + encodeURIComponent(projectId) + "&user_id=eq." + encodeURIComponent(user.id),
+      token, {status:"ready",updated_at:new Date().toISOString()});
+
+    sendJson(res, 200, {
+      success:true,
+      changed:finalFiles.length,
+      files:finalFiles.map(file=>file.path),
+      stage:"analyzed_planned_edited_reviewed",
+      saved:Array.isArray(saved) ? saved.length : finalFiles.length
+    });
+  } catch (error) {
+    console.error("CODING AGENT ERROR:", error);
+    if (!res.headersSent) sendJson(res, 500, {success:false,error:"CODING_AGENT_ERROR",message:"تعذر تشغيل وكيل البرمجة. لم يتم تطبيق التعديل."});
+  }
+}
+
 /*
  * /api/chat
  *
@@ -1644,6 +1827,8 @@ const server = http.createServer(async (req, res) => {
       ),
       routing_mode: AI_PROVIDER === "auto" ? "smart-auto" : "manual",
       ai_modes: ["assistant","planner","reviewer","debugger","teacher","optimizer","security","tester","builder"],
+      coding_agent: true,
+      coding_agent_stages: ["analyze","plan","edit","review"],
       max_message_chars: AI_MAX_MESSAGE_CHARS,
       uptime_seconds: Math.floor(process.uptime()),
       chat_primary: GEMINI_API_KEY ? "gemini" : (GROQ_API_KEY ? "groq" : (OPENROUTER_API_KEY ? "openrouter" : null)),
@@ -1682,6 +1867,16 @@ const server = http.createServer(async (req, res) => {
     if (!user) return;
 
     await handleChat(req, res, user);
+    return;
+  }
+
+  /*
+   * AI Coding Agent
+   */
+  if (method === "POST" && pathname === "/api/agent") {
+    const user = await requireAuth(req, res);
+    if (!user) return;
+    await handleCodingAgent(req, res, user);
     return;
   }
 
