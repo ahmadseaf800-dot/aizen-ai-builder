@@ -928,11 +928,11 @@ function askAIStream(currentMessage, res, isBuild, history = [], ownerVerified =
   }
 
   if (AI_PROVIDER === "auto") {
-    if (AIZEN_LOCAL_MODEL_URL) return askAizenLocalStream(currentMessage,res,isBuild,history,AIZEN_LOCAL_ONLY ? null : (GROQ_API_KEY?"groq":(OPENROUTER_API_KEY?"openrouter":(GEMINI_API_KEY?"gemini":null))));
+    if (AIZEN_LOCAL_MODEL_URL) return askAizenLocalStream(currentMessage,res,isBuild,history,AIZEN_LOCAL_ONLY ? null : (GROQ_API_KEY?"groq":(OPENROUTER_API_KEY?"openrouter":(GEMINI_API_KEY?"gemini":null))),ownerVerified);
     if (GROQ_API_KEY) return askGroqStream(currentMessage,res,isBuild,history,"openrouter",ownerVerified);
     if (OPENROUTER_API_KEY) return askOpenRouterStream(currentMessage,res,isBuild,history,0,"gemini",ownerVerified);
     if (GEMINI_API_KEY) return askGeminiStream(currentMessage,res,isBuild,history,null,0,null,ownerVerified);
-    return askAizenLocalStream(currentMessage,res,isBuild,history);
+    return askAizenLocalStream(currentMessage,res,isBuild,history,null,ownerVerified);
   }
 
   if (AI_PROVIDER === "groq") {
@@ -940,7 +940,7 @@ function askAIStream(currentMessage, res, isBuild, history = [], ownerVerified =
   }
 
   if (AI_PROVIDER === "openrouter") {
-    return askOpenRouterStream(currentMessage, res, isBuild, history);
+    return askOpenRouterStream(currentMessage, res, isBuild, history, 0, null, ownerVerified);
   }
 
   if (AI_PROVIDER === "gemini") {
