@@ -2420,20 +2420,13 @@ async function sendMessage(){
 
   const attachmentPrompt =
     pendingAttachments.length
-      ? "
-
-[ملفات مرفقة]
-" +
+      ? "\n\n[ملفات مرفقة]\n" +
         pendingAttachments.map(
           item =>
-            "--- FILE: " + item.name + " ---
-" +
+            "--- FILE: " + item.name + " ---\n" +
             item.content
-        ).join("
-
-") +
-        "
-[نهاية الملفات]"
+        ).join("\n\n") +
+        "\n[نهاية الملفات]"
       : "";
 
   const messageForAI = text + attachmentPrompt;
@@ -2532,16 +2525,11 @@ async function sendMessage(){
 async function saveGeneratedProjectFiles(projectId, text){
   if(!projectId || !text) return 0;
   const blocks=[];
-  const re=/FILE:\s*([^
-]+)
-\s*```(?:[^
-]*)
-([\s\S]*?)```/g;
+  const re=/FILE:\s*([^\n]+)\n\s*```(?:[^\n]*)\n([\s\S]*?)```/g;
   let match;
   while((match=re.exec(text))!==null){
     const filePath=match[1].trim().replace(/^\/+/, "");
-    const content=match[2].replace(/
-$/,"");
+    const content=match[2].replace(/\n$/,"");
     if(!filePath || filePath.includes("..") || filePath.length>240 || content.length>500000) continue;
     blocks.push({path:filePath,content,file_type:filePath.split(".").pop()||"text",size_bytes:new Blob([content]).size});
     if(blocks.length>=30) break;
@@ -2691,9 +2679,7 @@ async function requestAI(
         );
 
       const parts =
-        buffer.split(/
-
-/);
+        buffer.split(/\n\n/);
 
       buffer =
         parts.pop() || "";
@@ -2706,8 +2692,7 @@ async function requestAI(
       for(const rawEvent of events){
 
         const lines =
-          rawEvent.split("
-");
+          rawEvent.split("\n");
 
         let eventName = "";
         let dataText = "";
@@ -2981,28 +2966,18 @@ async function runBuild(type,typeLabel,description,secretToken="",projectName=""
 
   const attachmentPrompt =
     pendingAttachments.length
-      ? "
-
-[ملفات مرفقة]
-" +
+      ? "\n\n[ملفات مرفقة]\n" +
         pendingAttachments.map(
           item =>
-            "--- FILE: " + item.name + " ---
-" +
+            "--- FILE: " + item.name + " ---\n" +
             item.content
-        ).join("
-
-") +
-        "
-[نهاية الملفات]"
+        ).join("\n\n") +
+        "\n[نهاية الملفات]"
       : "";
 
   const messageForAI =
-    "[نوع المشروع: " + typeLabel + " | build_type=" + type + "]
-" +
-    "نفّذ المشروع فعلياً وأنشئ الملفات الأساسية القابلة للتشغيل.
-
-" +
+    "[نوع المشروع: " + typeLabel + " | build_type=" + type + "]\n" +
+    "نفّذ المشروع فعلياً وأنشئ الملفات الأساسية القابلة للتشغيل.\n\n" +
     text + attachmentPrompt;
 
   try{
@@ -3683,5 +3658,14 @@ loadSiteLanguage();
 })();
 </script>
 
+<script>
+(function(){
+  const actions={sendButton:()=>window.sendMessage&&window.sendMessage(),stopButton:()=>window.stopGeneration&&window.stopGeneration(),buildButton:()=>window.openBuildTypeModal&&window.openBuildTypeModal(),aiModeButton:()=>window.openAIModeModal&&window.openAIModeModal(),codingAgentButton:()=>window.openCodingAgentModal&&window.openCodingAgentModal(),loginButton:()=>window.openAuth&&window.openAuth(),accountButton:()=>window.toggleAccountMenu&&window.toggleAccountMenu(),chatTab:()=>window.showSidebarTab&&window.showSidebarTab("chats"),projectTab:()=>window.showSidebarTab&&window.showSidebarTab("projects")};
+  function bind(id){const n=document.getElementById(id);if(!n||n.dataset.aizenKernel)return;n.dataset.aizenKernel="1";n.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();try{actions[id]&&actions[id]();}catch(err){console.error("Aizen UI action failed:",id,err);}},true);}
+  function bindCore(){Object.keys(actions).forEach(bind);[[".menu-button",()=>window.toggleSidebar&&window.toggleSidebar()],[".new-chat-button",()=>window.newChat&&window.newChat()]].forEach(([sel,fn])=>{const n=document.querySelector(sel);if(!n||n.dataset.aizenKernel)return;n.dataset.aizenKernel="1";n.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();try{fn();}catch(err){console.error("Aizen UI action failed:",sel,err);}},true);});}
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindCore,{once:true});else bindCore();
+  window.addEventListener("load",bindCore,{once:true});
+})();
+</script>
 </body>
   </html>
