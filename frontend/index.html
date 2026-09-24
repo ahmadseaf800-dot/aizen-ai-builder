@@ -1269,7 +1269,7 @@ async function runCodingAgent(){
     const response=await fetch(BACKEND_URL+"/api/agent",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token},
-      body:JSON.stringify({projectId,instruction})
+      body:JSON.stringify({projectId,instruction,conversationId:currentConversationId || ""})
     });
     const data=await response.json().catch(()=>({}));
     if(!response.ok||!data.success) throw new Error(data.message||"تعذر تشغيل وكيل البرمجة.");
@@ -2155,22 +2155,34 @@ async function loadMessages(conversationId){
 
   if(!currentUser) return;
 
-  const {data,error} =
-    await supabaseClient
-      .from("messages")
-      .select("*")
-      .eq("conversation_id",conversationId)
-      .eq("user_id",currentUser.id)
-      .order("created_at",{ascending:true});
+  try{
+    const pageSize=1000;
+    let offset=0;
+    const allMessages=[];
 
-  if(error){
+    while(true){
+      const {data,error}=await supabaseClient
+        .from("messages")
+        .select("*")
+        .eq("conversation_id",conversationId)
+        .eq("user_id",currentUser.id)
+        .order("created_at",{ascending:true})
+        .range(offset,offset+pageSize-1);
 
+      if(error) throw error;
+
+      const page=Array.isArray(data)?data:[];
+      allMessages.push(...page);
+
+      if(page.length<pageSize) break;
+      offset+=pageSize;
+    }
+
+    renderMessages(allMessages);
+  }catch(error){
     console.error(error);
-    showToast("تعذر تحميل الرسائل.");
-    return;
+    showToast(error.message || "تعذر تحميل الرسائل.");
   }
-
-  renderMessages(data || []);
 }
 
 function clearMessages(){
@@ -2198,8 +2210,7 @@ function renderMessages(messages){
     return;
   }
 
-  container.innerHTML =
-    messages.map(messageHTML).join("");
+  container.innerHTML = messages.map(messageHTML).join("");
 
   scrollMessages();
 }
