@@ -788,7 +788,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
     <button
       class="menu-button"
       type="button"
-      onclick="toggleSidebar()"
+      data-aizen-action="toggle-sidebar"
     >☰</button>
 
     <div class="brand">
@@ -809,7 +809,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
       id="loginButton"
       class="header-button"
       type="button"
-      onclick="openAuth()"
+      data-aizen-action="open-auth"
     >
       دخول
     </button>
@@ -818,7 +818,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
       id="accountButton"
       class="header-button hidden"
       type="button"
-      onclick="toggleAccountMenu()"
+      data-aizen-action="toggle-account"
     >
       👤
     </button>
@@ -848,7 +848,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
 
     <button
       class="new-chat-button"
-      onclick="newChat()"
+      data-aizen-action="new-chat"
     >
       ＋ محادثة جديدة
     </button>
@@ -871,7 +871,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
     <button
       id="chatTab"
       class="sidebar-tab active"
-      onclick="showSidebarTab('chats')"
+      data-aizen-action="tab-chats"
     >
       💬 المحادثات
     </button>
@@ -879,7 +879,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
     <button
       id="projectTab"
       class="sidebar-tab"
-      onclick="showSidebarTab('projects')"
+      data-aizen-action="tab-projects"
     >
       📁 المشاريع
     </button>
@@ -947,17 +947,17 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
 
           <button
             class="composer-button"
-            onclick="triggerFileUpload()"
+            data-aizen-action="attach"
           >
             📎
           </button>
 
-          <button id="aiModeButton" type="button" class="composer-button ai-mode-button" onclick="openAIModeModal()" aria-label="وضع الذكاء الاصطناعي">AI</button>
+          <button id="aiModeButton" type="button" class="composer-button ai-mode-button" data-aizen-action="ai-mode" aria-label="وضع الذكاء الاصطناعي">AI</button>
 
           <button
             id="buildButton"
             class="build-button"
-            onclick="openBuildTypeModal()"
+            data-aizen-action="build"
           >
             Build
           </button>
@@ -970,7 +970,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
           <button
             id="stopButton"
             class="stop-button"
-            onclick="stopGeneration()"
+            data-aizen-action="stop"
           >
             ■
           </button>
@@ -978,7 +978,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
           <button
             id="sendButton"
             class="send-button"
-            onclick="sendMessage()"
+            data-aizen-action="send"
           >
             ➤
           </button>
@@ -3519,6 +3519,25 @@ $("messageInput")
       }
     }
   );
+
+/* AIZEN ACTION BUS: stable delegated handlers for primary controls. */
+(function(){
+  const actions={
+    "toggle-sidebar":()=>toggleSidebar(),"open-auth":()=>openAuth(),
+    "toggle-account":()=>toggleAccountMenu(),"new-chat":()=>newChat(),
+    "tab-chats":()=>showSidebarTab("chats"),"tab-projects":()=>showSidebarTab("projects"),
+    "attach":()=>triggerFileUpload(),"ai-mode":()=>openAIModeModal(),
+    "build":()=>openBuildTypeModal(),"stop":()=>stopGeneration(),"send":()=>sendMessage()
+  };
+  document.addEventListener("click",function(event){
+    const button=event.target.closest("[data-aizen-action]");
+    if(!button || button.disabled) return;
+    const action=actions[button.getAttribute("data-aizen-action")];
+    if(typeof action!=="function") return;
+    event.preventDefault(); event.stopPropagation();
+    try{action();}catch(error){console.error("AIZEN ACTION ERROR:",error);showToast("تعذر تنفيذ الزر حالياً.");}
+  },true);
+})();
 
 function autoResizeTextarea(){
 
