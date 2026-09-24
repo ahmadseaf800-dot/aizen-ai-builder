@@ -3673,7 +3673,7 @@ loadSiteLanguage();
 (function(){
   "use strict";
 
-  /* Aizen UI Kernel v4: one fresh event path for critical controls.
+  /* Aizen UI Kernel v5: fresh event path for critical controls; no legacy handler is required for them.
      Inline handlers are removed only for controls owned by this kernel. */
   const actions = {
     sendButton: ["sendMessage", []],
@@ -3702,8 +3702,8 @@ loadSiteLanguage();
 
   function bind(id,name,args){
     const el=document.getElementById(id);
-    if(!el || el.dataset.aizenKernelBound==="4") return;
-    el.dataset.aizenKernelBound="4";
+    if(!el || el.dataset.aizenKernelBound==="5") return;
+    el.dataset.aizenKernelBound="5";
     el.removeAttribute("onclick");
     el.type="button";
     el.addEventListener("click",function(){ run(name,args); });
@@ -3745,7 +3745,7 @@ loadSiteLanguage();
     init();
   }
 
-  window.AizenUI={version:"4",ready:true,rebind:init,run:run};
+  window.AizenUI={version:"5",ready:true,rebind:init,run:run};
 })();
 </script>
 
