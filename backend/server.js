@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { AIZEN_CORE_VERSION, AIZEN_AGENT_CAPABILITIES, AIZEN_CORE_KNOWLEDGE, buildAizenCoreInstruction } = require("./aizen-core");
 const { makeFileRow, cleanProjectPath, analyzeFiles } = require("./aizen-workspace");
+const { listFeatures, buildPlannerPrompt, buildSecurityPrompt, buildTestPrompt, validateAgentAction } = require("./aizen-feature-engine");
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -1534,6 +1535,20 @@ async function handleCodingAgent(req, res, user) {
 }
 
 
+async function handleAizenFeature(req,res,user){
+  let data;
+  try{data=await readJsonBody(req,res,512*1024);}
+  catch(error){sendJson(res,400,{success:false,error:"INVALID_JSON",message:"البيانات المرسلة غير صحيحة"});return;}
+  const action=String(data.action||"").toLowerCase();
+  if(action==="list"){sendJson(res,200,{success:true,features:listFeatures()});return;}
+  if(!validateAgentAction(action)){sendJson(res,400,{success:false,error:"UNKNOWN_FEATURE_ACTION",message:"إجراء الميزة غير معروف"});return;}
+  const request=String(data.request||data.instruction||"").trim();
+  if(!request){sendJson(res,400,{success:false,error:"REQUEST_REQUIRED",message:"الطلب مطلوب"});return;}
+  const context=String(data.context||"");
+  const prompts={plan:buildPlannerPrompt(request,context),security:buildSecurityPrompt(context),test:buildTestPrompt(context,request)};
+  sendJson(res,200,{success:true,action,mode:prompts[action]?"prompt_ready":"contract_ready",prompt:prompts[action]||null});
+}
+
 async function handleWorkspace(req,res,user){
   let data;
   try{data=await readJsonBody(req,res,4*1024*1024);}
@@ -1930,6 +1945,7 @@ const server = http.createServer(async (req, res) => {
       routing_mode: AI_PROVIDER === "auto" ? "smart-auto" : "manual",
       ai_modes: ["assistant","planner","reviewer","debugger","teacher","optimizer","security","tester","builder"],
       coding_agent: true,
+      roadmap_features: listFeatures(),
       ai_engine: AIZEN_LOCAL_MODEL_URL ? "aizen-local-compatible" : "provider-adapter",
       coding_agent_stages: ["analyze","plan","edit","review"],
       max_message_chars: AI_MAX_MESSAGE_CHARS,
@@ -1958,6 +1974,16 @@ const server = http.createServer(async (req, res) => {
     if (!user) return;
 
     await handleMe(req, res, user);
+    return;
+  }
+
+  /*
+   * Aizen feature contracts
+   */
+  if (method === "POST" && pathname === "/api/features") {
+    const user = await requireAuth(req, res);
+    if (!user) return;
+    await handleAizenFeature(req, res, user);
     return;
   }
 
