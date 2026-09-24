@@ -1710,7 +1710,8 @@ async function handleChat(req, res, user) {
       currentMessage,
       res,
       isBuild,
-      history
+      history,
+      ownerVerified
     );
   } catch (error) {
     console.error("CHAT ERROR:", error);
