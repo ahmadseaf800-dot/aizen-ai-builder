@@ -400,18 +400,10 @@ button{cursor:pointer}
   background:#6d5dfc;
 }
 
-.message-content{
-  max-width:calc(100% - 45px);
-  padding:11px 13px;
-  border-radius:13px;
-  background:#15181f;
-  border:1px solid #282c35;
-  white-space:pre-wrap;
-  overflow-wrap:anywhere;
-  line-height:1.55;
-  font-size:14px;
-}
-
+.message-content{max-width:calc(100% - 45px);padding:13px 15px;border-radius:15px;background:#15181f;border:1px solid #282c35;overflow-wrap:anywhere;line-height:1.7;font-size:14px;min-width:0}
+.message.user .message-content{background:#28224d;border-color:#40377a;white-space:pre-wrap}
+.message.assistant .message-content{white-space:normal}
+.aizen-message-body{direction:auto;text-align:start}.aizen-message-body p{margin:0 0 11px}.aizen-message-body p:last-child{margin-bottom:0}.aizen-message-body h1,.aizen-message-body h2,.aizen-message-body h3{margin:16px 0 8px;line-height:1.35;color:#fff}.aizen-message-body h1{font-size:20px}.aizen-message-body h2{font-size:17px}.aizen-message-body h3{font-size:15px}.aizen-message-body ul,.aizen-message-body ol{margin:7px 0 12px;padding-inline-start:24px}.aizen-message-body li{margin:4px 0}.aizen-message-body blockquote{margin:10px 0;padding:8px 12px;border-inline-start:3px solid #6d5dfc;color:#aeb3bf;background:#11141a;border-radius:7px}.aizen-inline-code{padding:2px 6px;border-radius:6px;background:#0d1015;border:1px solid #2d323d;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.92em}.aizen-code-wrap{margin:12px 0;border:1px solid #30343e;border-radius:11px;overflow:hidden;background:#0b0e13;direction:ltr}.aizen-code-head{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:#151922;border-bottom:1px solid #2b303a;color:#858b97;font-size:11px}.aizen-code-copy{border:1px solid #343a46;border-radius:7px;background:#1b1f28;color:#fff;padding:5px 9px;font-size:11px;cursor:pointer}.aizen-code-copy:hover{border-color:#6d5dfc}.aizen-code{margin:0;padding:12px;overflow:auto;white-space:pre;tab-size:2;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,'Liberation Mono',monospace;color:#e7e9ee}.aizen-message-tools{display:flex;align-items:center;gap:6px;margin-top:7px;padding-inline:2px}.aizen-message-tool{border:1px solid #30343e;background:#15181f;color:#aeb3bf;border-radius:7px;padding:5px 8px;font-size:10px;cursor:pointer}.aizen-message-tool:hover{color:#fff;border-color:#555b68}.aizen-message-time{margin-inline-start:auto;color:#666d79;font-size:10px}.thinking-message{white-space:pre-wrap}@media(max-width:800px){.message{gap:7px;margin-bottom:14px}.message-avatar{width:30px;min-width:30px;height:30px;font-size:10px}.message-content{max-width:calc(100% - 37px);padding:11px 12px;font-size:13px}.aizen-code{font-size:11px}}
 .message.user .message-content{
   background:#28224d;
   border-color:#40377a;
@@ -2223,56 +2215,56 @@ function renderMessages(messages){
   scrollMessages();
 }
 
-function messageHTML(message){
-
-  const user =
-    message.role === "user";
-
-  return `
-    <div class="message ${user ? "user" : "assistant"}">
-
-      <div class="message-avatar">
-        ${user ? "أنت" : '<div class="ai-avatar-small brand-ai-small" aria-label="Aizen AI">A</div>'}
-      </div>
-
-      <div class="message-content">
-        ${escapeHTML(message.content)}
-      </div>
-
-    </div>
-  `;
+function formatAizenInline(value){
+  let html=escapeHTML(value);
+  html=html.replace(/`([^`\\n]+)`/g,'<code class="aizen-inline-code">$1</code>');
+  html=html.replace(/\\*\\*([^*\\n]+)\\*\\*/g,'<strong>$1</strong>');
+  html=html.replace(/__([^_\\n]+)__/g,'<strong>$1</strong>');
+  html=html.replace(/\\*([^*\\n]+)\\*/g,'<em>$1</em>');
+  html=html.replace(/\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)]+)\\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  return html;
 }
-
+function renderAizenMarkdown(value){
+  const text=String(value??'').replace(/\\r\\n/g,'\\n').replace(/\\r/g,'\\n');
+  const lines=text.split('\\n'),out=[];let p=[],lt=null,li=[],q=[],code=false,lang='',cl=[];
+  const fp=()=>{if(p.length){out.push('<p>'+formatAizenInline(p.join('\\n')).replace(/\\n/g,'<br>')+'</p>');p=[];}};
+  const fl=()=>{if(li.length){const t=lt==='ol'?'ol':'ul';out.push('<'+t+'>'+li.map(x=>'<li>'+formatAizenInline(x)+'</li>').join('')+'</'+t+'>');li=[];lt=null;}};
+  const fq=()=>{if(q.length){out.push('<blockquote>'+formatAizenInline(q.join('\\n')).replace(/\\n/g,'<br>')+'</blockquote>');q=[];}};
+  const fc=()=>{const raw=cl.join('\\n');out.push('<div class="aizen-code-wrap"><div class="aizen-code-head"><span>'+escapeHTML(lang||'code')+'</span><button type="button" class="aizen-code-copy" data-copy-code="'+encodeURIComponent(raw)+'">نسخ</button></div><pre class="aizen-code"><code>'+escapeHTML(raw)+'</code></pre></div>');cl=[];lang='';};
+  for(const line of lines){
+    const f=line.match(/^\\s*`{3}\\s*([\\w+#.-]*)\\s*$/);
+    if(f){if(code){fc();code=false;}else{fp();fl();fq();code=true;lang=f[1]||'code';}continue;}
+    if(code){cl.push(line);continue;}
+    if(!line.trim()){fp();fl();fq();continue;}
+    const h=line.match(/^\\s*(#{1,3})\\s+(.+)$/);
+    if(h){fp();fl();fq();const n=h[1].length;out.push('<h'+n+'>'+formatAizenInline(h[2])+'</h'+n+'>');continue;}
+    const qq=line.match(/^\\s*>\\s?(.*)$/);
+    if(qq){fp();fl();q.push(qq[1]);continue;}
+    const ol=line.match(/^\\s*\\d+[.)]\\s+(.+)$/),ul=line.match(/^\\s*[-*+]\\s+(.+)$/);
+    if(ol||ul){fp();fq();const t=ol?'ol':'ul';if(lt&&lt!==t)fl();lt=t;li.push((ol||ul)[1]);continue;}
+    fl();fq();p.push(line);
+  }
+  if(code)fc();fp();fl();fq();return out.join('')||'<p></p>';
+}
+function messageTime(message){if(!message?.created_at)return '';try{const l=getActiveSiteLanguage();return new Date(message.created_at).toLocaleTimeString(l==='tr'?'tr-TR':l==='en'?'en-US':'ar',{hour:'2-digit',minute:'2-digit'});}catch{return '';}}
+function messageHTML(message){
+  const user=message.role==='user',content=String(message.content??''),time=messageTime(message);
+  return '<div class="message '+(user?'user':'assistant')+'"><div class="message-avatar">'+(user?'أنت':'<div class="ai-avatar-small brand-ai-small" aria-label="Aizen AI">A</div>')+'</div><div style="min-width:0;flex:1"><div class="message-content">'+(user?escapeHTML(content):'<div class="aizen-message-body">'+renderAizenMarkdown(content)+'</div>')+'</div><div class="aizen-message-tools">'+(user?'':'<button type="button" class="aizen-message-tool" data-message-action="copy">نسخ الرد</button>')+'<span class="aizen-message-time">'+escapeHTML(time)+'</span></div></div></div>';
+}
 function addMessageToUI(role,content){
-
-  const welcome =
-    $("messages").querySelector(".welcome");
-
-  if(welcome) welcome.remove();
-
-  const div =
-    document.createElement("div");
-
-  div.className =
-    `message ${role === "user" ? "user" : "assistant"}`;
-
-  div.innerHTML = `
-    <div class="message-avatar">
-      ${role === "user" ? "أنت" : '<div class="ai-avatar-small brand-ai-small" aria-label="Aizen AI">AI</div>'}
-    </div>
-
-    <div class="message-content"></div>
-  `;
-
-  div.querySelector(
-    ".message-content"
-  ).textContent = content;
-
-  $("messages").appendChild(div);
-
-  scrollMessages();
-
-  return div;
+  const welcome=$("messages").querySelector('.welcome');if(welcome)welcome.remove();
+  const div=document.createElement('div');div.className='message '+(role==='user'?'user':'assistant');
+  div.innerHTML='<div class="message-avatar">'+(role==='user'?'أنت':'<div class="ai-avatar-small brand-ai-small" aria-label="Aizen AI">A</div>')+'</div><div style="min-width:0;flex:1"><div class="message-content"></div><div class="aizen-message-tools">'+(role==='assistant'?'<button type="button" class="aizen-message-tool" data-message-action="copy">نسخ الرد</button>':'')+'<span class="aizen-message-time"></span></div></div>';
+  const ce=div.querySelector('.message-content');
+  if(role==='assistant')ce.innerHTML='<div class="aizen-message-body">'+renderAizenMarkdown(content)+'</div>';else ce.textContent=String(content??'');
+  div.querySelector('.aizen-message-time').textContent=messageTime({created_at:new Date().toISOString()});$("messages").appendChild(div);scrollMessages();return div;
+}
+function updateLiveAizenMessage(element,content){if(!element)return;const body=element.querySelector('.aizen-message-body')||element;body.innerHTML=renderAizenMarkdown(content);element.classList.remove('thinking-message');scrollMessages();}
+document.addEventListener('click',function(event){
+  const copy=event.target.closest('[data-message-action="copy"]');
+  if(copy){const body=copy.closest('.message')?.querySelector('.message-content'),txt=body?.innerText||'';navigator.clipboard?.writeText(txt).then(()=>{const old=copy.textContent;copy.textContent='تم النسخ ✓';setTimeout(()=>copy.textContent=old,1200);}).catch(()=>showToast('تعذر نسخ الرد.'));return;}
+  const code=event.target.closest('[data-copy-code]');
+  if(code){const txt=decodeURIComponent(code.getAttribute('data-copy-code')||'');navigator.clipboard?.writeText(txt).then(()=>{const old=code.textContent;code.textContent='تم ✓';setTimeout(()=>code.textContent=old,1000);}).catch(()=>showToast('تعذر نسخ الكود.'));}
 }
 
 function scrollMessages(){
@@ -2764,8 +2756,7 @@ async function requestAI(
           fullText +=
             String(delta);
 
-          contentElement.textContent =
-            fullText;
+          updateLiveAizenMessage(contentElement,fullText);
 
           scrollMessages();
         }
@@ -2777,8 +2768,7 @@ async function requestAI(
       fullText =
         "لم يصل رد من Aizen.";
 
-      contentElement.textContent =
-        fullText;
+      updateLiveAizenMessage(contentElement,fullText);
     }
 
     if(isBuild && currentProjectId){
