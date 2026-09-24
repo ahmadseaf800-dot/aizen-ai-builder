@@ -406,14 +406,19 @@ async function getConversation(accessToken, conversationId, userId) {
  */
 async function getConversationMessages(accessToken, conversationId) {
   const safeId = encodeURIComponent(String(conversationId));
-
-  const data = await supabaseRequest(
-    "GET",
-    `/rest/v1/messages?conversation_id=eq.${safeId}&select=id,conversation_id,user_id,role,content,metadata,created_at&order=created_at.asc&limit=5000`,
-    accessToken
-  );
-
-  return Array.isArray(data) ? data : [];
+  const all = [];
+  const pageSize = 1000;
+  for (let offset = 0; offset < 1000000; offset += pageSize) {
+    const data = await supabaseRequest(
+      "GET",
+      `/rest/v1/messages?conversation_id=eq.${safeId}&select=id,conversation_id,user_id,role,content,metadata,created_at&order=created_at.asc&offset=${offset}&limit=${pageSize}`,
+      accessToken
+    );
+    if (!Array.isArray(data) || !data.length) break;
+    all.push(...data);
+    if (data.length < pageSize) break;
+  }
+  return all;
 }
 
 /*
