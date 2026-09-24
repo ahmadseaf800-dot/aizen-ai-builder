@@ -420,6 +420,7 @@ button{cursor:pointer}
 /* COMPOSER */
 
 .composer-wrap{
+  pointer-events:auto;
   position:absolute;
   left:0;
   right:0;
@@ -3520,25 +3521,48 @@ $("messageInput")
     }
   );
 
-/* AIZEN ACTION BUS: stable delegated handlers for primary controls. */
+/* AIZEN BUTTON SYSTEM v2: fresh primary-button wiring. */
 (function(){
   const actions={
-    "toggle-sidebar":()=>toggleSidebar(),"open-auth":()=>openAuth(),
-    "toggle-account":()=>toggleAccountMenu(),"new-chat":()=>newChat(),
-    "tab-chats":()=>showSidebarTab("chats"),"tab-projects":()=>showSidebarTab("projects"),
-    "attach":()=>triggerFileUpload(),"ai-mode":()=>openAIModeModal(),
-    "build":()=>openBuildTypeModal(),"stop":()=>stopGeneration(),"send":()=>sendMessage()
+    "toggle-sidebar":()=>toggleSidebar(),
+    "open-auth":()=>openAuth(),
+    "toggle-account":()=>toggleAccountMenu(),
+    "new-chat":()=>newChat(),
+    "tab-chats":()=>showSidebarTab("chats"),
+    "tab-projects":()=>showSidebarTab("projects"),
+    "attach":()=>triggerFileUpload(),
+    "ai-mode":()=>openAIModeModal(),
+    "build":()=>openBuildTypeModal(),
+    "stop":()=>stopGeneration(),
+    "send":()=>sendMessage()
   };
-  document.addEventListener("click",function(event){
-    const button=event.target.closest("[data-aizen-action]");
+
+  function execute(button,event){
     if(!button || button.disabled) return;
     const action=actions[button.getAttribute("data-aizen-action")];
     if(typeof action!=="function") return;
-    event.preventDefault(); event.stopPropagation();
-    try{action();}catch(error){console.error("AIZEN ACTION ERROR:",error);showToast("تعذر تنفيذ الزر حالياً.");}
-  },true);
-})();
+    if(event) event.preventDefault();
+    try{ action(); }
+    catch(error){
+      console.error("AIZEN BUTTON ERROR",error);
+      showToast("تعذر تنفيذ الزر حالياً.");
+    }
+  }
 
+  function wire(){
+    document.querySelectorAll("[data-aizen-action]").forEach(function(button){
+      if(button.dataset.aizenWired==="1") return;
+      button.dataset.aizenWired="1";
+      button.type="button";
+      button.addEventListener("click",function(event){
+        execute(button,event);
+      });
+    });
+  }
+
+  wire();
+  new MutationObserver(wire).observe(document.body,{childList:true,subtree:true});
+})();
 function autoResizeTextarea(){
 
   const textarea =
