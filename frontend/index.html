@@ -775,7 +775,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
 @keyframes aizenPulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
 .settings-section{margin-top:16px;padding:12px;border:1px solid #30343e;border-radius:12px;background:#171a21}
 .theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.theme-choice{padding:11px;border:1px solid #30343e;border-radius:9px;background:#1b1e26;color:#fff}.theme-choice:hover{border-color:#6d5dfc}.theme-choice.wide{width:100%;margin-top:9px}
-.aizen-eye-logo{width:100%;height:100%;display:block;color:#fff;} .brand-logo .aizen-eye-logo{padding:5px;} .brand-ai-small .aizen-eye-logo{width:24px;height:24px;}</style>
+.agent-button{min-width:64px;font-weight:700}.agent-button:hover{border-color:#6d5dfc;background:#242033}.modal-box #agentResult{min-height:20px;margin-top:10px;line-height:1.5}.modal-box #agentRunButton:disabled{opacity:.6;cursor:wait}.aizen-eye-logo{width:100%;height:100%;display:block;color:#fff;} .brand-logo .aizen-eye-logo{padding:5px;} .brand-ai-small .aizen-eye-logo{width:24px;height:24px;}</style>
 </head>
 
 <body>
@@ -953,7 +953,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
             📎
           </button>
 
-          <button id="aiModeButton" type="button" class="composer-button ai-mode-button" data-aizen-action="ai-mode" aria-label="وضع الذكاء الاصطناعي">AI</button>
+          <button id="agentButton" type="button" class="composer-button agent-button" data-aizen-action="agent" aria-label="وكيل Aizen">Agent</button>
 
           <button
             id="buildButton"
@@ -1191,7 +1191,19 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
     <div class="modal-buttons"><button type="button" onclick="closeBuildTypeModal()">إلغاء</button></div>
   </div>
 </div>
-<div id="botTypeModal" class="modal hidden"><div class="modal-box"><h3>اختر نوع البوت</h3><div class="build-type-grid"><button type="button" class="build-type-card" onclick="confirmBotType('telegram')"><div class="build-type-icon">✈️</div><div class="build-type-title">Telegram</div><div class="build-type-desc">بوت Telegram.</div></button><button type="button" class="build-type-card" onclick="confirmBotType('discord')"><div class="build-type-icon">🎮</div><div class="build-type-title">Discord</div><div class="build-type-desc">بوت Discord.</div></button></div><div class="modal-buttons"><button type="button" onclick="closeBotTypeModal()">إلغاء</button></div></div></div><div id="botSecretModal" class="modal hidden" onclick="if(event.target===this) closeBotSecretModal()"><div class="modal-box"><h3 id="botSecretTitle">إعداد البوت</h3><div class="auth-subtitle">اكتب فكرة البوت والتوكن. التوكن لا يُرسل إلى نموذج الذكاء الاصطناعي ولا يظهر داخل المحادثة؛ يُحفظ مشفراً في مساحة أسرار المشروع.</div><textarea id="botIdeaInput" class="auth-input build-description" rows="5" placeholder="فكرة البوت والميزات والأوامر المطلوبة..."></textarea><input id="botTokenInput" class="auth-input" type="password" autocomplete="new-password" placeholder="توكن البوت السري"><div class="modal-buttons"><button type="button" class="primary" onclick="submitBotBuild()">بدء بناء البوت</button><button type="button" onclick="closeBotSecretModal()">إلغاء</button></div></div></div><div id="buildDescriptionModal" class="modal hidden" onclick="if(event.target===this) closeBuildDescriptionModal()"><div class="modal-box"><h3 id="buildDescriptionTitle">وصف المشروع</h3><input id="buildProjectName" class="auth-input" placeholder="اسم المشروع (اختياري — يحدده Aizen تلقائياً إذا تركته فارغاً)"><div id="buildDescriptionHint" class="auth-subtitle">اكتب فكرة المشروع بالتفصيل.</div><textarea id="buildDescriptionInput" class="auth-input build-description" rows="6" placeholder="مثال: أريد موقع متجر حديث مع تسجيل دخول وسلة شراء ولوحة تحكم..."></textarea><div class="modal-buttons"><button class="primary" onclick="submitBuildDescription()">بدء البناء</button><button onclick="closeBuildDescriptionModal()">إلغاء</button></div></div></div><div id="settingsModal" class="modal hidden" onclick="if(event.target===this) closeSettings()"><div class="modal-box"><h3>⚙️ إعدادات Aizen</h3><div class="auth-subtitle" data-i18n="settingsSubtitle">خصص مظهر المحادثة.</div><div class="settings-section"><b data-i18n="language">لغة الموقع</b><select id="siteLanguage" class="auth-input" onchange="setSiteLanguage(this.value)"><option value="auto">تلقائي (لغة المتصفح)</option><option value="ar">العربية</option><option value="en">English</option><option value="tr">Türkçe</option></select></div><div class="settings-section"><b id="themeLabel">لون المحادثة</b><div id="themeGrid" class="theme-grid"></div></div><div class="modal-buttons"><button type="button" class="primary" onclick="closeSettings()">تم</button></div></div></div><div id="toast" class="toast"></div>
+<div id="botTypeModal" class="modal hidden"><div class="modal-box"><h3>اختر نوع البوت</h3><div class="build-type-grid"><button type="button" class="build-type-card" onclick="confirmBotType('telegram')"><div class="build-type-icon">✈️</div><div class="build-type-title">Telegram</div><div class="build-type-desc">بوت Telegram.</div></button><button type="button" class="build-type-card" onclick="confirmBotType('discord')"><div class="build-type-icon">🎮</div><div class="build-type-title">Discord</div><div class="build-type-desc">بوت Discord.</div></button></div><div class="modal-buttons"><button type="button" onclick="closeBotTypeModal()">إلغاء</button></div></div></div><div id="botSecretModal" class="modal hidden" onclick="if(event.target===this) closeBotSecretModal()"><div class="modal-box"><h3 id="botSecretTitle">إعداد البوت</h3><div class="auth-subtitle">اكتب فكرة البوت والتوكن. التوكن لا يُرسل إلى نموذج الذكاء الاصطناعي ولا يظهر داخل المحادثة؛ يُحفظ مشفراً في مساحة أسرار المشروع.</div><textarea id="botIdeaInput" class="auth-input build-description" rows="5" placeholder="فكرة البوت والميزات والأوامر المطلوبة..."></textarea><input id="botTokenInput" class="auth-input" type="password" autocomplete="new-password" placeholder="توكن البوت السري"><div class="modal-buttons"><button type="button" class="primary" onclick="submitBotBuild()">بدء بناء البوت</button><button type="button" onclick="closeBotSecretModal()">إلغاء</button></div></div></div><div id="buildDescriptionModal" class="modal hidden" onclick="if(event.target===this) closeBuildDescriptionModal()"><div class="modal-box"><h3 id="buildDescriptionTitle">وصف المشروع</h3><input id="buildProjectName" class="auth-input" placeholder="اسم المشروع (اختياري — يحدده Aizen تلقائياً إذا تركته فارغاً)"><div id="buildDescriptionHint" class="auth-subtitle">اكتب فكرة المشروع بالتفصيل.</div><textarea id="buildDescriptionInput" class="auth-input build-description" rows="6" placeholder="مثال: أريد موقع متجر حديث مع تسجيل دخول وسلة شراء ولوحة تحكم..."></textarea><div class="modal-buttons"><button class="primary" onclick="submitBuildDescription()">بدء البناء</button><button onclick="closeBuildDescriptionModal()">إلغاء</button></div></div></div><div id="settingsModal" class="modal hidden" onclick="if(event.target===this) closeSettings()"><div class="modal-box"><h3>⚙️ إعدادات Aizen</h3><div class="auth-subtitle" data-i18n="settingsSubtitle">خصص مظهر المحادثة.</div><div class="settings-section"><b data-i18n="language">لغة الموقع</b><select id="siteLanguage" class="auth-input" onchange="setSiteLanguage(this.value)"><option value="auto">تلقائي (لغة المتصفح)</option><option value="ar">العربية</option><option value="en">English</option><option value="tr">Türkçe</option></select></div><div class="settings-section"><b id="themeLabel">لون المحادثة</b><div id="themeGrid" class="theme-grid"></div></div><div class="modal-buttons"><button type="button" class="primary" onclick="closeSettings()">تم</button></div></div></div><div id="agentModal" class="modal hidden" onclick="if(event.target===this) closeAgentModal()">
+  <div class="modal-box">
+    <h3>🤖 Aizen Agent</h3>
+    <div class="auth-subtitle">يقرأ ملفات المشروع، يحلل المطلوب، يعدّل الملفات ثم يراجع التعديلات قبل حفظها.</div>
+    <textarea id="agentInstruction" class="auth-input build-description" rows="7" placeholder="اكتب المهمة التي تريد من Agent تنفيذها على المشروع..."></textarea>
+    <div id="agentResult" class="auth-subtitle"></div>
+    <div class="modal-buttons">
+      <button id="agentRunButton" type="button" class="primary" onclick="runAgent()">تنفيذ المهمة</button>
+      <button type="button" onclick="closeAgentModal()">إغلاق</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
 
 
 <script>
@@ -3511,6 +3523,51 @@ $("messageInput")
     }
   );
 
+function openAgentModal(){
+  if(generating) return;
+  if(!currentUser){ openAuth(); showToast("سجّل الدخول أولاً."); return; }
+  if(!currentProjectId){ showToast("افتح مشروعاً أولاً ثم استخدم Agent."); return; }
+  const modal=$("agentModal"), input=$("agentInstruction"), result=$("agentResult");
+  if(!modal || !input) return;
+  if(result) result.textContent="";
+  input.value="";
+  modal.classList.remove("hidden");
+  setTimeout(()=>input.focus(),50);
+}
+function closeAgentModal(){ $("agentModal")?.classList.add("hidden"); }
+async function runAgent(){
+  if(!currentUser || !currentProjectId) return;
+  const input=$("agentInstruction"), button=$("agentRunButton"), result=$("agentResult");
+  const instruction=String(input?.value||"").trim();
+  if(!instruction){ showToast("اكتب مهمة للوكيل أولاً."); input?.focus(); return; }
+  const session=(await supabaseClient.auth.getSession()).data.session;
+  if(!session?.access_token){ showToast("انتهت جلسة تسجيل الدخول."); return; }
+  if(button){ button.disabled=true; button.textContent="جاري التحليل والتنفيذ..."; }
+  if(result) result.textContent="يحلل المشروع ثم يخطط ويعدّل ويراجع...";
+  try{
+    const response=await fetch(BACKEND_URL+"/api/agent",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token},
+      body:JSON.stringify({projectId:currentProjectId,conversationId:currentConversationId||"",instruction})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok || !data.success) throw new Error(data.message||"تعذر تنفيذ Agent.");
+    if(result){
+      result.textContent=data.changed
+        ? "تم تعديل "+data.changed+" ملف: "+(data.files||[]).join(", ")
+        : (data.message||"لم يجد Agent تغييرات ضرورية.");
+    }
+    await loadProjects();
+    showToast(data.changed ? "تم تنفيذ مهمة Agent بنجاح." : "تمت مراجعة المشروع.");
+  }catch(error){
+    console.error("AGENT UI ERROR:",error);
+    if(result) result.textContent=error.message||"تعذر تنفيذ Agent.";
+    showToast(error.message||"تعذر تنفيذ Agent.");
+  }finally{
+    if(button){ button.disabled=false; button.textContent="تنفيذ المهمة"; }
+  }
+}
+
 /* AIZEN INTERACTION CORE v5
    Native onclick handlers remain native.
    data-aizen-action uses a separate bubble-phase dispatcher.
@@ -3524,7 +3581,7 @@ $("messageInput")
     "tab-chats":()=>showSidebarTab("chats"),
     "tab-projects":()=>showSidebarTab("projects"),
     "attach":()=>triggerFileUpload(),
-    "ai-mode":()=>openAIModeModal(),
+    "agent":()=>openAgentModal(),
     "build":()=>openBuildTypeModal(),
     "stop":()=>stopGeneration(),
     "send":()=>sendMessage()
