@@ -31,7 +31,10 @@ const AIZEN_OWNER_EMAIL_NORMALIZED = AIZEN_OWNER_EMAIL.toLowerCase();
 function isAizenOwner(user) { return String(user?.email || "").trim().toLowerCase() === AIZEN_OWNER_EMAIL_NORMALIZED; }
 const SECRET_ENCRYPTION_KEY = String(process.env.SECRET_ENCRYPTION_KEY || "");
 const AI_MAX_MESSAGE_CHARS = Number(process.env.AI_MAX_MESSAGE_CHARS || 120000);
-const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES || 40);\n\n// Aizen deployment safety: keep this file as plain JavaScript source; never inject escaped source text.\n
+const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES || 40);
+
+// Aizen deployment safety: keep this file as plain JavaScript source; never inject escaped source text.
+
 
 
 function getAiMode(message, isBuild) {
