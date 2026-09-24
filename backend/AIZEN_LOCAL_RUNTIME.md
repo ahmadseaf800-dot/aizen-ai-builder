@@ -1,38 +1,42 @@
 # Aizen Local AI Runtime
 
-Aizen Core is provider-neutral. This runtime lets Aizen use a self-hosted open-source language model instead of Gemini, Groq, or OpenRouter.
+Aizen Core is the orchestration layer; the language model is an open-source model hosted by you. This avoids depending on Gemini/Groq/OpenRouter when local mode is enabled.
 
-## Recommended local stack
+## Docker / Ollama
 
-Run an OpenAI-compatible local model server such as Ollama on a machine/server with enough RAM/VRAM.
+From `aizen-local-runtime/`:
 
-Example:
 ```bash
-ollama pull qwen2.5-coder:7b
-ollama serve
+docker compose up -d
 ```
 
-Then configure Aizen Backend:
+The compose file pulls `qwen2.5-coder:3b` and creates the local model alias `aizen-local` from the repository Modelfile.
+
+Backend environment:
 
 ```
 AI_PROVIDER=local
 AIZEN_LOCAL_MODEL_URL=http://YOUR_MODEL_SERVER:11434/v1
-AIZEN_LOCAL_MODEL_NAME=qwen2.5-coder:7b
+AIZEN_LOCAL_MODEL_NAME=aizen-local
 AIZEN_LOCAL_ONLY=true
 ```
 
-The backend sends the Aizen system/agent instructions and conversation context to the local model. The browser never receives the model server credentials.
+For the same machine, use `http://127.0.0.1:11434/v1`. If the backend is on another server, expose Ollama only through a private network or authenticated proxy.
 
-## Important
+## What is independent
 
-Aizen Core is the orchestration, memory, knowledge, coding-agent, security and project-building layer. It is not a copy of ChatGPT's private model weights or training data.
+Aizen Core provides identity, coding-agent orchestration, project context, knowledge rules, file validation, review instructions and workspace tooling. The local model supplies language generation.
 
-The model itself must be supplied by the deployment. Model weights are intentionally not stored in GitHub.
+Model weights and another AI's private training data are not copied into GitHub. The local model is downloaded by the runtime.
 
-## Message history
+## Long conversations
 
-All conversation messages remain stored in the application's database. The AI request uses a bounded context window because every language model has a finite context size. This does not impose a lifetime message-count limit on the conversation database.
+The database can store an unbounded number of conversation rows subject to database/storage limits. A model still has a finite context window, so the backend intentionally sends bounded recent context. This prevents old messages from crashing every request.
 
-## Safety
+## Workspace
 
-The local model is not given raw environment secrets. Project ownership is checked through the authenticated Supabase session before the coding agent reads or writes project files.
+The authenticated workspace API supports project file listing, safe file writes/deletes and deterministic JavaScript/JSON/security checks. It never exposes environment secrets or permits path traversal.
+
+## Reliability
+
+The repository includes a GitHub Actions syntax guard for the backend. Existing external-provider fallback remains available when `AI_PROVIDER=auto` is used.
