@@ -895,7 +895,7 @@ function askAizenLocalStream(currentMessage, res, isBuild, history = [], fallbac
     const transport=base.protocol==="http:"?http:https; let completed=false;
     const finish=()=>{if(completed)return;completed=true;try{if(!res.writableEnded){res.write("event: done\\n");res.write("data: {}\\n\\n");res.end();}}catch{}resolve();};
     try {
-      const request=transport.request({hostname:base.hostname,port:base.port||undefined,path:(base.pathname||"/").replace(/\\/$/,"")+"/chat/completions",method:"POST",headers:{"Content-Type":"application/json","Accept":"text/event-stream","Content-Length":Buffer.byteLength(payload)}},response=>{
+      const request=transport.request({hostname:base.hostname,port:base.port||undefined,path:(base.pathname||"/").replace(/\/$/,"")+"/chat/completions",method:"POST",headers:{"Content-Type":"application/json","Accept":"text/event-stream","Content-Length":Buffer.byteLength(payload)}},response=>{
         let buffer=""; response.setEncoding("utf8");
         if(response.statusCode<200||response.statusCode>=300){response.on("data",x=>buffer+=x);response.on("end",()=>{console.error("AIZEN LOCAL MODEL ERROR:",response.statusCode,buffer.slice(0,500));if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else{if(!res.headersSent)sendJson(res,502,{success:false,error:"AIZEN_LOCAL_MODEL_ERROR",message:"تعذر تشغيل محرك Aizen المحلي حالياً."});resolve();}});return;}
         if(!res.headersSent)res.writeHead(200,{"Content-Type":"text/event-stream; charset=utf-8","Cache-Control":"no-cache, no-transform","Connection":"keep-alive","X-Accel-Buffering":"no"});
