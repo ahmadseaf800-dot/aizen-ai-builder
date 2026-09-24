@@ -21,6 +21,60 @@ const OPENROUTER_APP_NAME = String(process.env.OPENROUTER_APP_NAME || "Aizen AI 
 const GROQ_API_KEY = String(process.env.GROQ_API_KEY || "");
 const GROQ_MODEL = String(process.env.GROQ_MODEL || "llama-3.3-70b-versatile");
 const SECRET_ENCRYPTION_KEY = String(process.env.SECRET_ENCRYPTION_KEY || "");
+const AI_MAX_MESSAGE_CHARS = Number(process.env.AI_MAX_MESSAGE_CHARS || 120000);
+const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES || 40);
+
+function getAiMode(message, isBuild) {
+  const text = String(message || "").trim();
+  const command = text.match(/^\/(plan|review|fix|explain|debug|optimize|security|test)\b/i)?.[1]?.toLowerCase() || "";
+  if (isBuild) return { command, mode: "builder" };
+  if (command === "plan") return { command, mode: "planner" };
+  if (command === "review") return { command, mode: "reviewer" };
+  if (command === "fix" || command === "debug") return { command, mode: "debugger" };
+  if (command === "explain") return { command, mode: "teacher" };
+  if (command === "optimize") return { command, mode: "optimizer" };
+  if (command === "security") return { command, mode: "security" };
+  if (command === "test") return { command, mode: "tester" };
+  return { command: "", mode: "assistant" };
+}
+
+function buildAiSystemInstruction(message, isBuild) {
+  const { command, mode } = getAiMode(message, isBuild);
+  const base = isBuild
+    ? [
+        "أنت Aizen AI Builder، مهندس برمجيات ووكيل بناء مشاريع.",
+        "حوّل الطلب إلى مشروع حقيقي قابل للتشغيل، وليس مجرد نموذج شكلي.",
+        "قبل إخراج الملفات: حلل المتطلبات، اختر بنية مناسبة، تحقق من dependencies والمسارات وواجهات API وتدفق البيانات والأمان.",
+        "أنشئ كل الملفات الأساسية المطلوبة. عند إخراج الملفات استخدم FILE: path ثم code fence ومحتوى الملف الكامل.",
+        "لا تضع مفاتيح API أو كلمات مرور أو توكنات حقيقية داخل الكود.",
+        "لا تدّعي أنك شغّلت أو اختبرت المشروع فعلياً. بدلاً من ذلك أضف قائمة تحقق واختبارات قابلة للتنفيذ.",
+        "إذا كانت المتطلبات ناقصة، اختر افتراضات آمنة ومعقولة واذكرها باختصار بدلاً من تعطيل البناء.",
+        "بعد الإنشاء نفّذ مراجعة ذاتية ذهنية: syntax، imports، routes، state، edge cases، security، mobile UX، accessibility، وقابلية النشر.",
+        "اجعل الناتج متوافقاً مع المشروع الحالي ولا تكسر الوظائف الموجودة."
+      ].join(" ")
+    : [
+        "أنت Aizen AI، المساعد الذكي الرسمي داخل Aizen AI Builder.",
+        "افهم السياق السابق قبل الإجابة، وأعطِ النتيجة العملية مباشرة.",
+        "في البرمجة: لا تختلق APIs أو مكتبات أو خصائص غير مؤكدة، وفضّل حلولاً كاملة قابلة للتطبيق.",
+        "عند وجود كود أو خطأ: حلل السبب، ثم قدم الإصلاح، ثم تحقق من الآثار الجانبية نظرياً.",
+        "احترم خصوصية الأسرار ولا تطلب من المستخدم نشر مفاتيح أو توكنات سرية.",
+        "إذا كانت المعلومة غير مؤكدة، صرّح بذلك بدلاً من اختلاقها.",
+        "إذا سُئلت مين طورك أو صنعك فأجب: أحمد قسوم هو من صنعني بدون مساعدة، وهو يمثل الفريق كامل."
+      ].join(" ");
+  const modes = {
+    planner:"وضع التخطيط: حوّل الفكرة إلى خطة تنفيذ مرتبة، مع بنية الملفات، الخطوات، المخاطر ومعايير النجاح.",
+    reviewer:"وضع المراجعة: ابحث عن الأخطاء والثغرات ومشاكل الأداء وقابلية الصيانة، ثم اقترح إصلاحات محددة.",
+    debugger:"وضع التصحيح: حدّد السبب الجذري أولاً، ثم أعطِ إصلاحاً دقيقاً واختبارات تحقق.",
+    teacher:"وضع الشرح: اشرح ببساطة وبخطوات عملية، مع أمثلة عند الحاجة.",
+    optimizer:"وضع التحسين: حسّن السرعة، استهلاك الموارد، جودة الكود وتجربة المستخدم دون كسر السلوك.",
+    security:"وضع الأمان: افحص المصادقة، الصلاحيات، الأسرار، المدخلات، SSRF، XSS، SQL/RLS وسوء الإعدادات بحسب التقنية.",
+    tester:"وضع الاختبار: أنشئ حالات اختبار تغطي النجاح والفشل والحالات الحدية، مع طريقة تشغيلها.",
+    builder:"وضع البناء: نفّذ المشروع كاملاً مع مراجعة ذاتية قبل إنهاء الرد."
+  };
+  return base + (modes[mode] ? " " + modes[mode] : "") +
+    (command ? " الأمر النشط: /" + command + "." : "");
+}
+
 
 const FRONTEND_PATH = path.join(__dirname, "..", "frontend", "index.html");
 
@@ -378,7 +432,7 @@ function buildGeminiInput(messages, currentMessage) {
   }
 
   const messageText =
-    String(currentMessage || "").trim();
+    String(currentMessage || "").trim().slice(0, AI_MAX_MESSAGE_CHARS);
 
   const lastItem =
     history.length
@@ -402,8 +456,8 @@ function buildGeminiInput(messages, currentMessage) {
   // Keep the context focused for faster responses while preserving the
   // most recent conversation turns. Very large histories slow generation
   // and can dilute the user's current request.
-  const MAX_HISTORY_MESSAGES = 40;
-  const MAX_HISTORY_CHARS = 50000;
+  const MAX_HISTORY_MESSAGES = Math.max(10, Math.min(AI_CONTEXT_MESSAGES, 80));
+  const MAX_HISTORY_CHARS = 70000;
 
   let compacted = history.slice(-MAX_HISTORY_MESSAGES);
   let totalChars = 0;
@@ -450,9 +504,7 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
       }
     }
 
-    const systemInstruction = isBuild
-      ? "أنت Aizen AI Builder، مهندس برمجيات دقيق. أنشئ مشاريع حقيقية قابلة للتشغيل، التزم بالتقنيات المطلوبة، راجع syntax/imports/المسارات، ولا تضع أسراراً حقيقية داخل الكود. عند إخراج ملفات استخدم FILE: path ثم code fence ومحتوى الملف الكامل. لا تدّعي تشغيل أو اختبار شيء لم ينفذه النظام فعلياً."
-      : "أنت Aizen AI، المساعد الذكي الرسمي داخل Aizen AI Builder. أعطِ الجواب المباشر أولاً، حافظ على سياق المحادثة، لا تختلق APIs أو أوامر، وفي البرمجة أعطِ كوداً كاملاً ومتوافقاً. إذا سُئلت مين طورك أو صنعك فأجب: أحمد قسوم هو من صنعني بدون مساعدة، وهو يمثل الفريق كامل.";
+    const systemInstruction = buildAiSystemInstruction(currentMessage, isBuild);
 
     const payload = JSON.stringify({
       model: OPENROUTER_MODEL,
@@ -497,7 +549,6 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
       }, (response) => {
         let buffer = "";
         response.setEncoding("utf8");
-
         if (response.statusCode >= 400) {
           response.on("data", (chunk) => {
             if (!completed) buffer += chunk;
@@ -997,7 +1048,6 @@ FILE: path/to/file.ext
 
             response.on("end", () => {
               if (completed) return;
-
               let message = "فشل طلب Gemini.";
               try {
                 const parsed = JSON.parse(buffer);
@@ -1497,8 +1547,7 @@ async function handleCreate(req, res, user) {
     sendJson(res, 400, {
       success: false,
       error: "INVALID_JSON",
-      message: "البيانات المرسلة غير صحيحة",
-    });
+      message: "البيانات المرسلة غير صحيحة",    });
 
     return;
   }
@@ -1594,6 +1643,9 @@ const server = http.createServer(async (req, res) => {
         GROQ_API_KEY
       ),
       routing_mode: AI_PROVIDER === "auto" ? "smart-auto" : "manual",
+      ai_modes: ["assistant","planner","reviewer","debugger","teacher","optimizer","security","tester","builder"],
+      max_message_chars: AI_MAX_MESSAGE_CHARS,
+      uptime_seconds: Math.floor(process.uptime()),
       chat_primary: GEMINI_API_KEY ? "gemini" : (GROQ_API_KEY ? "groq" : (OPENROUTER_API_KEY ? "openrouter" : null)),
       build_primary: GROQ_API_KEY ? "groq" : (GEMINI_API_KEY ? "gemini" : (OPENROUTER_API_KEY ? "openrouter" : null)),
       ai_provider: AI_PROVIDER,
