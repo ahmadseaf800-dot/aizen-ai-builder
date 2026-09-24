@@ -498,7 +498,6 @@ button{cursor:pointer}
 .composer-actions{
   display:flex;
   gap:6px;}
-
 .composer-button,
 .send-button,
 .stop-button{
@@ -997,8 +996,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
             class="send-button"
             onclick="sendMessage()"
           >
-            ➤
-          </button>
+            ➤          </button>
 
         </div>
 
@@ -1497,8 +1495,7 @@ function switchAuthMode(){
 
 async function submitAuth(){
 
-  const email =
-    $("emailInput").value.trim();
+  const email =    $("emailInput").value.trim();
 
   const password =
     $("passwordInput").value;
@@ -1997,8 +1994,7 @@ function renderConversations(){
               class="conversation-actions"
             >
               <button type="button" onclick="conversationAction(event,'${c.id}','rename')">✏️ إعادة تسمية</button>
-              <button type="button" onclick="conversationAction(event,'${c.id}','pin')">${c.pinned ? "📌 إلغاء التثبيت" : "📌 تثبيت"}</button>
-              <button type="button" class="danger" onclick="conversationAction(event,'${c.id}','delete')">🗑️ حذف</button>
+              <button type="button" onclick="conversationAction(event,'${c.id}','pin')">${c.pinned ? "📌 إلغاء التثبيت" : "📌 تثبيت"}</button>              <button type="button" class="danger" onclick="conversationAction(event,'${c.id}','delete')">🗑️ حذف</button>
             </div>
           </div>
 
@@ -2345,7 +2341,8 @@ async function sendMessage(){
   const input =
     $("messageInput");
 
-  const rawText = input.value.trim();\n  const text = getAizenModePrefix() + rawText;
+  const rawText = input.value.trim();
+  const text = getAizenModePrefix() + rawText;
 
   const attachmentPrompt =
     pendingAttachments.length
@@ -2497,8 +2494,7 @@ async function requestAI(
 
   if(!currentSession){
 
-    const {data} =
-      await supabaseClient.auth.getSession();
+    const {data} =      await supabaseClient.auth.getSession();
 
     currentSession =
       data.session;
@@ -2997,8 +2993,7 @@ async function runBuild(type,typeLabel,description,secretToken="",projectName=""
         await supabaseClient
           .from("messages")
           .insert({
-            conversation_id:conversation.id,
-            user_id:currentUser.id,
+            conversation_id:conversation.id,            user_id:currentUser.id,
             role:"user",
             content:messageForAI,
             metadata:{
@@ -3497,8 +3492,7 @@ function renderAttachments(){
         '<div class="attachment-chip">' +
           '<span title="' + escapeHTML(item.name) + '">' +
             '📄 ' + escapeHTML(item.name) +
-          '</span>' +
-          '<button type="button" class="attachment-remove" ' +
+          '</span>' +          '<button type="button" class="attachment-remove" ' +
             'onclick="removeAttachment(' + index + ')" ' +
             'aria-label="إزالة الملف">×</button>' +
         '</div>'
