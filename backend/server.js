@@ -24,6 +24,20 @@ const SECRET_ENCRYPTION_KEY = String(process.env.SECRET_ENCRYPTION_KEY || "");
 const AI_MAX_MESSAGE_CHARS = Number(process.env.AI_MAX_MESSAGE_CHARS || 120000);
 const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES || 40);
 
+/* Aizen Core Knowledge: stable engineering guidance used by the coding agent. */
+const AIZEN_CORE_KNOWLEDGE = [
+  "Software engineering: requirements analysis, architecture, modular design, clean code, error handling, observability, testing, debugging, performance, accessibility, responsive UX and deployment.",
+  "Web: HTML, CSS, JavaScript, TypeScript, DOM, browser APIs, HTTP, REST, JSON, WebSockets, authentication, sessions, OAuth, CORS, caching and secure frontend patterns.",
+  "Backend: Node.js, Express-style routing, Python, Java, APIs, validation, rate limiting, logging, background jobs, queues, databases and environment configuration.",
+  "Databases: PostgreSQL concepts, SQL, indexes, transactions, constraints, migrations, ownership checks, least privilege and row-level security.",
+  "Security: never expose secrets; validate input; prevent XSS, CSRF, SSRF, injection, path traversal, IDOR/BOLA and insecure authorization; keep privileged keys server-side.",
+  "AI engineering: prompt construction, structured outputs, context management, tool use, retrieval, evaluation, fallback routing, streaming, token limits and graceful failure.",
+  "Bots and integrations: Telegram Bot API, Discord bot concepts, webhooks, tokens as server-side secrets, permissions, retries and API error handling.",
+  "Games and mods: version-aware code, client/server boundaries, configuration, commands, assets, dependencies and compatibility.",
+  "Project workflow: inspect existing files first, make the smallest safe change, preserve unrelated behavior, review imports/routes/state, and never claim execution that did not happen.",
+  "When information is version-sensitive or unknown, do not invent APIs; prefer the project files and verified documentation available to the system."
+].join("\n");
+
 function getAiMode(message, isBuild) {
   const text = String(message || "").trim();
   const command = text.match(/^\/(plan|review|fix|explain|debug|optimize|security|test)\b/i)?.[1]?.toLowerCase() || "";
@@ -1383,6 +1397,7 @@ async function handleCodingAgent(req, res, user) {
   }
 
   const projectId = String(data.projectId || "").trim();
+  const conversationId = String(data.conversationId || "").trim();
   const instruction = String(data.instruction || "").trim();
   if (!projectId || !instruction) {
     sendJson(res, 400, { success:false, error:"AGENT_FIELDS_REQUIRED", message:"المشروع وتعليمات الوكيل مطلوبة" });
@@ -1404,12 +1419,24 @@ async function handleCodingAgent(req, res, user) {
       token);
     const files = Array.isArray(projectFiles) ? projectFiles : [];
     const project = projectRows[0];
-    const context = compactProjectFiles(files);
+    const context = compactProjectFiles(files, 180000);
+    let conversationContext = "(لا توجد محادثة مرتبطة بالوكيل)";
+    if (conversationId) {
+      try {
+        const agentConversation = await getConversation(accessToken, conversationId, user.id);
+        const agentMessages = await getConversationMessages(accessToken, conversationId);
+        conversationContext = agentMessages.slice(-80).map(m => "[" + (m.role === "assistant" ? "AIZEN" : "USER") + "]\n" + String(m.content || "")).join("\n\n").slice(-120000) || "(المحادثة فارغة)";
+      } catch (conversationError) {
+        console.error("CODING AGENT CONVERSATION CONTEXT ERROR:", conversationError.message);
+      }
+    }
 
     const firstPrompt = [
       "أنت Aizen Coding Agent. نفّذ: تحليل المتطلبات ثم خطة مختصرة ثم تعديل الملفات ثم مراجعة ذاتية.",
       "لا تكسر الوظائف الموجودة. لا تحذف ملفات إلا إذا طلب المستخدم ذلك.",
       "طلب المستخدم:", instruction,
+      "قاعدة معرفة Aizen الأساسية:", AIZEN_CORE_KNOWLEDGE,
+      "سياق المحادثة المرتبطة:", conversationContext,
       "اسم المشروع:", project.name,
       "النوع:", project.type || "custom",
       "الوصف:", project.description || "",
@@ -1438,7 +1465,9 @@ async function handleCodingAgent(req, res, user) {
       "صحح syntax/import/path/state/security/regression problems.",
       "أعد فقط النسخة النهائية الكاملة للملفات التي يجب إنشاؤها أو تعديلها.",
       "إذا كانت سليمة أعدها كما هي. لا تضف أسراراً حقيقية.",
+      "قاعدة معرفة Aizen الأساسية:", AIZEN_CORE_KNOWLEDGE,
       "طلب المستخدم:", instruction,
+      "سياق المحادثة المرتبطة:", conversationContext,
       "الملفات الحالية:", context || "(لا توجد ملفات محفوظة بعد)",
       "التعديلات المقترحة:", proposedContext
     ].join("\n");
