@@ -3722,51 +3722,130 @@ loadSiteLanguage();
 <script>
 (function(){
   "use strict";
-  /* Aizen UI Action Layer v8: fresh delegated controls. */
-  const actions={
-    attach:()=>window.triggerFileUpload?.(),
-    "ai-mode":()=>window.openAIModeModal?.(),
-    agent:()=>window.openCodingAgentModal?.(),
-    workspace:()=>window.openWorkspaceModal?.(),
-    build:()=>window.openBuildTypeModal?.(),
-    stop:()=>window.stopGeneration?.(),
-    send:()=>window.sendMessage?.(),
-    "new-chat":()=>window.newChat?.(),
-    "tab-chats":()=>window.showSidebarTab?.("chats"),
-    "tab-projects":()=>window.showSidebarTab?.("projects")
-  };
-  function invoke(button){
-    const name=button?.dataset?.aizenAction;
-    const action=actions[name];
-    if(!action || button.disabled || button.getAttribute("aria-disabled")==="true") return;
+  /* Aizen UI Action Layer v9: independent mobile-safe controls. */
+  const call=(name,...args)=>{
+    const fn=window[name];
+    if(typeof fn!=="function"){
+      console.error("AIZEN ACTION MISSING:",name);
+      return false;
+    }
     try{
-      const result=action();
-      if(result && typeof result.catch==="function")
-        result.catch(error=>console.error("AIZEN ACTION ERROR:",name,error));
+      const result=fn(...args);
+      if(result && typeof result.catch==="function"){
+        result.catch(error=>{
+          console.error("AIZEN ACTION ERROR:",name,error);
+          window.showToast?.("تعذر تنفيذ العملية حالياً.");
+        });
+      }
+      return true;
     }catch(error){
       console.error("AIZEN ACTION ERROR:",name,error);
-      window.showToast?.("تعذر تنفيذ الزر حالياً.");
+      window.showToast?.("تعذر تنفيذ العملية حالياً.");
+      return false;
     }
-  }
-  document.addEventListener("click",function(event){
-    const button=event.target.closest("button[data-aizen-action]");
-    if(!button) return;
-    event.preventDefault();
-    event.stopPropagation();
-    invoke(button);
-  },true);
-  document.querySelectorAll("button").forEach(button=>{
-    if(!button.getAttribute("type")) button.setAttribute("type","button");
-    button.style.pointerEvents="auto";
-    button.style.touchAction="manipulation";
-  });
-  window.AizenUI={version:"8",ready:true,invoke,rebind:function(){
-    document.querySelectorAll("button").forEach(button=>{
-      if(!button.getAttribute("type")) button.setAttribute("type","button");
-      button.style.pointerEvents="auto";
-      button.style.touchAction="manipulation";
+  };
+
+  const direct={
+    menu:()=>call("toggleSidebar"),
+    login:()=>call("openAuth"),
+    account:()=>call("toggleAccountMenu"),
+    settings:()=>call("openSettings"),
+    profile:()=>call("openProfile"),
+    logout:()=>call("logout"),
+    newchat:()=>call("newChat"),
+    chats:()=>call("showSidebarTab","chats"),
+    projects:()=>call("showSidebarTab","projects"),
+    attach:()=>call("triggerFileUpload"),
+    aimode:()=>call("openAIModeModal"),
+    agent:()=>call("openCodingAgentModal"),
+    workspace:()=>call("openWorkspaceModal"),
+    build:()=>call("openBuildTypeModal"),
+    send:()=>call("sendMessage"),
+    stop:()=>call("stopGeneration"),
+    auth:()=>call("submitAuth"),
+    authswitch:()=>call("switchAuthMode"),
+    forgot:()=>call("forgotPassword"),
+    oauth_google:()=>call("oauthLogin","google"),
+    oauth_github:()=>call("oauthLogin","github"),
+    oauth_discord:()=>call("oauthLogin","discord"),
+    close_auth:()=>call("closeAuth"),
+    close_settings:()=>call("closeSettings"),
+    close_profile:()=>call("closeProfile"),
+    close_project:()=>call("closeProjectModal"),
+    create_project:()=>call("createProject"),
+    close_build_type:()=>call("closeBuildTypeModal"),
+    close_build_description:()=>call("closeBuildDescriptionModal"),
+    submit_build:()=>call("submitBuildDescription"),
+    close_bot_secret:()=>call("closeBotSecretModal"),
+    submit_bot_build:()=>call("submitBotBuild"),
+    close_ai_mode:()=>call("closeAIModeModal"),
+    close_agent:()=>call("closeCodingAgentModal"),
+    run_agent:()=>call("runCodingAgent"),
+    close_workspace:()=>call("closeWorkspaceModal"),
+    save_workspace:()=>call("saveWorkspaceFile"),
+    analyze_workspace:()=>call("analyzeWorkspaceFile")
+  };
+
+  const byId={
+    menuButton:"menu",
+    loginButton:"login",
+    accountButton:"account",
+    authPrimary:"auth",
+    authSwitch:"authswitch",
+    aiModeButton:"aimode",
+    codingAgentButton:"agent",
+    workspaceButton:"workspace",
+    buildButton:"build",
+    stopButton:"stop",
+    sendButton:"send"
+  };
+
+  function bind(){
+    Object.keys(byId).forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el || el.dataset.aizenFreshBound==="1") return;
+      el.dataset.aizenFreshBound="1";
+      el.addEventListener("click",e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        direct[byId[id]]?.();
+      });
+      el.addEventListener("touchend",e=>{
+        if(e.cancelable) e.preventDefault();
+      },{passive:false});
     });
-  }};
+
+    const selector=[
+      "#accountMenu button",
+      "#authOverlay .auth-oauth",
+      ".modal .modal-buttons button",
+      ".build-type-card",
+      ".ai-mode-card",
+      ".theme-choice",
+      ".conversation-menu>button",
+      ".conversation-actions button",
+      ".project-actions button",
+      ".attachment-remove"
+    ].join(",");
+
+    document.querySelectorAll(selector).forEach(el=>{
+      if(el.dataset.aizenFreshBound==="1") return;
+      el.dataset.aizenFreshBound="1";
+      el.style.pointerEvents="auto";
+      el.style.touchAction="manipulation";
+      el.addEventListener("touchstart",()=>{}, {passive:true});
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded",bind);
+  bind();
+
+  window.AizenUI={
+    version:"9",
+    ready:true,
+    rebind:bind,
+    call
+  };
 })();
 </script>
 
