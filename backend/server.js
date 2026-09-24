@@ -1486,7 +1486,7 @@ async function handleCodingAgent(req, res, user) {
       "راجع syntax وimports والمسارات والحالة والأمان قبل الإخراج."
     ].join("\n");
 
-    const firstPass = await runAIToText(firstPrompt, false, []);
+    const firstPass = await runAIToText(firstPrompt, true, []);
     if (!firstPass || firstPass === "NO_CHANGES") {
       sendJson(res, 200, {success:true,changed:0,stage:"reviewed",message:"حلّل Aizen المشروع ولم يجد تغييرات ضرورية."});
       return;
@@ -1512,7 +1512,7 @@ async function handleCodingAgent(req, res, user) {
       "التعديلات المقترحة:", proposedContext
     ].join("\n");
 
-    const reviewed = await runAIToText(reviewPrompt, false, []);
+    const reviewed = await runAIToText(reviewPrompt, true, []);
     const finalFiles = extractAgentFileBlocks(reviewed || firstPass);
     if (!finalFiles.length) {
       sendJson(res, 422, {success:false,error:"AGENT_REVIEW_NO_FILES",message:"فشلت المراجعة في إنتاج ملفات قابلة للتطبيق، ولم يتم تغيير المشروع."});
