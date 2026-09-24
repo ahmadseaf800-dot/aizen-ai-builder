@@ -321,7 +321,7 @@ async function requireAuth(req, res) {
  * so Supabase RLS policies continue protecting
  * the user's data.
  */
-async function supabaseRequest(method, endpoint, accessToken, body = null) {
+async function supabaseRequest(method, endpoint, accessToken, body = null, extraHeaders = {}) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error("SUPABASE_NOT_CONFIGURED");
   }
@@ -332,6 +332,7 @@ async function supabaseRequest(method, endpoint, accessToken, body = null) {
     apikey: SUPABASE_ANON_KEY,
     Authorization: `Bearer ${accessToken}`,
     Accept: "application/json",
+    ...extraHeaders,
   };
 
   if (body !== null) {
@@ -1458,7 +1459,7 @@ async function handleCodingAgent(req, res, user) {
 
     const saved = await supabaseRequest("POST",
       "/rest/v1/project_files?on_conflict=project_id%2Cpath",
-      token, rows);
+      token, rows, { "Prefer": "resolution=merge-duplicates,return=representation" });
 
     await supabaseRequest("PATCH",
       "/rest/v1/projects?id=eq." + encodeURIComponent(projectId) + "&user_id=eq." + encodeURIComponent(user.id),
