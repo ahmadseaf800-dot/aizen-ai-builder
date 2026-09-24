@@ -2348,6 +2348,7 @@ async function sendMessage(){
 
     openAuth();
     showToast("سجّل الدخول أولاً.");
+    sendingLock=false;
     return;
   }
 
@@ -3051,11 +3052,32 @@ async function runBuild(type,typeLabel,description,secretToken="",projectName=""
       }
     }
 
-    await requestAI(
-      conversation.id,
-      true,
-      messageForAI
-    );
+    setStatus("Aizen ينفذ البناء الفعلي ويكتب ملفات المشروع...");
+    const buildSession=(await supabaseClient.auth.getSession()).data.session;
+    if(!buildSession?.access_token) throw new Error("انتهت جلسة تسجيل الدخول.");
+    const buildResponse=await fetch(BACKEND_URL+"/api/agent",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+buildSession.access_token},
+      body:JSON.stringify({projectId:createdProject.id,conversationId:conversation.id,instruction:messageForAI})
+    });
+    const buildData=await buildResponse.json().catch(()=>({}));
+    if(!buildResponse.ok || !buildData.success) throw new Error(buildData.message || "فشل بناء المشروع فعلياً.");
+    if(!Number(buildData.changed||0)){
+      await supabaseClient.from("projects").update({status:"error",updated_at:new Date().toISOString()}).eq("id",createdProject.id).eq("user_id",currentUser.id);
+      throw new Error("لم يُنشئ الوكيل أي ملفات. لم يتم اعتبار البناء ناجحاً.");
+    }
+    const builtFiles=Array.isArray(buildData.files)?buildData.files:[];
+    const buildSummary="تم بناء المشروع فعلياً. تم إنشاء/تعديل "+buildData.changed+" ملف:\n\n"+builtFiles.map(file=>"• "+file).join("\n");
+    addMessageToUI("assistant",buildSummary);
+    await supabaseClient.from("messages").insert({conversation_id:conversation.id,user_id:currentUser.id,role:"assistant",content:buildSummary,metadata:{build:true,agent:true,changed:buildData.changed,files:builtFiles}});
+    await supabaseClient.from("conversations").update({updated_at:new Date().toISOString(),build_used:true,build_used_at:new Date().toISOString()}).eq("id",conversation.id).eq("user_id",currentUser.id);
+    await supabaseClient.from("projects").update({status:"ready",updated_at:new Date().toISOString()}).eq("id",createdProject.id).eq("user_id",currentUser.id);
+    createdProject.status="ready";
+    const localProject=projects.find(p=>p.id===createdProject.id);
+    if(localProject) localProject.status="ready";
+    renderProjects();
+    await loadConversations();
+    setStatus("اكتمل البناء الفعلي: "+buildData.changed+" ملف.");
 
   }catch(error){
 
