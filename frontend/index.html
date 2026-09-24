@@ -5,7 +5,32 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Aizen AI Builder</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+/* Aizen fresh action layer: core controls use one delegated listener. */
+(function(){
+  const actions={
+    "attach":()=>typeof triggerFileUpload==="function"&&triggerFileUpload(),
+    "ai-mode":()=>typeof openAIModeModal==="function"&&openAIModeModal(),
+    "agent":()=>typeof openCodingAgentModal==="function"&&openCodingAgentModal(),
+    "workspace":()=>typeof openWorkspaceModal==="function"&&openWorkspaceModal(),
+    "build":()=>typeof openBuildTypeModal==="function"&&openBuildTypeModal(),
+    "stop":()=>typeof stopGeneration==="function"&&stopGeneration(),
+    "send":()=>typeof sendMessage==="function"&&sendMessage(),
+    "new-chat":()=>typeof newChat==="function"&&newChat(),
+    "tab-chats":()=>typeof showSidebarTab==="function"&&showSidebarTab("chats"),
+    "tab-projects":()=>typeof showSidebarTab==="function"&&showSidebarTab("projects")
+  };
+  document.addEventListener("click",function(event){
+    const button=event.target.closest("[data-aizen-action]");
+    if(!button||button.disabled)return;
+    const action=actions[button.dataset.aizenAction];
+    if(!action)return;
+    event.preventDefault();
+    event.stopPropagation();
+    try{action();}catch(error){console.error("AIZEN ACTION ERROR:",button.dataset.aizenAction,error);showToast("تعذر تنفيذ هذا الزر حالياً.");}
+  },true);
+})();
+</script>
 
 <style>
 *{box-sizing:border-box}
@@ -849,7 +874,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
 
     <button
       class="new-chat-button"
-      onclick="newChat()"
+      data-aizen-action="new-chat"
     >
       ＋ محادثة جديدة
     </button>
@@ -872,7 +897,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
     <button
       id="chatTab"
       class="sidebar-tab active"
-      onclick="showSidebarTab('chats')"
+      data-aizen-action="tab-chats"
     >
       💬 المحادثات
     </button>
@@ -880,7 +905,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
     <button
       id="projectTab"
       class="sidebar-tab"
-      onclick="showSidebarTab('projects')"
+      data-aizen-action="tab-projects"
     >
       📁 المشاريع
     </button>
@@ -948,7 +973,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
 
           <button
             class="composer-button"
-            onclick="triggerFileUpload()"
+            data-aizen-action="attach"
             title="إرفاق ملف"
           >
             📎
@@ -956,7 +981,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
           <button
             id="aiModeButton"
             class="ai-mode-button"
-            onclick="openAIModeModal()"
+            data-aizen-action="ai-mode"
             type="button"
             title="وضع الذكاء الاصطناعي"
           >
@@ -965,18 +990,18 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
           <button
             id="codingAgentButton"
             class="coding-agent-button"
-            onclick="openCodingAgentModal()"
+            data-aizen-action="agent"
             type="button"
             title="وكيل البرمجة"
           >
             Agent
           </button>
-          <button id="workspaceButton" class="aizen-workspace-button" onclick="openWorkspaceModal()" type="button" title="مساحة المشروع">Files</button>
+          <button id="workspaceButton" class="aizen-workspace-button" data-aizen-action="workspace" type="button" title="مساحة المشروع">Files</button>
 
           <button
             id="buildButton"
             class="build-button"
-            onclick="openBuildTypeModal()"
+            data-aizen-action="build"
           >
             Build
           </button>
@@ -989,7 +1014,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
           <button
             id="stopButton"
             class="stop-button"
-            onclick="stopGeneration()"
+            data-aizen-action="stop"
           >
             ■
           </button>
@@ -997,7 +1022,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
           <button
             id="sendButton"
             class="send-button"
-            onclick="sendMessage()"
+            data-aizen-action="send"
           >
             ➤          </button>
 
