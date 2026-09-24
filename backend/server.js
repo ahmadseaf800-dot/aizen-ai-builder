@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { AIZEN_CORE_VERSION, AIZEN_AGENT_CAPABILITIES, AIZEN_CORE_KNOWLEDGE, buildAizenCoreInstruction } = require("./aizen-core");
+const { makeFileRow, cleanProjectPath, analyzeFiles } = require("./aizen-workspace");
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -1532,6 +1533,48 @@ async function handleCodingAgent(req, res, user) {
   }
 }
 
+
+async function handleWorkspace(req,res,user){
+  let data;
+  try{data=await readJsonBody(req,res,4*1024*1024);}
+  catch(error){sendJson(res,error.message==="REQUEST_TOO_LARGE"?413:400,{success:false,error:error.message==="REQUEST_TOO_LARGE"?"REQUEST_TOO_LARGE":"INVALID_JSON",message:"البيانات المرسلة غير صحيحة"});return;}
+  const token=getBearerToken(req);
+  const projectId=String(data.projectId||"").trim();
+  if(!projectId){sendJson(res,400,{success:false,error:"PROJECT_ID_REQUIRED",message:"معرّف المشروع مطلوب"});return;}
+  try{
+    const projects=await supabaseRequest("GET","/rest/v1/projects?id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id)+"&select=id,name,type,description,status&limit=1",token);
+    if(!Array.isArray(projects)||!projects.length){sendJson(res,404,{success:false,error:"PROJECT_NOT_FOUND",message:"المشروع غير موجود أو لا تملك صلاحية الوصول إليه"});return;}
+    if(req.method==="GET"){
+      const files=await supabaseRequest("GET","/rest/v1/project_files?project_id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id)+"&select=path,content,file_type,size_bytes,updated_at&order=path.asc&limit=2000",token);
+      sendJson(res,200,{success:true,project:projects[0],files:Array.isArray(files)?files:[]});
+      return;
+    }
+    const action=String(data.action||"analyze").toLowerCase();
+    if(action==="analyze"){
+      const files=await supabaseRequest("GET","/rest/v1/project_files?project_id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id)+"&select=path,content,file_type,size_bytes&order=path.asc&limit=2000",token);
+      sendJson(res,200,{success:true,analysis:analyzeFiles(Array.isArray(files)?files:[])});
+      return;
+    }
+    if(action==="write"){
+      const row=makeFileRow(projectId,user.id,data.path,data.content);
+      const saved=await supabaseRequest("POST","/rest/v1/project_files?on_conflict=project_id%2Cpath",token,[row],{"Prefer":"resolution=merge-duplicates,return=representation"});
+      sendJson(res,200,{success:true,action:"write",file:row.path,saved:Array.isArray(saved)?saved.length:1});
+      return;
+    }
+    if(action==="delete"){
+      const filePath=cleanProjectPath(data.path);
+      if(!filePath){sendJson(res,400,{success:false,error:"INVALID_FILE_PATH",message:"مسار الملف غير صالح"});return;}
+      await supabaseRequest("DELETE","/rest/v1/project_files?project_id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id)+"&path=eq."+encodeURIComponent(filePath),token);
+      sendJson(res,200,{success:true,action:"delete",file:filePath});
+      return;
+    }
+    sendJson(res,400,{success:false,error:"UNKNOWN_WORKSPACE_ACTION",message:"إجراء مساحة العمل غير معروف"});
+  }catch(error){
+    console.error("WORKSPACE ERROR:",error);
+    if(!res.headersSent)sendJson(res,500,{success:false,error:"WORKSPACE_ERROR",message:"تعذر تنفيذ عملية مساحة العمل."});
+  }
+}
+
 /*
  * /api/chat
  *
@@ -1914,6 +1957,16 @@ const server = http.createServer(async (req, res) => {
     if (!user) return;
 
     await handleMe(req, res, user);
+    return;
+  }
+
+  /*
+   * Project workspace
+   */
+  if ((method === "GET" || method === "POST") && pathname === "/api/workspace") {
+    const user = await requireAuth(req, res);
+    if (!user) return;
+    await handleWorkspace(req, res, user);
     return;
   }
 
