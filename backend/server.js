@@ -778,7 +778,7 @@ function askGroqStream(currentMessage, res, isBuild, history = [], fallbackProvi
 
     const payload = JSON.stringify({
       model: GROQ_MODEL,
-      stream: false,
+      stream: true,
       messages: [
         {
           role: "system",
@@ -918,9 +918,9 @@ function askAIStream(currentMessage, res, isBuild, history = []) {
   }
 
   if (AI_PROVIDER === "auto") {
-    if (AIZEN_LOCAL_MODEL_URL) return askAizenLocalStream(currentMessage,res,isBuild,history,AIZEN_LOCAL_ONLY ? null : (OPENROUTER_API_KEY?"openrouter":(GROQ_API_KEY?"groq":(GEMINI_API_KEY?"gemini":null))));
-    if (OPENROUTER_API_KEY) return askOpenRouterStream(currentMessage,res,isBuild,history,0,null);
-    if (GROQ_API_KEY) return askGroqStream(currentMessage,res,isBuild,history,null);
+    if (AIZEN_LOCAL_MODEL_URL) return askAizenLocalStream(currentMessage,res,isBuild,history,AIZEN_LOCAL_ONLY ? null : (GROQ_API_KEY?"groq":(OPENROUTER_API_KEY?"openrouter":(GEMINI_API_KEY?"gemini":null))));
+    if (GROQ_API_KEY) return askGroqStream(currentMessage,res,isBuild,history,"openrouter");
+    if (OPENROUTER_API_KEY) return askOpenRouterStream(currentMessage,res,isBuild,history,0,"gemini");
     if (GEMINI_API_KEY) return askGeminiStream(currentMessage,res,isBuild,history,null,0,null);
     return askAizenLocalStream(currentMessage,res,isBuild,history);
   }
