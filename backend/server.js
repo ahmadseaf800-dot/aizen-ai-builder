@@ -421,7 +421,7 @@ function buildGeminiInput(messages, currentMessage) {
  * Call OpenRouter using OpenAI-compatible SSE streaming.
  * This keeps the provider key on the backend and never exposes it to the browser.
  */
-function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCount = 0) {
+function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCount = 0, fallbackProvider = null) {
   return new Promise((resolve) => {
     if (!OPENROUTER_API_KEY) {
       if (!res.headersSent) {
@@ -522,9 +522,16 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
                   res,
                   isBuild,
                   history,
-                  1
+                  1,
+                  fallbackProvider
                 ).then(resolve);
               }, 2000);
+              return;
+            }
+
+            if (fallbackProvider) {
+              completed = true;
+              askProviderFallback(fallbackProvider, currentMessage, res, isBuild, history).then(resolve);
               return;
             }
 
@@ -676,7 +683,131 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
   });
 }
 
+function askGroqStream(currentMessage, res, isBuild, history = []) {
+  return new Promise((resolve) => {
+    if (!GROQ_API_KEY) {
+      if (!res.headersSent) sendJson(res, 500, {
+        success: false,
+        error: "GROQ_NOT_CONFIGURED",
+        message: "GROQ_API_KEY غير موجود في إعدادات السيرفر",
+      });
+      resolve();
+      return;
+    }
+
+    const messages = history.filter((m) => m && m.content).map((m) => ({
+      role: m.role === "model" ? "assistant" : "user",
+      content: String(m.content),
+    }));
+
+    const text = String(currentMessage || "").trim();
+    if (text) {
+      const last = messages[messages.length - 1];
+      if (!(last && last.role === "user" && String(last.content || "").trim() === text)) {
+        messages.push({ role: "user", content: text });
+      }
+    }
+
+    const payload = JSON.stringify({
+      model: GROQ_MODEL,
+      stream: false,
+      messages: [
+        {
+          role: "system",
+          content: isBuild
+            ? "أنت Aizen AI Builder، مهندس برمجيات دقيق. أنشئ مشاريع حقيقية قابلة للتشغيل، راجع syntax/imports/المسارات، ولا تضع أسراراً حقيقية داخل الكود. عند إخراج الملفات استخدم FILE: path ثم code fence ومحتوى الملف الكامل."
+            : "أنت Aizen AI، المساعد الذكي الرسمي داخل Aizen AI Builder. أعطِ الجواب المباشر أولاً، حافظ على سياق المحادثة، ولا تختلق APIs أو أوامر.",
+        },
+        ...messages,
+      ],
+    });
+
+    const url = new URL("https://api.groq.com/openai/v1/chat/completions");
+
+    httpsRequest({
+      hostname: url.hostname,
+      port: 443,
+      path: url.pathname,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: "Bearer " + GROQ_API_KEY,
+        "Content-Length": Buffer.byteLength(payload),
+      },
+    }, payload, 120000).then((response) => {
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        console.error("GROQ API ERROR:", response.statusCode);
+        if (!res.headersSent) sendJson(res, 502, {
+          success: false,
+          error: "GROQ_API_ERROR",
+          message: "تعذر تشغيل مزود الذكاء الاصطناعي حالياً.",
+          upstream_status: response.statusCode || 0,
+        });
+        resolve();
+        return;
+      }
+
+      let data = null;
+      try { data = JSON.parse(response.body); } catch {}
+      const output = data?.choices?.[0]?.message?.content;
+
+      if (!output) {
+        if (!res.headersSent) sendJson(res, 502, {
+          success: false,
+          error: "GROQ_EMPTY_RESPONSE",
+          message: "لم يصل رد من مزود الذكاء الاصطناعي.",
+        });
+        resolve();
+        return;
+      }
+
+      if (!res.headersSent) res.writeHead(200, {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
+      });
+
+      res.write("event: text\n");
+      res.write("data: " + JSON.stringify({ text: String(output) }) + "\n\n");
+      res.write("event: complete\n");
+      res.write("data: {}\n\n");
+      res.write("event: done\n");
+      res.write("data: {}\n\n");
+      res.end();
+      resolve();
+    }).catch((error) => {
+      console.error("GROQ REQUEST ERROR:", error.message);
+      if (!res.headersSent) sendJson(res, 502, {
+        success: false,
+        error: "GROQ_CONNECTION_ERROR",
+        message: "تعذر الاتصال بمزود الذكاء الاصطناعي.",
+      });
+      resolve();
+    });
+  });
+}
+
+function askProviderFallback(provider, currentMessage, res, isBuild, history = []) {
+  if (provider === "openrouter") {
+    return askOpenRouterStream(currentMessage, res, isBuild, history, 0, "groq");
+  }
+  if (provider === "groq") {
+    return askGroqStream(currentMessage, res, isBuild, history);
+  }
+  return Promise.resolve();
+}
+
 function askAIStream(currentMessage, res, isBuild, history = []) {
+  if (AI_PROVIDER === "auto") {
+    return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "openrouter");
+  }
+
+  if (AI_PROVIDER === "groq") {
+    return askGroqStream(currentMessage, res, isBuild, history);
+  }
+
   if (AI_PROVIDER === "openrouter") {
     return askOpenRouterStream(currentMessage, res, isBuild, history);
   }
@@ -695,9 +826,13 @@ function askAIStream(currentMessage, res, isBuild, history = []) {
 /*
  * Call Gemini using SSE streaming.
  */
-function askGeminiStream(currentMessage, res, isBuild, history = [], modelOverride = null, retryCount = 0) {
+function askGeminiStream(currentMessage, res, isBuild, history = [], modelOverride = null, retryCount = 0, fallbackProvider = null) {
   return new Promise((resolve) => {
     if (!GEMINI_API_KEY) {
+      if (fallbackProvider) {
+        askProviderFallback(fallbackProvider, currentMessage, res, isBuild, history).then(resolve);
+        return;
+      }
       if (!res.headersSent) {
         sendJson(res, 500, {
           success: false,
@@ -849,8 +984,15 @@ FILE: path/to/file.ext
                   isBuild,
                   history,
                   GEMINI_FALLBACK_MODEL,
-                  1
+                  1,
+                  fallbackProvider
                 ).then(resolve);
+                return;
+              }
+
+              if (fallbackProvider) {
+                completed = true;
+                askProviderFallback(fallbackProvider, currentMessage, res, isBuild, history).then(resolve);
                 return;
               }
 
@@ -1412,6 +1554,9 @@ const server = http.createServer(async (req, res) => {
       openrouter_configured: Boolean(
         OPENROUTER_API_KEY
       ),
+      groq_configured: Boolean(
+        GROQ_API_KEY
+      ),
       ai_provider: AI_PROVIDER,
       openrouter_model: OPENROUTER_API_KEY ? OPENROUTER_MODEL : null,
     });
@@ -1536,6 +1681,8 @@ server.listen(PORT, () => {
   console.log(`Gemini: ${GEMINI_API_KEY ? "configured" : "missing"}`);
   console.log(`OpenRouter: ${OPENROUTER_API_KEY ? "configured" : "missing"}`);
   console.log(`OpenRouter model: ${OPENROUTER_API_KEY ? OPENROUTER_MODEL : "not configured"}`);
+  console.log(`Groq: ${GROQ_API_KEY ? "configured" : "missing"}`);
+  console.log(`Groq model: ${GROQ_API_KEY ? GROQ_MODEL : "not configured"}`);
   console.log(`AI provider: ${AI_PROVIDER}`);
   console.log(`Frontend: ${FRONTEND_PATH}`);
   console.log("====================================");
