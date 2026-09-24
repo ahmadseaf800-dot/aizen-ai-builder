@@ -1878,7 +1878,7 @@ const server = http.createServer(async (req, res) => {
       uptime_seconds: Math.floor(process.uptime()),
       aizen_core_version: AIZEN_CORE_VERSION,
       aizen_agent_capabilities: 11,
-      chat_primary: AIZEN_LOCAL_MODEL_URL ? "aizen-local" : (GEMINI_API_KEY ? "gemini" : (GROQ_API_KEY ? "groq" : (OPENROUTER_API_KEY ? "openrouter" : null)),
+      chat_primary: AIZEN_LOCAL_MODEL_URL ? "aizen-local" : (GEMINI_API_KEY ? "gemini" : (GROQ_API_KEY ? "groq" : (OPENROUTER_API_KEY ? "openrouter" : null))),
       build_primary: GROQ_API_KEY ? "groq" : (GEMINI_API_KEY ? "gemini" : (OPENROUTER_API_KEY ? "openrouter" : null)),
       ai_provider: AI_PROVIDER,
       aizen_core: {version:AIZEN_CORE_VERSION,capabilities:AIZEN_AGENT_CAPABILITIES.split("\n").length},
