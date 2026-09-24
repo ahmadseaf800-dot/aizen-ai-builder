@@ -908,7 +908,7 @@ function askAizenLocalStream(currentMessage, res, isBuild, history = [], fallbac
     let base;
     try { base=new URL(AIZEN_LOCAL_MODEL_URL); } catch { sendJson(res,500,{success:false,error:"AIZEN_LOCAL_URL_INVALID",message:"عنوان محرك Aizen المحلي غير صالح."}); resolve(); return; }
     const messages=[
-      {role:"system",content:buildAizenCoreInstruction({mode:getAiMode(currentMessage,isBuild).mode,isBuild,userRequest:currentMessage})},
+      {role:"system",content:buildAizenCoreInstruction({mode:getAiMode(currentMessage,isBuild).mode,isBuild,userRequest:currentMessage,ownerVerified:Boolean(res.__aizenAuthContext?.isOwner)})},
       ...history.filter(m=>m&&m.content).map(m=>({role:m.role==="assistant"||m.role==="model"?"assistant":"user",content:String(m.content)})),
       ...(String(currentMessage||"").trim()?[{role:"user",content:String(currentMessage).trim()}]:[])
     ];
@@ -1043,7 +1043,7 @@ FILE: path/to/file.ext
 - اجعل الرد مختصراً عندما يكون السؤال بسيطاً ومفصلاً عندما يحتاج ذلك.
 `;
 
-    const systemInstruction = buildAizenCoreInstruction({ mode: getAiMode(currentMessage, isBuild).mode, isBuild, userRequest: currentMessage }) + "\n\n" + legacySystemInstruction;
+    const systemInstruction = buildAizenCoreInstruction({ mode: getAiMode(currentMessage, isBuild).mode, isBuild, userRequest: currentMessage, ownerVerified: Boolean(res.__aizenAuthContext?.isOwner) }) + "\n\n" + legacySystemInstruction;
 
     const payload = JSON.stringify({
       model: modelOverride || GEMINI_MODEL,
@@ -1627,6 +1627,7 @@ async function handleWorkspace(req,res,user){
  */
 async function handleChat(req, res, user) {
   const ownerVerified = isAizenOwner(user);
+  res.__aizenAuthContext = { isOwner: ownerVerified, nonce: crypto.randomBytes(24).toString("hex") };
   const accessToken = getBearerToken(req);
 
   let data;
