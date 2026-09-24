@@ -2316,23 +2316,13 @@ async function sendMessage(){
 
   const text = input.value.trim();
 
-  const attachmentPrompt =
-    pendingAttachments.length
-      ? "
-
-[ملفات مرفقة]
-" +
-        pendingAttachments.map(
-          item =>
-            "--- FILE: " + item.name + " ---
-" +
-            item.content
-        ).join("
-
-") +
-        "
-[نهاية الملفات]"
-      : "";
+  const attachmentPrompt = pendingAttachments.length
+    ? "\n\n[ملفات مرفقة]\n" +
+      pendingAttachments.map(
+        item => "--- FILE: " + item.name + " ---\n" + item.content
+      ).join("\n\n") +
+      "\n[نهاية الملفات]"
+    : "";
 
   const messageForAI = text + attachmentPrompt;
 
@@ -2879,23 +2869,13 @@ async function runBuild(type,typeLabel,description,secretToken="",projectName=""
 
   const text = String(description || "").trim();
 
-  const attachmentPrompt =
-    pendingAttachments.length
-      ? "
-
-[ملفات مرفقة]
-" +
-        pendingAttachments.map(
-          item =>
-            "--- FILE: " + item.name + " ---
-" +
-            item.content
-        ).join("
-
-") +
-        "
-[نهاية الملفات]"
-      : "";
+  const attachmentPrompt = pendingAttachments.length
+    ? "\n\n[ملفات مرفقة]\n" +
+      pendingAttachments.map(
+        item => "--- FILE: " + item.name + " ---\n" + item.content
+      ).join("\n\n") +
+      "\n[نهاية الملفات]"
+    : "";
 
   const messageForAI =
     "[نوع المشروع: " + typeLabel + " | build_type=" + type + "]
