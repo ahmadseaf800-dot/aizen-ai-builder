@@ -882,7 +882,7 @@ function askProviderFallback(provider, currentMessage, res, isBuild, history = [
     return askGroqStream(currentMessage, res, isBuild, history, "openrouter");
   }
   if (provider === "openrouter") {
-    return askOpenRouterStream(currentMessage, res, isBuild, history);
+    return askOpenRouterStream(currentMessage, res, isBuild, history, 0, null, ownerVerified);
   }
   if (provider === "gemini") {
     return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "groq");
@@ -924,19 +924,19 @@ function askAizenLocalStream(currentMessage, res, isBuild, history = [], fallbac
 
 function askAIStream(currentMessage, res, isBuild, history = [], ownerVerified = false) {
   if (AI_PROVIDER === "local") {
-    return askAizenLocalStream(currentMessage, res, isBuild, history);
+    return askAizenLocalStream(currentMessage, res, isBuild, history, null, ownerVerified);
   }
 
   if (AI_PROVIDER === "auto") {
     if (AIZEN_LOCAL_MODEL_URL) return askAizenLocalStream(currentMessage,res,isBuild,history,AIZEN_LOCAL_ONLY ? null : (GROQ_API_KEY?"groq":(OPENROUTER_API_KEY?"openrouter":(GEMINI_API_KEY?"gemini":null))));
-    if (GROQ_API_KEY) return askGroqStream(currentMessage,res,isBuild,history,"openrouter");
-    if (OPENROUTER_API_KEY) return askOpenRouterStream(currentMessage,res,isBuild,history,0,"gemini");
-    if (GEMINI_API_KEY) return askGeminiStream(currentMessage,res,isBuild,history,null,0,null);
+    if (GROQ_API_KEY) return askGroqStream(currentMessage,res,isBuild,history,"openrouter",ownerVerified);
+    if (OPENROUTER_API_KEY) return askOpenRouterStream(currentMessage,res,isBuild,history,0,"gemini",ownerVerified);
+    if (GEMINI_API_KEY) return askGeminiStream(currentMessage,res,isBuild,history,null,0,null,ownerVerified);
     return askAizenLocalStream(currentMessage,res,isBuild,history);
   }
 
   if (AI_PROVIDER === "groq") {
-    return askGroqStream(currentMessage, res, isBuild, history);
+    return askGroqStream(currentMessage, res, isBuild, history, null, ownerVerified);
   }
 
   if (AI_PROVIDER === "openrouter") {
@@ -944,7 +944,7 @@ function askAIStream(currentMessage, res, isBuild, history = [], ownerVerified =
   }
 
   if (AI_PROVIDER === "gemini") {
-    return askGeminiStream(currentMessage, res, isBuild, history);
+    return askGeminiStream(currentMessage, res, isBuild, history, null, 0, null, ownerVerified);
   }
 
   if (OPENROUTER_API_KEY) {
@@ -1617,7 +1617,8 @@ async function handleWorkspace(req,res,user){
  *   build: true
  * }
  */
-async function handleChat(req, res, user) {\n  const ownerVerified = isAizenOwner(user);
+async function handleChat(req, res, user) {
+  const ownerVerified = isAizenOwner(user);
   const accessToken = getBearerToken(req);
 
   let data;
