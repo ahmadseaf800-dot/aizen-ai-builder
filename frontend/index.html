@@ -1248,9 +1248,6 @@ async function workspaceRequest(options){
 async function loadWorkspaceFiles(){
   const projectId=$("workspaceProject")?.value||currentProjectId||"";
   if(!projectId)return;
-  try{
-    const data=await workspaceRequest({method:"GET",body:undefined,headers:undefined,url:BACKEND_URL+"/api/workspace?projectId="+encodeURIComponent(projectId)});
-  }catch(e){}
   const session=(await supabaseClient.auth.getSession()).data.session;
   try{
     const response=await fetch(BACKEND_URL+"/api/workspace?projectId="+encodeURIComponent(projectId),{headers:{"Authorization":"Bearer "+session.access_token}});
