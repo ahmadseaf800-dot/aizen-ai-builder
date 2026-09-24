@@ -683,9 +683,13 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
   });
 }
 
-function askGroqStream(currentMessage, res, isBuild, history = []) {
+function askGroqStream(currentMessage, res, isBuild, history = [], fallbackProvider = null) {
   return new Promise((resolve) => {
     if (!GROQ_API_KEY) {
+      if (fallbackProvider) {
+        askProviderFallback(fallbackProvider, currentMessage, res, isBuild, history).then(resolve);
+        return;
+      }
       if (!res.headersSent) sendJson(res, 500, {
         success: false,
         error: "GROQ_NOT_CONFIGURED",
@@ -738,6 +742,10 @@ function askGroqStream(currentMessage, res, isBuild, history = []) {
     }, payload, 120000).then((response) => {
       if (response.statusCode < 200 || response.statusCode >= 300) {
         console.error("GROQ API ERROR:", response.statusCode);
+        if (fallbackProvider) {
+          askProviderFallback(fallbackProvider, currentMessage, res, isBuild, history).then(resolve);
+          return;
+        }
         if (!res.headersSent) sendJson(res, 502, {
           success: false,
           error: "GROQ_API_ERROR",
@@ -753,6 +761,10 @@ function askGroqStream(currentMessage, res, isBuild, history = []) {
       const output = data?.choices?.[0]?.message?.content;
 
       if (!output) {
+        if (fallbackProvider) {
+          askProviderFallback(fallbackProvider, currentMessage, res, isBuild, history).then(resolve);
+          return;
+        }
         if (!res.headersSent) sendJson(res, 502, {
           success: false,
           error: "GROQ_EMPTY_RESPONSE",
@@ -779,6 +791,10 @@ function askGroqStream(currentMessage, res, isBuild, history = []) {
       resolve();
     }).catch((error) => {
       console.error("GROQ REQUEST ERROR:", error.message);
+      if (fallbackProvider) {
+        askProviderFallback(fallbackProvider, currentMessage, res, isBuild, history).then(resolve);
+        return;
+      }
       if (!res.headersSent) sendJson(res, 502, {
         success: false,
         error: "GROQ_CONNECTION_ERROR",
@@ -791,17 +807,37 @@ function askGroqStream(currentMessage, res, isBuild, history = []) {
 
 function askProviderFallback(provider, currentMessage, res, isBuild, history = []) {
   if (provider === "openrouter") {
-    return askOpenRouterStream(currentMessage, res, isBuild, history, 0, "groq");
+    return askOpenRouterStream(currentMessage, res, isBuild, history);
   }
   if (provider === "groq") {
-    return askGroqStream(currentMessage, res, isBuild, history);
+    return askGroqStream(currentMessage, res, isBuild, history, "gemini");
+  }
+  if (provider === "gemini") {
+    return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "openrouter");
   }
   return Promise.resolve();
 }
 
 function askAIStream(currentMessage, res, isBuild, history = []) {
   if (AI_PROVIDER === "auto") {
-    return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "openrouter");
+    // Smart routing: build requests start with Groq; normal chat starts with Gemini.
+    // The next available provider is used automatically when the primary fails.
+    if (isBuild && GROQ_API_KEY) {
+      return askGroqStream(currentMessage, res, isBuild, history, "gemini");
+    }
+    if (!isBuild && GEMINI_API_KEY) {
+      return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "groq");
+    }
+    if (GEMINI_API_KEY) {
+      return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "openrouter");
+    }
+    if (GROQ_API_KEY) {
+      return askGroqStream(currentMessage, res, isBuild, history, "openrouter");
+    }
+    if (OPENROUTER_API_KEY) {
+      return askOpenRouterStream(currentMessage, res, isBuild, history);
+    }
+    return askGeminiStream(currentMessage, res, isBuild, history);
   }
 
   if (AI_PROVIDER === "groq") {
@@ -1557,6 +1593,9 @@ const server = http.createServer(async (req, res) => {
       groq_configured: Boolean(
         GROQ_API_KEY
       ),
+      routing_mode: AI_PROVIDER === "auto" ? "smart-auto" : "manual",
+      chat_primary: GEMINI_API_KEY ? "gemini" : (GROQ_API_KEY ? "groq" : (OPENROUTER_API_KEY ? "openrouter" : null)),
+      build_primary: GROQ_API_KEY ? "groq" : (GEMINI_API_KEY ? "gemini" : (OPENROUTER_API_KEY ? "openrouter" : null)),
       ai_provider: AI_PROVIDER,
       openrouter_model: OPENROUTER_API_KEY ? OPENROUTER_MODEL : null,
     });
