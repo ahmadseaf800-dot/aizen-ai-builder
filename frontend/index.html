@@ -952,6 +952,8 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
             📎
           </button>
 
+          <button id="aiModeButton" type="button" class="composer-button ai-mode-button" onclick="openAIModeModal()" aria-label="وضع الذكاء الاصطناعي">AI</button>
+
           <button
             id="buildButton"
             class="build-button"
@@ -2596,8 +2598,7 @@ async function requestAI(
       for(const rawEvent of events){
 
         const lines =
-          rawEvent.split("
-");
+          rawEvent.split("\n");
 
         let eventName = "";
         let dataText = "";
