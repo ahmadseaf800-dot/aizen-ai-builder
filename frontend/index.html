@@ -3672,35 +3672,51 @@ loadSiteLanguage();
 <script>
 (function(){
   "use strict";
-  /* Aizen UI Kernel v2: resilient delegated handlers for critical controls. */
-  const actions = {
-    sendButton: () => typeof window.sendMessage === "function" && window.sendMessage(),
-    stopButton: () => typeof window.stopGeneration === "function" && window.stopGeneration(),
-    buildButton: () => typeof window.openBuildTypeModal === "function" && window.openBuildTypeModal(),
-    aiModeButton: () => typeof window.openAIModeModal === "function" && window.openAIModeModal(),
-    codingAgentButton: () => typeof window.openCodingAgentModal === "function" && window.openCodingAgentModal(),
-    loginButton: () => typeof window.openAuth === "function" && window.openAuth(),
-    accountButton: () => typeof window.toggleAccountMenu === "function" && window.toggleAccountMenu(),
-    chatTab: () => typeof window.showSidebarTab === "function" && window.showSidebarTab("chats"),
-    projectTab: () => typeof window.showSidebarTab === "function" && window.showSidebarTab("projects"),
-    menu: () => typeof window.toggleSidebar === "function" && window.toggleSidebar(),
-    newChat: () => typeof window.newChat === "function" && window.newChat()
+  /* Aizen UI Kernel v3: independent handlers for critical controls.
+     It never blocks unrelated click handlers and does not depend on legacy inline wiring. */
+  const bind = (id, handler) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener("click", function(event){
+      event.preventDefault();
+      try { handler(); }
+      catch(error){ console.error("Aizen action failed:", id, error); }
+    });
   };
-  function dispatch(event){
-    if(event.type !== "click") return;
-    const target = event.target && event.target.closest ? event.target.closest("button") : null;
-    if(!target) return;
-    let key = target.id;
-    if(!key && target.classList.contains("menu-button")) key = "menu";
-    if(!key && target.classList.contains("new-chat-button")) key = "newChat";
-    if(!actions[key]) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    try { actions[key](); }
-    catch(error) { console.error("Aizen UI action failed:", key, error); }
-  }
-  document.addEventListener("click", dispatch, true);
-  window.AizenUI = { version:"2", dispatch };
+  const call = (name, ...args) => {
+    const fn = window[name];
+    if(typeof fn !== "function"){
+      console.error("Aizen missing action:", name);
+      return;
+    }
+    return fn(...args);
+  };
+
+  bind("sendButton", () => call("sendMessage"));
+  bind("stopButton", () => call("stopGeneration"));
+  bind("buildButton", () => call("openBuildTypeModal"));
+  bind("aiModeButton", () => call("openAIModeModal"));
+  bind("codingAgentButton", () => call("openCodingAgentModal"));
+  bind("loginButton", () => call("openAuth"));
+  bind("accountButton", () => call("toggleAccountMenu"));
+  bind("chatTab", () => call("showSidebarTab","chats"));
+  bind("projectTab", () => call("showSidebarTab","projects"));
+
+  document.querySelectorAll("[data-aizen-action]").forEach((el) => {
+    el.addEventListener("click", function(event){
+      const action=el.getAttribute("data-aizen-action");
+      if(!action) return;
+      event.preventDefault();
+      if(action==="new-chat") call("newChat");
+      if(action==="menu") call("toggleSidebar");
+    });
+  });
+
+  window.AizenUI = {
+    version:"3",
+    ready:true,
+    run:(name,...args)=>call(name,...args)
+  };
 })();
 </script>
 </body>
