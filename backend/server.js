@@ -941,7 +941,8 @@ function askGeminiStream(currentMessage, res, isBuild, history = [], modelOverri
         : []),
     ];
 
-    const legacySystemInstruction = isBuild\n      ? `
+    const legacySystemInstruction = isBuild
+      ? `
 أنت Aizen AI Builder، مهندس برمجيات ومساعد ذكي دقيق.
 
 أولوية كل رد: الصحة، فهم المطلوب، ثم السرعة. لا تختلق معلومات أو نتائج.
@@ -985,7 +986,9 @@ FILE: path/to/file.ext
 - اجعل الرد مختصراً عندما يكون السؤال بسيطاً ومفصلاً عندما يحتاج ذلك.
 `;
 
-    const systemInstruction = buildAizenCoreInstruction({ mode: getAiMode(currentMessage, isBuild).mode, isBuild, userRequest: currentMessage }) + "\n\n" + legacySystemInstruction;\n\n    const payload = JSON.stringify({\n      model: modelOverride || GEMINI_MODEL,
+    const systemInstruction = buildAizenCoreInstruction({ mode: getAiMode(currentMessage, isBuild).mode, isBuild, userRequest: currentMessage }) + "\n\n" + legacySystemInstruction;
+
+    const payload = JSON.stringify({\n      model: modelOverride || GEMINI_MODEL,
       input,
       stream: true,
       system_instruction: systemInstruction,
