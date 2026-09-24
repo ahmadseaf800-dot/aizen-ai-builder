@@ -3671,12 +3671,37 @@ loadSiteLanguage();
 
 <script>
 (function(){
-  const actions={sendButton:()=>window.sendMessage&&window.sendMessage(),stopButton:()=>window.stopGeneration&&window.stopGeneration(),buildButton:()=>window.openBuildTypeModal&&window.openBuildTypeModal(),aiModeButton:()=>window.openAIModeModal&&window.openAIModeModal(),codingAgentButton:()=>window.openCodingAgentModal&&window.openCodingAgentModal(),loginButton:()=>window.openAuth&&window.openAuth(),accountButton:()=>window.toggleAccountMenu&&window.toggleAccountMenu(),chatTab:()=>window.showSidebarTab&&window.showSidebarTab("chats"),projectTab:()=>window.showSidebarTab&&window.showSidebarTab("projects")};
-  function bind(id){const n=document.getElementById(id);if(!n||n.dataset.aizenKernel)return;n.dataset.aizenKernel="1";n.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();try{actions[id]&&actions[id]();}catch(err){console.error("Aizen UI action failed:",id,err);}},true);}
-  function bindCore(){Object.keys(actions).forEach(bind);[[".menu-button",()=>window.toggleSidebar&&window.toggleSidebar()],[".new-chat-button",()=>window.newChat&&window.newChat()]].forEach(([sel,fn])=>{const n=document.querySelector(sel);if(!n||n.dataset.aizenKernel)return;n.dataset.aizenKernel="1";n.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();try{fn();}catch(err){console.error("Aizen UI action failed:",sel,err);}},true);});}
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindCore,{once:true});else bindCore();
-  window.addEventListener("load",bindCore,{once:true});
+  "use strict";
+  /* Aizen UI Kernel v2: resilient delegated handlers for critical controls. */
+  const actions = {
+    sendButton: () => typeof window.sendMessage === "function" && window.sendMessage(),
+    stopButton: () => typeof window.stopGeneration === "function" && window.stopGeneration(),
+    buildButton: () => typeof window.openBuildTypeModal === "function" && window.openBuildTypeModal(),
+    aiModeButton: () => typeof window.openAIModeModal === "function" && window.openAIModeModal(),
+    codingAgentButton: () => typeof window.openCodingAgentModal === "function" && window.openCodingAgentModal(),
+    loginButton: () => typeof window.openAuth === "function" && window.openAuth(),
+    accountButton: () => typeof window.toggleAccountMenu === "function" && window.toggleAccountMenu(),
+    chatTab: () => typeof window.showSidebarTab === "function" && window.showSidebarTab("chats"),
+    projectTab: () => typeof window.showSidebarTab === "function" && window.showSidebarTab("projects"),
+    menu: () => typeof window.toggleSidebar === "function" && window.toggleSidebar(),
+    newChat: () => typeof window.newChat === "function" && window.newChat()
+  };
+  function dispatch(event){
+    if(event.type !== "click") return;
+    const target = event.target && event.target.closest ? event.target.closest("button") : null;
+    if(!target) return;
+    let key = target.id;
+    if(!key && target.classList.contains("menu-button")) key = "menu";
+    if(!key && target.classList.contains("new-chat-button")) key = "newChat";
+    if(!actions[key]) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    try { actions[key](); }
+    catch(error) { console.error("Aizen UI action failed:", key, error); }
+  }
+  document.addEventListener("click", dispatch, true);
+  window.AizenUI = { version:"2", dispatch };
 })();
 </script>
 </body>
-  </html>
+</html>
