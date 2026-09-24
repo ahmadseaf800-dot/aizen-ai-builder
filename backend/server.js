@@ -21,6 +21,8 @@ const OPENROUTER_SITE_URL = String(process.env.OPENROUTER_SITE_URL || "");
 const OPENROUTER_APP_NAME = String(process.env.OPENROUTER_APP_NAME || "Aizen AI Builder");
 const GROQ_API_KEY = String(process.env.GROQ_API_KEY || "");
 const GROQ_MODEL = String(process.env.GROQ_MODEL || "llama-3.3-70b-versatile");
+const AIZEN_LOCAL_MODEL_URL = String(process.env.AIZEN_LOCAL_MODEL_URL || "").replace(/\/$/, "");
+const AIZEN_LOCAL_MODEL_NAME = String(process.env.AIZEN_LOCAL_MODEL_NAME || "aizen-local");
 const SECRET_ENCRYPTION_KEY = String(process.env.SECRET_ENCRYPTION_KEY || "");
 const AI_MAX_MESSAGE_CHARS = Number(process.env.AI_MAX_MESSAGE_CHARS || 120000);
 const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES || 40);
@@ -870,20 +872,45 @@ function askProviderFallback(provider, currentMessage, res, isBuild, history = [
   return Promise.resolve();
 }
 
+function askAizenLocalStream(currentMessage, res, isBuild, history = [], fallbackProvider = null) {
+  return new Promise((resolve) => {
+    if (!AIZEN_LOCAL_MODEL_URL) {
+      if (fallbackProvider) return askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);
+      if (!res.headersSent) sendJson(res,503,{success:false,error:"AIZEN_LOCAL_NOT_CONFIGURED",message:"محرك Aizen المحلي غير مهيأ."});
+      resolve(); return;
+    }
+    let base;
+    try { base=new URL(AIZEN_LOCAL_MODEL_URL); } catch { sendJson(res,500,{success:false,error:"AIZEN_LOCAL_URL_INVALID",message:"عنوان محرك Aizen المحلي غير صالح."}); resolve(); return; }
+    const messages=[
+      {role:"system",content:buildAizenCoreInstruction({mode:getAiMode(currentMessage,isBuild).mode,isBuild,userRequest:currentMessage})},
+      ...history.filter(m=>m&&m.content).map(m=>({role:m.role==="assistant"||m.role==="model"?"assistant":"user",content:String(m.content)})),
+      ...(String(currentMessage||"").trim()?[{role:"user",content:String(currentMessage).trim()}]:[])
+    ];
+    const payload=JSON.stringify({model:AIZEN_LOCAL_MODEL_NAME,stream:true,messages});
+    const transport=base.protocol==="http:"?http:https; let completed=false;
+    const finish=()=>{if(completed)return;completed=true;try{if(!res.writableEnded){res.write("event: done\\n");res.write("data: {}\\n\\n");res.end();}}catch{}resolve();};
+    try {
+      const request=transport.request({hostname:base.hostname,port:base.port||undefined,path:(base.pathname||"/").replace(/\\/$/,"")+"/chat/completions",method:"POST",headers:{"Content-Type":"application/json","Accept":"text/event-stream","Content-Length":Buffer.byteLength(payload)}},response=>{
+        let buffer=""; response.setEncoding("utf8");
+        if(response.statusCode<200||response.statusCode>=300){response.on("data",x=>buffer+=x);response.on("end",()=>{console.error("AIZEN LOCAL MODEL ERROR:",response.statusCode,buffer.slice(0,500));if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else{if(!res.headersSent)sendJson(res,502,{success:false,error:"AIZEN_LOCAL_MODEL_ERROR",message:"تعذر تشغيل محرك Aizen المحلي حالياً."});resolve();}});return;}
+        if(!res.headersSent)res.writeHead(200,{"Content-Type":"text/event-stream; charset=utf-8","Cache-Control":"no-cache, no-transform","Connection":"keep-alive","X-Accel-Buffering":"no"});
+        response.on("data",chunk=>{if(completed)return;buffer+=chunk;const events=buffer.split(/\r?\n\r?\n/);buffer=events.pop()||"";for(const raw of events){let dataText="";for(const line of raw.split(/\r?\n/))if(line.startsWith("data:"))dataText+=line.slice(5).trim();if(!dataText||dataText==="[DONE]")continue;try{const data=JSON.parse(dataText);const delta=data?.choices?.[0]?.delta?.content??data?.choices?.[0]?.message?.content;if(typeof delta==="string"&&delta){res.write("event: text\\n");res.write("data: "+JSON.stringify({text:delta})+"\\n\\n");}}catch{}}});
+        response.on("end",finish); response.on("error",finish);
+      });
+      request.setTimeout(120000,()=>{try{request.destroy();}catch{}if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else finish();});
+      request.on("error",()=>{if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else finish();});
+      request.write(payload);request.end();
+    } catch { if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else finish(); }
+  });
+}
+
 function askAIStream(currentMessage, res, isBuild, history = []) {
   if (AI_PROVIDER === "auto") {
-    // Stable automatic chain for both chat and builds: Gemini -> Groq -> OpenRouter.
-    // The database may keep unlimited messages; each provider receives the bounded context window.
-    if (GEMINI_API_KEY) {
-      return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "groq");
-    }
-    if (GROQ_API_KEY) {
-      return askGroqStream(currentMessage, res, isBuild, history, "openrouter");
-    }
-    if (OPENROUTER_API_KEY) {
-      return askOpenRouterStream(currentMessage, res, isBuild, history);
-    }
-    return askGeminiStream(currentMessage, res, isBuild, history);
+    if (AIZEN_LOCAL_MODEL_URL) return askAizenLocalStream(currentMessage,res,isBuild,history,GEMINI_API_KEY?"gemini":(GROQ_API_KEY?"groq":"openrouter"));
+    if (GEMINI_API_KEY) return askGeminiStream(currentMessage,res,isBuild,history,null,0,"groq");
+    if (GROQ_API_KEY) return askGroqStream(currentMessage,res,isBuild,history,"openrouter");
+    if (OPENROUTER_API_KEY) return askOpenRouterStream(currentMessage,res,isBuild,history);
+    return askAizenLocalStream(currentMessage,res,isBuild,history);
   }
 
   if (AI_PROVIDER === "groq") {
@@ -1851,7 +1878,7 @@ const server = http.createServer(async (req, res) => {
       uptime_seconds: Math.floor(process.uptime()),
       aizen_core_version: AIZEN_CORE_VERSION,
       aizen_agent_capabilities: 11,
-      chat_primary: GEMINI_API_KEY ? "gemini" : (GROQ_API_KEY ? "groq" : (OPENROUTER_API_KEY ? "openrouter" : null)),
+      chat_primary: AIZEN_LOCAL_MODEL_URL ? "aizen-local" : (GEMINI_API_KEY ? "gemini" : (GROQ_API_KEY ? "groq" : (OPENROUTER_API_KEY ? "openrouter" : null)),
       build_primary: GROQ_API_KEY ? "groq" : (GEMINI_API_KEY ? "gemini" : (OPENROUTER_API_KEY ? "openrouter" : null)),
       ai_provider: AI_PROVIDER,
       aizen_core: {version:AIZEN_CORE_VERSION,capabilities:AIZEN_AGENT_CAPABILITIES.split("\n").length},
