@@ -7,8 +7,9 @@ services:
       - "11434:11434"
     volumes:
       - aizen-models:/root/.ollama
+      - ./Modelfile:/opt/aizen/Modelfile:ro
     entrypoint: ["/bin/sh","-c"]
-    command: ["ollama serve & pid=$$!; sleep 5; ollama pull qwen2.5-coder:3b; wait $$pid"]
+    command: ["ollama serve & pid=$$!; until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull qwen2.5-coder:3b; ollama create aizen-local -f /opt/aizen/Modelfile; wait $$pid"]
 
 volumes:
   aizen-models:
