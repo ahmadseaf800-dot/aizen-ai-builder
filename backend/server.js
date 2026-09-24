@@ -988,7 +988,8 @@ FILE: path/to/file.ext
 
     const systemInstruction = buildAizenCoreInstruction({ mode: getAiMode(currentMessage, isBuild).mode, isBuild, userRequest: currentMessage }) + "\n\n" + legacySystemInstruction;
 
-    const payload = JSON.stringify({\n      model: modelOverride || GEMINI_MODEL,
+    const payload = JSON.stringify({
+      model: modelOverride || GEMINI_MODEL,
       input,
       stream: true,
       system_instruction: systemInstruction,
