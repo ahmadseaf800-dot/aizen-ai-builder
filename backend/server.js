@@ -891,10 +891,10 @@ function askProviderFallback(provider, currentMessage, res, isBuild, history = [
     return askGroqStream(currentMessage, res, isBuild, history, "openrouter");
   }
   if (provider === "openrouter") {
-    return askOpenRouterStream(currentMessage, res, isBuild, history, 0, null, ownerVerified);
+    return askOpenRouterStream(currentMessage, res, isBuild, history, 0, "gemini", ownerVerified);
   }
   if (provider === "gemini") {
-    return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "groq");
+    return askGeminiStream(currentMessage, res, isBuild, history, null, 0, null, ownerVerified);
   }
   return Promise.resolve();
 }
