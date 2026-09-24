@@ -302,7 +302,15 @@ async function verifySupabaseToken(token) {
   return data;
 }
 
-function requireOwner(req, res, user) {\n  if (!isAizenOwner(user)) { sendJson(res,403,{success:false,error:"OWNER_ONLY",message:"هذا الإجراء متاح لمالك Aizen الموثق فقط."}); return false; }\n  return true;\n}\n\nasync function requireAuth(req, res) {
+function requireOwner(req, res, user) {
+  if (!isAizenOwner(user)) {
+    sendJson(res,403,{success:false,error:"OWNER_ONLY",message:"هذا الإجراء متاح لمالك Aizen الموثق فقط."});
+    return false;
+  }
+  return true;
+}
+
+async function requireAuth(req, res) {
   const token = getBearerToken(req);
 
   if (!token) {
