@@ -3670,25 +3670,40 @@ loadSiteLanguage();
 <script>
 (function(){
   "use strict";
-  const registry={
-    sendButton:function(){return typeof window.sendMessage==="function"&&window.sendMessage();},
-    stopButton:function(){return typeof window.stopGeneration==="function"&&window.stopGeneration();},
-    buildButton:function(){return typeof window.openBuildTypeModal==="function"&&window.openBuildTypeModal();},
-    aiModeButton:function(){return typeof window.openAIModeModal==="function"&&window.openAIModeModal();},
-    codingAgentButton:function(){return typeof window.openCodingAgentModal==="function"&&window.openCodingAgentModal();}
+  /* Aizen UI Bridge v7: one delegated touch/click path, no duplicate handlers. */
+  const actions={
+    sendButton:"sendMessage", stopButton:"stopGeneration", buildButton:"openBuildTypeModal",
+    aiModeButton:"openAIModeModal", codingAgentButton:"openCodingAgentModal"
   };
-  function install(){
-    Object.keys(registry).forEach(function(id){
-      var el=document.getElementById(id);
-      if(!el||el.dataset.aizenV6==="1")return;
-      el.dataset.aizenV6="1";el.removeAttribute("onclick");el.type="button";
-      el.style.pointerEvents="auto";el.style.touchAction="manipulation";
-      el.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();try{registry[id]();}catch(err){console.error("Aizen UI action failed:",id,err);}},false);
-    });
-    document.querySelectorAll("button").forEach(function(el){if(!el.getAttribute("type"))el.type="button";el.style.touchAction="manipulation";});
+  function call(id){
+    const fn=window[actions[id]];
+    if(typeof fn!=="function"){
+      console.error("Aizen UI action unavailable:",id);
+      if(typeof window.showToast==="function") window.showToast("تعذر تشغيل هذا الزر. أعد تحميل الصفحة.");
+      return;
+    }
+    try{ const out=fn(); if(out&&typeof out.catch==="function") out.catch(e=>console.error("Aizen UI action failed:",id,e)); }
+    catch(e){ console.error("Aizen UI action failed:",id,e); }
   }
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});else install();
-  window.AizenUI={version:"6",ready:true,rebind:install};
+  function bind(){
+    Object.keys(actions).forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el||el.dataset.aizenUiV7==="1")return;
+      el.dataset.aizenUiV7="1";
+      el.removeAttribute("onclick");
+      el.setAttribute("type","button");
+      el.style.pointerEvents="auto";
+      el.style.touchAction="manipulation";
+      el.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();call(id);},{passive:false});
+    });
+    document.querySelectorAll("button").forEach(el=>{
+      if(!el.getAttribute("type"))el.setAttribute("type","button");
+      el.style.touchAction="manipulation";
+    });
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bind,{once:true});
+  else bind();
+  window.AizenUI={version:"7",ready:true,rebind:bind};
 })();
 </script>
 
