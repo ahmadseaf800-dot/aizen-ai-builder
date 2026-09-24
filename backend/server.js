@@ -30,8 +30,8 @@ const AIZEN_LOCAL_ONLY = String(process.env.AIZEN_LOCAL_ONLY || "false").toLower
 const AIZEN_OWNER_EMAIL_NORMALIZED = AIZEN_OWNER_EMAIL.toLowerCase();
 function isAizenOwner(user) { return String(user?.email || "").trim().toLowerCase() === AIZEN_OWNER_EMAIL_NORMALIZED; }
 const SECRET_ENCRYPTION_KEY = String(process.env.SECRET_ENCRYPTION_KEY || "");
-const AI_MAX_MESSAGE_CHARS = Number(process.env.AI_MAX_MESSAGE_CHARS || 120000);
-const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES || 40);
+const AI_MAX_MESSAGE_CHARS = Number(process.env.AI_MAX_MESSAGE_CHARS || 500000);
+const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES || 200);
 
 // Aizen deployment safety: keep this file as plain JavaScript source; never inject escaped source text.
 
@@ -491,7 +491,7 @@ function buildGeminiInput(messages, currentMessage) {
   // most recent conversation turns. Very large histories slow generation
   // and can dilute the user's current request.
   const MAX_HISTORY_MESSAGES = Math.max(10, Math.min(AI_CONTEXT_MESSAGES, 80));
-  const MAX_HISTORY_CHARS = 70000;
+  const MAX_HISTORY_CHARS = Number(process.env.AI_CONTEXT_CHARS || 240000);
 
   let compacted = history.slice(-MAX_HISTORY_MESSAGES);
   let totalChars = 0;
@@ -1455,11 +1455,11 @@ async function handleCodingAgent(req, res, user) {
     }
 
     const projectFiles = await supabaseRequest("GET",
-      "/rest/v1/project_files?project_id=eq." + encodeURIComponent(projectId) + "&user_id=eq." + encodeURIComponent(user.id) + "&select=path,content,file_type,size_bytes&order=path.asc&limit=1000",
+      "/rest/v1/project_files?project_id=eq." + encodeURIComponent(projectId) + "&user_id=eq." + encodeURIComponent(user.id) + "&select=path,content,file_type,size_bytes&order=path.asc&limit=2000",
       token);
     const files = Array.isArray(projectFiles) ? projectFiles : [];
     const project = projectRows[0];
-    const context = compactProjectFiles(files, 220000);
+    const context = compactProjectFiles(files, 400000);
     let conversationContext = "(لا توجد محادثة مرتبطة بالوكيل)";
     if (conversationId) {
       try {
