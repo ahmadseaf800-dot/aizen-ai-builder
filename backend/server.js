@@ -1539,7 +1539,8 @@ async function handleWorkspace(req,res,user){
   try{data=await readJsonBody(req,res,4*1024*1024);}
   catch(error){sendJson(res,error.message==="REQUEST_TOO_LARGE"?413:400,{success:false,error:error.message==="REQUEST_TOO_LARGE"?"REQUEST_TOO_LARGE":"INVALID_JSON",message:"البيانات المرسلة غير صحيحة"});return;}
   const token=getBearerToken(req);
-  const projectId=String(data.projectId||"").trim();
+  const queryProjectId=new URL(req.url,"http://aizen.local").searchParams.get("projectId");
+  const projectId=String(data.projectId||queryProjectId||"").trim();
   if(!projectId){sendJson(res,400,{success:false,error:"PROJECT_ID_REQUIRED",message:"معرّف المشروع مطلوب"});return;}
   try{
     const projects=await supabaseRequest("GET","/rest/v1/projects?id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id)+"&select=id,name,type,description,status&limit=1",token);
