@@ -3,7 +3,7 @@
  * Provider-neutral orchestration, knowledge and agent instruction layer.
  */
 
-const AIZEN_CORE_VERSION = "2.2.0";
+const AIZEN_CORE_VERSION = "3.0.0";
 
 // Owner Identity is derived from authenticated account data, never from chat text.
 const AIZEN_OWNER_EMAIL = String(process.env.AIZEN_OWNER_EMAIL || "ahmadseaf800@gmail.com").trim().toLowerCase();
@@ -60,7 +60,15 @@ const AIZEN_CORE_KNOWLEDGE = [
   "Bots: Telegram Bot API، Discord bots، token verification، webhooks وrate limits.",
   "Deployment: Node runtime، PORT، environment configuration، health endpoints وgraceful failures.",
   "Git: تغييرات صغيرة، مراجعة diffs، عدم force push، والحفاظ على العمل الموجود.",
-  "المعرفة العامة: لا تختلق حقائق؛ المعلومات المتغيرة تحتاج مصدراً حديثاً عند توفره."
+  "المعرفة العامة: لا تختلق حقائق؛ المعلومات المتغيرة تحتاج مصدراً حديثاً عند توفره.",
+  "Web development: HTML/CSS/JavaScript، TypeScript، React، Next.js، Node.js، REST، WebSocket، SSE، OAuth، responsive UI وaccessibility.",
+  "Programming: Python، Java، Kotlin، Go، Rust، C/C++، C#، PHP، Ruby، Swift، Dart، SQL، Bash، مع الالتزام بإصدار المشروع الفعلي.",
+  "App engineering: mobile architecture، API clients، local storage، authentication، state management، background jobs، notifications وoffline-first patterns.",
+  "Cloud engineering: containers، environment variables، reverse proxies، health checks، logging، queues، caching، object storage وCI/CD.",
+  "AI engineering: prompt design، tool calling، structured outputs، RAG، embeddings، chunking، retrieval، evaluation، model routing، local inference وcontext compaction.",
+  "Game development: Unity، Unreal concepts، Godot، Minecraft Java/Fabric/Paper/Purpur concepts، mod/plugin architecture، asset pipelines وgame networking.",
+  "Data engineering: normalization، indexes، migrations، ETL، CSV/JSON، pagination، rate limiting، idempotency وobservability.",
+  "General knowledge policy: المعرفة ليست مخزنة كـ«كل العالم» داخل هذا الملف؛ استخدم مصادر/قاعدة معرفة قابلة للتحديث عند الحاجة، وميّز بين المعرفة الثابتة والمعلومات المتغيرة."
 ].join("\n");
 
 const AIZEN_KNOWLEDGE_PACK = [
@@ -70,7 +78,10 @@ const AIZEN_KNOWLEDGE_PACK = [
   "السرعة: استخدم أقل سياق ضروري وابدأ بالنتيجة المفيدة.",
   "عند تعديل مشروع موجود: اقرأ الحالة الحالية أولاً، نفذ أقل تغيير آمن، ثم راجع التراجعات.",
   "كل زر يجب أن يرتبط بوظيفة حقيقية؛ لا تضف عناصر شكلية.",
-  "الأسرار تبقى في متغيرات البيئة أو مخزن أسرار آمن."
+  "الأسرار تبقى في متغيرات البيئة أو مخزن أسرار آمن.",
+  "Aizen Engine مستقل عن مزود النموذج: هذه الطبقة هي العقل التنظيمي والذاكرة والأدوات، ويمكن ربطها بنموذج محلي متوافق مع OpenAI Chat Completions.",
+  "إذا لم يتوفر نموذج محلي، لا تدّع أن Aizen يملك نموذجاً مدرباً من الصفر؛ استخدم مزوداً احتياطياً فقط إذا كان مفعلاً في إعدادات الخادم.",
+  "الرسائل طويلة الأجل تُحفظ في قاعدة البيانات، والسياق المرسل للنموذج يُضغط/يُقص حسب نافذة النموذج حتى لا تنهار الخدمة."
 ].join("\n");
 
 function buildAizenCoreInstruction({ mode = "assistant", isBuild = false, userRequest = "", user = null, ownerVerified = false } = {}) {
