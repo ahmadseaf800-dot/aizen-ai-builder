@@ -3523,11 +3523,36 @@ $("messageInput")
     }
   );
 
-function openAgentModal(){
+async function ensureAgentProject(){
+  if(currentProjectId) return currentProjectId;
+  if(!currentUser) return null;
+  let conversation=currentConversationId ? conversations.find(c=>c.id===currentConversationId) : null;
+  const name=((conversation?.title || "Aizen Agent Workspace").trim() || "Aizen Agent Workspace").slice(0,60);
+  const {data,error}=await supabaseClient.from("projects").insert({
+    user_id:currentUser.id,
+    name,
+    type:"Aizen Workspace",
+    description:"مساحة عمل تلقائية لوكيل Aizen Coding Agent.",
+    status:"draft"
+  }).select().single();
+  if(error) throw error;
+  projects.unshift(data);
+  currentProjectId=data.id;
+  renderProjects();
+  return data.id;
+}
+async function openAgentModal(){
   if(generating) return;
   if(!currentUser){ openAuth(); showToast("سجّل الدخول أولاً."); return; }
-  if(!currentProjectId){ showToast("افتح مشروعاً أولاً ثم استخدم Agent."); return; }
   const modal=$("agentModal"), input=$("agentInstruction"), result=$("agentResult");
+  if(!modal || !input) return;
+  try{
+    await ensureAgentProject();
+  }catch(error){
+    console.error("AGENT WORKSPACE ERROR:",error);
+    showToast("تعذر تجهيز مساحة Agent.");
+    return;
+  }
   if(!modal || !input) return;
   if(result) result.textContent="";
   input.value="";
@@ -3536,7 +3561,7 @@ function openAgentModal(){
 }
 function closeAgentModal(){ $("agentModal")?.classList.add("hidden"); }
 async function runAgent(){
-  if(!currentUser || !currentProjectId) return;
+  if(!currentUser) return;
   const input=$("agentInstruction"), button=$("agentRunButton"), result=$("agentResult");
   const instruction=String(input?.value||"").trim();
   if(!instruction){ showToast("اكتب مهمة للوكيل أولاً."); input?.focus(); return; }
@@ -3544,6 +3569,7 @@ async function runAgent(){
   if(!session?.access_token){ showToast("انتهت جلسة تسجيل الدخول."); return; }
   if(button){ button.disabled=true; button.textContent="جاري التحليل والتنفيذ..."; }
   if(result) result.textContent="يحلل المشروع ثم يخطط ويعدّل ويراجع...";
+  await ensureAgentProject();
   try{
     const response=await fetch(BACKEND_URL+"/api/agent",{
       method:"POST",
@@ -3568,10 +3594,39 @@ async function runAgent(){
   }
 }
 
-/* AIZEN INTERACTION CORE v5
-   Native onclick handlers remain native.
-   data-aizen-action uses a separate bubble-phase dispatcher.
+/* AIZEN INTERACTION CORE v6
+   Fresh delegated handlers for all primary controls.
+   Uses capture phase so a broken child handler cannot block the button.
 */
+(function(){
+  const actions={
+    "toggle-sidebar":()=>toggleSidebar(),
+    "open-auth":()=>openAuth(),
+    "toggle-account":()=>toggleAccountMenu(),
+    "new-chat":()=>newChat(),
+    "tab-chats":()=>showSidebarTab("chats"),
+    "tab-projects":()=>showSidebarTab("projects"),
+    "attach":()=>triggerFileUpload(),
+    "agent":()=>openAgentModal(),
+    "build":()=>openBuildTypeModal(),
+    "stop":()=>stopGeneration(),
+    "send":()=>sendMessage()
+  };
+  document.addEventListener("click",function(event){
+    const button=event.target.closest?.("button[data-aizen-action]");
+    if(!button || button.disabled) return;
+    const fn=actions[button.dataset.aizenAction];
+    if(!fn) return;
+    event.preventDefault();
+    try{ Promise.resolve(fn()).catch(error=>{
+      console.error("AIZEN ACTION ERROR",error);
+      if(typeof showToast==="function") showToast("تعذر تنفيذ الزر حالياً.");
+    }); }catch(error){
+      console.error("AIZEN ACTION ERROR",error);
+      if(typeof showToast==="function") showToast("تعذر تنفيذ الزر حالياً.");
+    }
+  },true);
+})();
 (function(){
   const routes=Object.freeze({
     "toggle-sidebar":()=>toggleSidebar(),
