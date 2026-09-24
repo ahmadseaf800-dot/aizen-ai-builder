@@ -3626,42 +3626,15 @@ async function runAgent(){
   }
 }
 
-/* AIZEN INTERACTION CORE v7
-   Fresh primary-control system. One delegated handler only.
-   Header account + sidebar use dedicated handlers.
+/* AIZEN INTERACTION CORE v8
+   Fresh event binding for primary controls.
+   No dependency on old click delegation; handlers are rebound safely once.
 */
 (function(){
-  function aizenToggleSidebarFresh(){
-    const sidebar=document.getElementById("sidebar");
-    if(!sidebar) return;
-    const mobile=window.matchMedia("(max-width:800px)").matches;
-    if(mobile){
-      sidebar.classList.toggle("open");
-      document.body.classList.toggle("aizen-sidebar-open",sidebar.classList.contains("open"));
-    }else{
-      sidebar.classList.toggle("aizen-collapsed");
-    }
-  }
-
-  function aizenCloseSidebarFresh(){
-    const sidebar=document.getElementById("sidebar");
-    if(!sidebar) return;
-    sidebar.classList.remove("open","aizen-collapsed");
-    document.body.classList.remove("aizen-sidebar-open");
-  }
-
-  function aizenToggleAccountFresh(){
-    const menu=document.getElementById("accountMenu");
-    if(!menu) return;
-    const willOpen=menu.classList.contains("hidden");
-    menu.classList.toggle("hidden",!willOpen);
-    if(willOpen) aizenCloseSidebarFresh();
-  }
-
-  const actions=Object.freeze({
-    "toggle-sidebar":aizenToggleSidebarFresh,
+  const ACTIONS=Object.freeze({
+    "toggle-sidebar":()=>window.aizenToggleSidebarFresh?.(),
     "open-auth":()=>openAuth(),
-    "toggle-account":aizenToggleAccountFresh,
+    "toggle-account":()=>window.aizenToggleAccountFresh?.(),
     "new-chat":()=>newChat(),
     "tab-chats":()=>showSidebarTab("chats"),
     "tab-projects":()=>showSidebarTab("projects"),
@@ -3672,39 +3645,72 @@ async function runAgent(){
     "send":()=>sendMessage()
   });
 
-  window.aizenToggleSidebar=aizenToggleSidebarFresh;
-  window.aizenCloseSidebar=aizenCloseSidebarFresh;
-  window.aizenToggleAccount=aizenToggleAccountFresh;
+  function closeSidebar(){
+    const sidebar=document.getElementById("sidebar");
+    if(!sidebar)return;
+    sidebar.classList.remove("open","aizen-collapsed");
+    document.body.classList.remove("aizen-sidebar-open");
+  }
 
-  document.addEventListener("click",function(event){
-    const button=event.target.closest?.("button[data-aizen-action]");
-    if(!button || button.disabled) return;
-    const action=actions[button.getAttribute("data-aizen-action")];
-    if(typeof action!=="function") return;
-    event.preventDefault();
-    event.stopPropagation();
-    try{
-      Promise.resolve(action()).catch(error=>{
-        console.error("AIZEN ACTION ERROR",error);
-        if(typeof showToast==="function") showToast("تعذر تنفيذ الزر حالياً.");
-      });
-    }catch(error){
-      console.error("AIZEN ACTION ERROR",error);
-      if(typeof showToast==="function") showToast("تعذر تنفيذ الزر حالياً.");
+  function toggleSidebar(){
+    const sidebar=document.getElementById("sidebar");
+    if(!sidebar)return;
+    if(window.matchMedia("(max-width:800px)").matches){
+      sidebar.classList.toggle("open");
+      document.body.classList.toggle("aizen-sidebar-open",sidebar.classList.contains("open"));
+    }else{
+      sidebar.classList.toggle("aizen-collapsed");
     }
-  },true);
+  }
 
-  document.addEventListener("click",function(event){
+  function toggleAccount(){
     const menu=document.getElementById("accountMenu");
-    if(!menu || menu.classList.contains("hidden")) return;
-    if(event.target.closest("#accountMenu") || event.target.closest("#accountButton")) return;
-    menu.classList.add("hidden");
-  },false);
+    if(!menu)return;
+    const opening=menu.classList.contains("hidden");
+    menu.classList.toggle("hidden",!opening);
+    if(opening)closeSidebar();
+  }
 
-  window.addEventListener("resize",function(){
+  window.aizenToggleSidebarFresh=toggleSidebar;
+  window.aizenCloseSidebarFresh=closeSidebar;
+  window.aizenToggleAccountFresh=toggleAccount;
+
+  function bind(){
+    document.querySelectorAll("button[data-aizen-action]").forEach(button=>{
+      if(button.dataset.aizenBound==="1")return;
+      button.dataset.aizenBound="1";
+      const action=ACTIONS[button.dataset.aizenAction];
+      if(typeof action!=="function")return;
+      button.addEventListener("click",async event=>{
+        if(button.disabled)return;
+        event.preventDefault();
+        try{await action();}
+        catch(error){
+          console.error("AIZEN ACTION ERROR",error);
+          if(typeof showToast==="function")showToast("تعذر تنفيذ الزر حالياً.");
+        }
+      });
+    });
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",bind,{once:true});
+  }else bind();
+
+  window.aizenRebindControls=bind;
+
+  document.addEventListener("click",event=>{
+    const menu=document.getElementById("accountMenu");
+    const account=document.getElementById("accountButton");
+    if(menu&&account&&!menu.classList.contains("hidden")&&!event.target.closest("#accountMenu")&&!event.target.closest("#accountButton")){
+      menu.classList.add("hidden");
+    }
+  });
+
+  window.addEventListener("resize",()=>{
     if(window.matchMedia("(min-width:801px)").matches){
       const sidebar=document.getElementById("sidebar");
-      if(sidebar) sidebar.classList.remove("open");
+      if(sidebar)sidebar.classList.remove("open");
       document.body.classList.remove("aizen-sidebar-open");
     }
   });
