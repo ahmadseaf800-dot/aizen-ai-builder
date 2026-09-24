@@ -3603,6 +3603,7 @@ $("messageInput")
     const fresh=button.cloneNode(true);
     fresh.removeAttribute("onclick");
     fresh.dataset.aizenV3="1";
+    fresh.dataset.aizenWired="1";
     fresh.type="button";
     fresh.addEventListener("click",function(e){
       if(fresh.disabled)return;
