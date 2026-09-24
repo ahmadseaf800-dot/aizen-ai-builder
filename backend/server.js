@@ -858,30 +858,24 @@ function askGroqStream(currentMessage, res, isBuild, history = [], fallbackProvi
 }
 
 function askProviderFallback(provider, currentMessage, res, isBuild, history = []) {
-  if (provider === "openrouter") {
-    return askOpenRouterStream(currentMessage, res, isBuild, history, 0, "groq");
-  }
   if (provider === "groq") {
-    return askGroqStream(currentMessage, res, isBuild, history);
+    return askGroqStream(currentMessage, res, isBuild, history, "openrouter");
+  }
+  if (provider === "openrouter") {
+    return askOpenRouterStream(currentMessage, res, isBuild, history);
   }
   if (provider === "gemini") {
-    return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "openrouter");
+    return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "groq");
   }
   return Promise.resolve();
 }
 
 function askAIStream(currentMessage, res, isBuild, history = []) {
   if (AI_PROVIDER === "auto") {
-    // Smart routing: build requests start with Groq; normal chat starts with Gemini.
-    // The next available provider is used automatically when the primary fails.
-    if (isBuild && GROQ_API_KEY) {
-      return askGroqStream(currentMessage, res, isBuild, history, "gemini");
-    }
-    if (!isBuild && GEMINI_API_KEY) {
-      return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "openrouter");
-    }
+    // Stable automatic chain for both chat and builds: Gemini -> Groq -> OpenRouter.
+    // The database may keep unlimited messages; each provider receives the bounded context window.
     if (GEMINI_API_KEY) {
-      return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "openrouter");
+      return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "groq");
     }
     if (GROQ_API_KEY) {
       return askGroqStream(currentMessage, res, isBuild, history, "openrouter");
