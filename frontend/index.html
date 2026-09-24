@@ -2431,8 +2431,7 @@ async function saveGeneratedProjectFiles(projectId, text){
   let match;
   while((match=re.exec(text))!==null){
     const filePath=match[1].trim().replace(/^\/+/, "");
-    const content=match[2].replace(/
-$/,"");
+    const content=match[2].replace(/\n$/,"");
     if(!filePath || filePath.includes("..") || filePath.length>240 || content.length>500000) continue;
     blocks.push({path:filePath,content,file_type:filePath.split(".").pop()||"text",size_bytes:new Blob([content]).size});
     if(blocks.length>=30) break;
@@ -2584,9 +2583,7 @@ async function requestAI(
         );
 
       const parts =
-        buffer.split(/
-
-/);
+        buffer.split(/\r?\n\r?\n/);
 
       buffer =
         parts.pop() || "";
