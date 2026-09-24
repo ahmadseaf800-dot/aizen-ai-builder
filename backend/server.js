@@ -772,9 +772,7 @@ function askGroqStream(currentMessage, res, isBuild, history = [], fallbackProvi
       messages: [
         {
           role: "system",
-          content: isBuild
-            ? "أنت Aizen AI Builder، مهندس برمجيات دقيق. أنشئ مشاريع حقيقية قابلة للتشغيل، راجع syntax/imports/المسارات، ولا تضع أسراراً حقيقية داخل الكود. عند إخراج الملفات استخدم FILE: path ثم code fence ومحتوى الملف الكامل."
-            : "أنت Aizen AI، المساعد الذكي الرسمي داخل Aizen AI Builder. أعطِ الجواب المباشر أولاً، حافظ على سياق المحادثة، ولا تختلق APIs أو أوامر.",
+          content: buildAizenCoreInstruction({ mode: getAiMode(currentMessage, isBuild).mode, isBuild, userRequest: currentMessage }),
         },
         ...messages,
       ],
@@ -864,7 +862,7 @@ function askProviderFallback(provider, currentMessage, res, isBuild, history = [
     return askOpenRouterStream(currentMessage, res, isBuild, history, 0, "groq");
   }
   if (provider === "groq") {
-    return askGroqStream(currentMessage, res, isBuild, history, "gemini");
+    return askGroqStream(currentMessage, res, isBuild, history);
   }
   if (provider === "gemini") {
     return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "openrouter");
@@ -880,7 +878,7 @@ function askAIStream(currentMessage, res, isBuild, history = []) {
       return askGroqStream(currentMessage, res, isBuild, history, "gemini");
     }
     if (!isBuild && GEMINI_API_KEY) {
-      return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "groq");
+      return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "openrouter");
     }
     if (GEMINI_API_KEY) {
       return askGeminiStream(currentMessage, res, isBuild, history, null, 0, "openrouter");
@@ -949,8 +947,7 @@ function askGeminiStream(currentMessage, res, isBuild, history = [], modelOverri
         : []),
     ];
 
-    const systemInstruction = isBuild
-      ? `
+    const legacySystemInstruction = isBuild\n      ? `
 أنت Aizen AI Builder، مهندس برمجيات ومساعد ذكي دقيق.
 
 أولوية كل رد: الصحة، فهم المطلوب، ثم السرعة. لا تختلق معلومات أو نتائج.
@@ -994,8 +991,7 @@ FILE: path/to/file.ext
 - اجعل الرد مختصراً عندما يكون السؤال بسيطاً ومفصلاً عندما يحتاج ذلك.
 `;
 
-    const payload = JSON.stringify({
-      model: modelOverride || GEMINI_MODEL,
+    const systemInstruction = buildAizenCoreInstruction({ mode: getAiMode(currentMessage, isBuild).mode, isBuild, userRequest: currentMessage }) + "\n\n" + legacySystemInstruction;\n\n    const payload = JSON.stringify({\n      model: modelOverride || GEMINI_MODEL,
       input,
       stream: true,
       system_instruction: systemInstruction,
@@ -1403,7 +1399,7 @@ async function handleCodingAgent(req, res, user) {
     }
 
     const projectFiles = await supabaseRequest("GET",
-      "/rest/v1/project_files?project_id=eq." + encodeURIComponent(projectId) + "&user_id=eq." + encodeURIComponent(user.id) + "&select=path,content,file_type,size_bytes&order=path.asc&limit=200",
+      "/rest/v1/project_files?project_id=eq." + encodeURIComponent(projectId) + "&user_id=eq." + encodeURIComponent(user.id) + "&select=path,content,file_type,size_bytes&order=path.asc&limit=1000",
       token);
     const files = Array.isArray(projectFiles) ? projectFiles : [];
     const project = projectRows[0];
@@ -1412,7 +1408,7 @@ async function handleCodingAgent(req, res, user) {
     if (conversationId) {
       try {
         const agentConversation = await getConversation(token, conversationId, user.id);
-        const agentMessages = await getConversationMessages(accessToken, conversationId);
+        const agentMessages = await getConversationMessages(token, conversationId);
         conversationContext = agentMessages.slice(-200).map(m => "[" + (m.role === "assistant" ? "AIZEN" : "USER") + "]\n" + String(m.content || "")).join("\n\n").slice(-120000) || "(المحادثة فارغة)";
       } catch (conversationError) {
         console.error("CODING AGENT CONVERSATION CONTEXT ERROR:", conversationError.message);
@@ -1860,6 +1856,7 @@ const server = http.createServer(async (req, res) => {
       chat_primary: GEMINI_API_KEY ? "gemini" : (GROQ_API_KEY ? "groq" : (OPENROUTER_API_KEY ? "openrouter" : null)),
       build_primary: GROQ_API_KEY ? "groq" : (GEMINI_API_KEY ? "gemini" : (OPENROUTER_API_KEY ? "openrouter" : null)),
       ai_provider: AI_PROVIDER,
+      aizen_core: {version:AIZEN_CORE_VERSION,capabilities:AIZEN_AGENT_CAPABILITIES.split("\n").length},
       openrouter_model: OPENROUTER_API_KEY ? OPENROUTER_MODEL : null,
     });
 
