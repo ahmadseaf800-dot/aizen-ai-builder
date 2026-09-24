@@ -1300,12 +1300,15 @@ function runAIToText(currentMessage, isBuild = false, history = []) {
   return new Promise((resolve, reject) => {
     let output = "";
     let errorPayload = null;
+    let streamBuffer = "";
     const capture = {
       headersSent: false,
       writableEnded: false,
       writeHead() { this.headersSent = true; },
       write(chunk) {
-        const events = String(chunk || "").split(/\r?\n\r?\n/);
+        streamBuffer += String(chunk || "");
+        const events = streamBuffer.split(/\r?\n\r?\n/);
+        streamBuffer = events.pop() || "";
         for (const event of events) {
           const lines = event.split(/\r?\n/);
           let eventName = "";
