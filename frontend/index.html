@@ -2873,11 +2873,8 @@ async function runBuild(type,typeLabel,description,secretToken="",projectName=""
     : "";
 
   const messageForAI =
-    "[نوع المشروع: " + typeLabel + " | build_type=" + type + "]
-" +
-    "نفّذ المشروع فعلياً وأنشئ الملفات الأساسية القابلة للتشغيل.
-
-" +
+    "[نوع المشروع: " + typeLabel + " | build_type=" + type + "]\n" +
+    "نفّذ المشروع فعلياً وأنشئ الملفات الأساسية القابلة للتشغيل.\n\n" +
     text + attachmentPrompt;
 
   try{
@@ -3514,9 +3511,9 @@ $("messageInput")
     }
   );
 
-/* AIZEN BUTTON SYSTEM v2: fresh primary-button wiring. */
+/* AIZEN INTERACTION CORE v4: one delegated event system. */
 (function(){
-  const actions={
+  const routes={
     "toggle-sidebar":()=>toggleSidebar(),
     "open-auth":()=>openAuth(),
     "toggle-account":()=>toggleAccountMenu(),
@@ -3530,99 +3527,54 @@ $("messageInput")
     "send":()=>sendMessage()
   };
 
-  function execute(button,event){
-    if(!button || button.disabled) return;
-    const action=actions[button.getAttribute("data-aizen-action")];
-    if(typeof action!=="function") return;
-    if(event) event.preventDefault();
-    try{ action(); }
-    catch(error){
-      console.error("AIZEN BUTTON ERROR",error);
-      showToast("تعذر تنفيذ الزر حالياً.");
-    }
-  }
-
-  function wire(){
-    document.querySelectorAll("[data-aizen-action]").forEach(function(button){
-      if(button.dataset.aizenWired==="1") return;
-      button.dataset.aizenWired="1";
-      button.type="button";
-      button.addEventListener("click",function(event){
-        execute(button,event);
-      });
-    });
-  }
-
-  wire();
-  new MutationObserver(wire).observe(document.body,{childList:true,subtree:true});
-})();
-/* AIZEN INTERACTION CORE v3: fresh, centralized button routing. */
-(function(){
-  const routes={
-    "toggle-sidebar":()=>toggleSidebar(),"open-auth":()=>openAuth(),
-    "toggle-account":()=>toggleAccountMenu(),"new-chat":()=>newChat(),
-    "tab-chats":()=>showSidebarTab("chats"),"tab-projects":()=>showSidebarTab("projects"),
-    "attach":()=>triggerFileUpload(),"ai-mode":()=>openAIModeModal(),
-    "build":()=>openBuildTypeModal(),"stop":()=>stopGeneration(),"send":()=>sendMessage()
-  };
-  function parse(s){
-    s=String(s||"").trim(); let m;
-    if(/^openProfile\(\)$/.test(s))return()=>openProfile();
-    if(/^openSettings\(\)$/.test(s))return()=>openSettings();
-    if(/^logout\(\)$/.test(s))return()=>logout();
-    if(/^submitAuth\(\)$/.test(s))return()=>submitAuth();
-    if(/^saveProfile\(\)$/.test(s))return()=>saveProfile();
-    if(/^closeProfile\(\)$/.test(s))return()=>closeProfile();
-    if(/^createProject\(\)$/.test(s))return()=>createProject();
-    if(/^closeProjectModal\(\)$/.test(s))return()=>closeProjectModal();
-    if(/^openBotTypeModal\(\)$/.test(s))return()=>openBotTypeModal();
-    if((m=s.match(/^confirmBuildType\(['"]([^'"]+)['"]\)$/)))return()=>confirmBuildType(m[1]);
-    if((m=s.match(/^confirmBotType\(['"]([^'"]+)['"]\)$/)))return()=>confirmBotType(m[1]);
-    if(/^closeBuildTypeModal\(\)$/.test(s))return()=>closeBuildTypeModal();
-    if(/^closeBotTypeModal\(\)$/.test(s))return()=>closeBotTypeModal();
-    if(/^submitBotBuild\(\)$/.test(s))return()=>submitBotBuild();
-    if(/^closeBotSecretModal\(\)$/.test(s))return()=>closeBotSecretModal();
-    if(/^submitBuildDescription\(\)$/.test(s))return()=>submitBuildDescription();
-    if(/^closeBuildDescriptionModal\(\)$/.test(s))return()=>closeBuildDescriptionModal();
-    if(/^closeSettings\(\)$/.test(s))return()=>closeSettings();
-    if((m=s.match(/^setChatTheme\(['"]([^'"]+)['"]\)$/)))return()=>setChatTheme(m[1]);
-    if((m=s.match(/^oauthLogin\(['"]([^'"]+)['"]\)$/)))return()=>oauthLogin(m[1]);
-    if((m=s.match(/^openProject\(['"]([^'"]+)['"]\)$/)))return()=>openProject(m[1]);
-    if((m=s.match(/^deleteProject\(['"]([^'"]+)['"]\)$/)))return()=>deleteProject(m[1]);
-    if((m=s.match(/^removeAttachment\((\d+)\)$/)))return()=>removeAttachment(Number(m[1]));
-    if((m=s.match(/^conversationMenu\(event,\s*['"]([^'"]+)['"]\)$/)))return()=>conversationMenu(event,m[1]);
-    if((m=s.match(/^conversationAction\(event,\s*['"]([^'"]+)['"],\s*['"]([^'"]+)['"]\)$/)))return()=>conversationAction(event,m[1],m[2]);
+  function fromMarkup(markup){
+    const s=String(markup||"").trim();
+    let m;
+    if(/^openProfile\\(\\)$/.test(s))return()=>openProfile();
+    if(/^openSettings\\(\\)$/.test(s))return()=>openSettings();
+    if(/^logout\\(\\)$/.test(s))return()=>logout();
+    if(/^submitAuth\\(\\)$/.test(s))return()=>submitAuth();
+    if(/^saveProfile\\(\\)$/.test(s))return()=>saveProfile();
+    if(/^closeProfile\\(\\)$/.test(s))return()=>closeProfile();
+    if(/^createProject\\(\\)$/.test(s))return()=>createProject();
+    if(/^closeProjectModal\\(\\)$/.test(s))return()=>closeProjectModal();
+    if(/^openBotTypeModal\\(\\)$/.test(s))return()=>openBotTypeModal();
+    if((m=s.match(/^confirmBuildType\\(['"]([^'"]+)['"]\\)$/)))return()=>confirmBuildType(m[1]);
+    if((m=s.match(/^confirmBotType\\(['"]([^'"]+)['"]\\)$/)))return()=>confirmBotType(m[1]);
+    if(/^closeBuildTypeModal\\(\\)$/.test(s))return()=>closeBuildTypeModal();
+    if(/^closeBotTypeModal\\(\\)$/.test(s))return()=>closeBotTypeModal();
+    if(/^submitBotBuild\\(\\)$/.test(s))return()=>submitBotBuild();
+    if(/^closeBotSecretModal\\(\\)$/.test(s))return()=>closeBotSecretModal();
+    if(/^submitBuildDescription\\(\\)$/.test(s))return()=>submitBuildDescription();
+    if(/^closeBuildDescriptionModal\\(\\)$/.test(s))return()=>closeBuildDescriptionModal();
+    if(/^closeSettings\\(\\)$/.test(s))return()=>closeSettings();
+    if((m=s.match(/^setChatTheme\\(['"]([^'"]+)['"]\\)$/)))return()=>setChatTheme(m[1]);
+    if((m=s.match(/^oauthLogin\\(['"]([^'"]+)['"]\\)$/)))return()=>oauthLogin(m[1]);
+    if((m=s.match(/^openProject\\(['"]([^'"]+)['"]\\)$/)))return()=>openProject(m[1]);
+    if((m=s.match(/^deleteProject\\(['"]([^'"]+)['"]\\)$/)))return()=>deleteProject(m[1]);
+    if((m=s.match(/^removeAttachment\\((\\d+)\\)$/)))return()=>removeAttachment(Number(m[1]));
     return null;
   }
-  function wire(button){
-    if(!button||button.dataset.aizenV3==="1")return;
+
+  document.addEventListener("click",function(event){
+    const button=event.target.closest("button");
+    if(!button || button.disabled) return;
+
     const name=button.getAttribute("data-aizen-action");
-    const markup=button.getAttribute("onclick");
-    const fn=routes[name]||parse(markup);
-    if(typeof fn!=="function")return;
-    const fresh=button.cloneNode(true);
-    fresh.removeAttribute("onclick");
-    fresh.dataset.aizenV3="1";
-    fresh.dataset.aizenWired="1";
-    fresh.type="button";
-    fresh.addEventListener("click",function(e){
-      if(fresh.disabled)return;
-      e.preventDefault(); e.stopImmediatePropagation();
-      try{
-        const action=routes[name]||parse(markup);
-        if(action)action();
-      }catch(error){
-        console.error("AIZEN BUTTON ERROR",error);
-        if(typeof showToast==="function")showToast("تعذر تنفيذ الزر حالياً.");
-      }
-    });
-    button.replaceWith(fresh);
-  }
-  function wireAll(){document.querySelectorAll("button").forEach(wire);}
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wireAll,{once:true});
-  else wireAll();
-  new MutationObserver(wireAll).observe(document.body,{childList:true,subtree:true});
-})();
+    const action=routes[name] || fromMarkup(button.getAttribute("onclick"));
+    if(typeof action!=="function") return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    try{
+      action();
+    }catch(error){
+      console.error("AIZEN BUTTON ERROR",error);
+      if(typeof showToast==="function")showToast("تعذر تنفيذ الزر حالياً.");
+    }
+  },true);
+})(); 
 
 function autoResizeTextarea(){
 
