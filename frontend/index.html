@@ -3294,7 +3294,7 @@ function renderProjects(){
     `).join("");
 }
 
-function openProjectModal(){ openBuildTypeModal(); }
+function openProjectModal(){ if(!currentUser){openAuth();showToast("سجّل الدخول أولاً.");return;} $("projectModal").classList.remove("hidden"); setTimeout(()=>$("projectName")?.focus(),50); }
 
 function closeProjectModal(){
   $("projectModal")
