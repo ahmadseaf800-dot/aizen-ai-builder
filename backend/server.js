@@ -22,7 +22,8 @@ const OPENROUTER_MODEL = String(process.env.OPENROUTER_MODEL || "openrouter/free
 const OPENROUTER_SITE_URL = String(process.env.OPENROUTER_SITE_URL || "");
 const OPENROUTER_APP_NAME = String(process.env.OPENROUTER_APP_NAME || "Aizen AI Builder");
 const GROQ_API_KEY = String(process.env.GROQ_API_KEY || "");
-const GROQ_MODEL = String(process.env.GROQ_MODEL || "llama-3.3-70b-versatile");
+const GROQ_MODEL_CONFIG = String(process.env.GROQ_MODEL || "openai/gpt-oss-20b");
+const GROQ_MODEL = GROQ_MODEL_CONFIG === "llama-3.3-70b-versatile" ? "openai/gpt-oss-20b" : GROQ_MODEL_CONFIG;
 const AIZEN_LOCAL_MODEL_URL = String(process.env.AIZEN_LOCAL_MODEL_URL || "").replace(/\/$/, "");
 const AIZEN_LOCAL_MODEL_NAME = String(process.env.AIZEN_LOCAL_MODEL_NAME || "aizen-local");
 const AIZEN_LOCAL_ONLY = String(process.env.AIZEN_LOCAL_ONLY || "false").toLowerCase() === "true";
@@ -397,8 +398,7 @@ async function supabaseRequest(method, endpoint, accessToken, body = null, extra
 }
 
 /*
- * Get a conversation and make sure it belongs
- * to the currently authenticated user.
+ * Get a conversation and make sure it belongs * to the currently authenticated user.
  */
 async function getConversation(accessToken, conversationId, userId) {
   if (!conversationId) return null;
@@ -797,8 +797,7 @@ function askGroqStream(currentMessage, res, isBuild, history = [], fallbackProvi
     const payload = JSON.stringify({
       model: GROQ_MODEL,
       stream: true,
-      messages: [
-        {
+      messages: [        {
           role: "system",
           content: buildAizenCoreInstruction({ mode: getAiMode(currentMessage, isBuild).mode, isBuild, userRequest: currentMessage, ownerVerified }),
         },
@@ -1197,8 +1196,7 @@ FILE: path/to/file.ext
                 }
 
                 if (line.startsWith("data:")) {
-                  dataText += line.slice(5).trim();
-                }
+                  dataText += line.slice(5).trim();                }
               }
 
               if (!dataText) continue;
@@ -1597,8 +1595,7 @@ async function handleWorkspace(req,res,user){
     }
     if(action==="delete"){
       const filePath=cleanProjectPath(data.path);
-      if(!filePath){sendJson(res,400,{success:false,error:"INVALID_FILE_PATH",message:"مسار الملف غير صالح"});return;}
-      await supabaseRequest("DELETE","/rest/v1/project_files?project_id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id)+"&path=eq."+encodeURIComponent(filePath),token);
+      if(!filePath){sendJson(res,400,{success:false,error:"INVALID_FILE_PATH",message:"مسار الملف غير صالح"});return;}      await supabaseRequest("DELETE","/rest/v1/project_files?project_id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id)+"&path=eq."+encodeURIComponent(filePath),token);
       sendJson(res,200,{success:true,action:"delete",file:filePath});
       return;
     }
@@ -1997,7 +1994,6 @@ const server = http.createServer(async (req, res) => {
     await handleMe(req, res, user);
     return;
   }
-
   /*
    * Aizen feature contracts
    */
