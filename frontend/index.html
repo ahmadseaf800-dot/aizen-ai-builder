@@ -3670,80 +3670,25 @@ loadSiteLanguage();
 <script>
 (function(){
   "use strict";
-
-  /* Aizen UI Kernel v5: fresh event path for critical controls; no legacy handler is required for them.
-     Inline handlers are removed only for controls owned by this kernel. */
-  const actions = {
-    sendButton: ["sendMessage", []],
-    stopButton: ["stopGeneration", []],
-    buildButton: ["openBuildTypeModal", []],
-    aiModeButton: ["openAIModeModal", []],
-    codingAgentButton: ["openCodingAgentModal", []],
-    loginButton: ["openAuth", []],
-    accountButton: ["toggleAccountMenu", []],
-    chatTab: ["showSidebarTab", ["chats"]],
-    projectTab: ["showSidebarTab", ["projects"]]
+  const registry={
+    sendButton:function(){return typeof window.sendMessage==="function"&&window.sendMessage();},
+    stopButton:function(){return typeof window.stopGeneration==="function"&&window.stopGeneration();},
+    buildButton:function(){return typeof window.openBuildTypeModal==="function"&&window.openBuildTypeModal();},
+    aiModeButton:function(){return typeof window.openAIModeModal==="function"&&window.openAIModeModal();},
+    codingAgentButton:function(){return typeof window.openCodingAgentModal==="function"&&window.openCodingAgentModal();}
   };
-
-  function run(name,args){
-    try{
-      const fn=window[name];
-      if(typeof fn!=="function"){
-        console.error("Aizen action unavailable:",name);
-        return;
-      }
-      return fn.apply(window,args||[]);
-    }catch(error){
-      console.error("Aizen action failed:",name,error);
-    }
-  }
-
-  function bind(id,name,args){
-    const el=document.getElementById(id);
-    if(!el || el.dataset.aizenKernelBound==="5") return;
-    el.dataset.aizenKernelBound="5";
-    el.removeAttribute("onclick");
-    el.type="button";
-    el.addEventListener("click",function(){ run(name,args); });
-  }
-
-  function bindClass(selector,name,args){
-    const el=document.querySelector(selector);
-    if(!el || el.dataset.aizenKernelBound==="4") return;
-    el.dataset.aizenKernelBound="4";
-    el.removeAttribute("onclick");
-    el.type="button";
-    el.addEventListener("click",function(){ run(name,args); });
-  }
-
-  function init(){
-    document.querySelectorAll("button").forEach(function(el){
-      if(!el.getAttribute("type")) el.type="button";
+  function install(){
+    Object.keys(registry).forEach(function(id){
+      var el=document.getElementById(id);
+      if(!el||el.dataset.aizenV6==="1")return;
+      el.dataset.aizenV6="1";el.removeAttribute("onclick");el.type="button";
+      el.style.pointerEvents="auto";el.style.touchAction="manipulation";
+      el.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();try{registry[id]();}catch(err){console.error("Aizen UI action failed:",id,err);}},false);
     });
-    Object.entries(actions).forEach(function(entry){
-      bind(entry[0],entry[1][0],entry[1][1]);
-    });
-    bindClass(".menu-button","toggleSidebar",[]);
-    bindClass(".new-chat-button","newChat",[]);
-
-    document.querySelectorAll("[data-aizen-action]").forEach(function(el){
-      if(el.dataset.aizenKernelBound==="4") return;
-      el.dataset.aizenKernelBound="4";
-      el.addEventListener("click",function(){
-        const action=el.getAttribute("data-aizen-action");
-        if(action==="new-chat") run("newChat",[]);
-        else if(action==="menu") run("toggleSidebar",[]);
-      });
-    });
+    document.querySelectorAll("button").forEach(function(el){if(!el.getAttribute("type"))el.type="button";el.style.touchAction="manipulation";});
   }
-
-  if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded",init,{once:true});
-  }else{
-    init();
-  }
-
-  window.AizenUI={version:"5",ready:true,rebind:init,run:run};
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});else install();
+  window.AizenUI={version:"6",ready:true,rebind:install};
 })();
 </script>
 
