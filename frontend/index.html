@@ -497,8 +497,7 @@ button{cursor:pointer}
 }
 
 .composer-actions{
-  display:flex;
-  gap:6px;
+  display:flex;  gap:6px;
 }
 
 .composer-button,
@@ -997,7 +996,6 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
     >
       Aizen AI جاهز للعمل.
     </div>
-
   </div>
 
 </section>
@@ -1498,7 +1496,6 @@ async function submitAuth(){
     showToast("أدخل البريد وكلمة المرور.");
     return;
   }
-
   try{
 
     if(authMode === "signup"){
@@ -1998,7 +1995,6 @@ function renderConversations(){
 }
 
 async function createConversation(title="محادثة جديدة"){
-
   if(!currentUser){
 
     openAuth();
@@ -2497,7 +2493,6 @@ async function requestAI(
 ){
 
   if(!currentSession){
-
     const {data} =
       await supabaseClient.auth.getSession();
 
@@ -2997,8 +2992,7 @@ async function runBuild(type,typeLabel,description,secretToken="",projectName=""
 
       if(error) throw error;
 
-      addMessageToUI(
-        "user",
+      addMessageToUI(        "user",
         messageForAI
       );
 
@@ -3497,8 +3491,7 @@ function removeAttachment(index){
 
   if(
     index < 0 ||
-    index >= pendingAttachments.length
-  ) return;
+    index >= pendingAttachments.length  ) return;
 
   pendingAttachments.splice(index,1);
   renderAttachments();
@@ -3763,6 +3756,7 @@ loadSiteLanguage();
 
 })();
 </script>
+<script src="/interaction.js" defer></script>
 
 </body>
   </html>
