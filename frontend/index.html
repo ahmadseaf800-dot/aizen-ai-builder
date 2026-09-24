@@ -1240,25 +1240,23 @@ tr:{
 "لا توجد محادثات بعد.":"Henüz sohbet yok.","لا توجد مشاريع.":"Henüz proje yok.","فتح":"Aç","أنت":"Siz"
 }};
 function translateAizenUI(lang){
-  const map=AIZEN_UI[lang]||AIZEN_UI.en;
+  const target=AIZEN_UI[lang]||AIZEN_UI.en;
+  const reverse={};
+  Object.keys(AIZEN_UI).forEach(l=>Object.keys(AIZEN_UI[l]).forEach(k=>{reverse[AIZEN_UI[l][k]]=k;}));
+  const extra={"موقع ويب":{en:"Website",tr:"Web sitesi"},"بوت":{en:"Bot",tr:"Bot"},"لعبة":{en:"Game",tr:"Oyun"},"تطبيق":{en:"App",tr:"Uygulama"},"أتمتة":{en:"Automation",tr:"Otomasyon"},"إضافة للمتصفح":{en:"Browser extension",tr:"Tarayıcı eklentisi"},"مشروع مخصص":{en:"Custom project",tr:"Özel proje"},"فتح":{en:"Open",tr:"Aç"},"حذف":{en:"Delete",tr:"Sil"},"إلغاء":{en:"Cancel",tr:"İptal"},"إنشاء":{en:"Create",tr:"Oluştur"},"تم":{en:"Done",tr:"Tamam"}};
   const excluded=".message-content,.conversation-title,input,textarea";
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
-  const nodes=[];
-  while(walker.nextNode())nodes.push(walker.currentNode);
-  nodes.forEach(n=>{
-    const p=n.parentElement;
-    if(!p||p.closest(excluded))return;
-    const raw=n.nodeValue.trim();
-    if(map[raw]&&map[raw]!==raw)n.nodeValue=n.nodeValue.replace(raw,map[raw]);
-  });
+  const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+  nodes.forEach(n=>{const p=n.parentElement;if(!p||p.closest(excluded))return;const raw=n.nodeValue.trim();const key=reverse[raw]||raw;const value=target[key]||extra[key]?.[lang];if(value&&value!==raw)n.nodeValue=n.nodeValue.replace(raw,value);});
+  const placeholders={"#messageInput":{ar:"اكتب فكرتك هنا...",en:"Describe your idea here...",tr:"Fikrinizi buraya yazın..."},"#searchInput":{ar:"بحث في المحادثات...",en:"Search conversations...",tr:"Sohbetlerde ara..."},"#nameInput":{ar:"اسمك",en:"Your name",tr:"Adınız"},"#emailInput":{ar:"البريد الإلكتروني",en:"Email",tr:"E-posta"},"#passwordInput":{ar:"كلمة المرور",en:"Password",tr:"Şifre"},"#projectName":{ar:"اسم المشروع",en:"Project name",tr:"Proje adı"},"#projectType":{ar:"النوع - Web / App / Bot",en:"Type - Web / App / Bot",tr:"Tür - Web / App / Bot"},"#projectDescription":{ar:"وصف المشروع",en:"Project description",tr:"Proje açıklaması"},"#botIdeaInput":{ar:"فكرة البوت والميزات والأوامر المطلوبة...",en:"Bot idea, features and commands...",tr:"Bot fikri, özellikler ve komutlar..."},"#botTokenInput":{ar:"توكن البوت السري",en:"Secret bot token",tr:"Gizli bot token"},"#buildProjectName":{ar:"اسم المشروع (اختياري — يحدده Aizen تلقائياً إذا تركته فارغاً)",en:"Project name (optional — Aizen chooses one if empty)",tr:"Proje adı (isteğe bağlı — boşsa Aizen otomatik belirler)"},"#buildDescriptionInput":{ar:"مثال: أريد موقع متجر حديث مع تسجيل دخول وسلة شراء ولوحة تحكم...",en:"Example: I want a modern store with login, cart and admin dashboard...",tr:"Örnek: Giriş, sepet ve yönetim paneli olan modern bir mağaza istiyorum..."}};
+  Object.keys(placeholders).forEach(sel=>{const el=document.querySelector(sel);if(el)el.placeholder=placeholders[sel][lang];});
 }
 function setSiteLanguage(value){
   const lang=value==="auto"?detectedSiteLanguage():(AIZEN_I18N[value]?value:"en");
-  localStorage.setItem("aizen-site-language",value);
-  document.documentElement.lang=lang;
-  document.documentElement.dir=lang==="ar"?"rtl":"ltr";
-  const sel=$("siteLanguage");
-  if(sel)sel.value=value;
+  localStorage.setItem("aizen-site-language",value);document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";
+  const sel=$("siteLanguage");if(sel)sel.value=value;
+  if(typeof renderConversations==="function")renderConversations();
+  if(typeof renderProjects==="function")renderProjects();
   translateAizenUI(lang);
   renderThemeChoices();
 }
