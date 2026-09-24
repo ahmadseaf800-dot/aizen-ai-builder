@@ -2240,7 +2240,7 @@ function renderAizenMarkdown(value){
     if(h){fp();fl();fq();const n=h[1].length;out.push('<h'+n+'>'+formatAizenInline(h[2])+'</h'+n+'>');continue;}
     const qq=line.match(/^\s*>\s?(.*)$/);
     if(qq){fp();fl();q.push(qq[1]);continue;}
-    const ol=line.match(/^\s*\\d+[.)]\s+(.+)$/),ul=line.match(/^\s*[-*+]\s+(.+)$/);
+    const ol=line.match(/^\s*\d+[.)]\s+(.+)$/),ul=line.match(/^\s*[-*+]\s+(.+)$/);
     if(ol||ul){fp();fq();const t=ol?'ol':'ul';if(lt&&lt!==t)fl();lt=t;li.push((ol||ul)[1]);continue;}
     fl();fq();p.push(line);
   }
