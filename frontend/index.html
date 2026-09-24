@@ -777,7 +777,35 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
 @media(max-width:520px){.ai-mode-grid{grid-template-columns:1fr}.ai-mode-button{padding:0 8px}}
 .aizen-eye-logo{width:100%;height:100%;display:block;color:#fff;} .brand-logo .aizen-eye-logo{padding:5px;} .brand-ai-small .aizen-eye-logo{width:24px;height:24px;}
 .aizen-mobile-chat-button{display:none;position:fixed;left:12px;bottom:92px;z-index:75;border:1px solid #6d5dfc;border-radius:12px;background:#201a45;color:#fff;padding:10px 13px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.35);touch-action:manipulation;pointer-events:auto}.aizen-mobile-chat-button:active{transform:scale(.97)}@media(max-width:800px){.aizen-mobile-chat-button{display:block}}
-</style>
+<style>
+/* Mobile restoration only — desktop layout is untouched */
+@media(max-width:800px){
+  .header{height:58px;min-height:58px;padding:0 10px}
+  .header-left,.header-right{gap:6px}
+  .brand{gap:7px;font-size:13px}
+  .brand-logo{width:30px;height:30px}
+  .menu-button,.header-button{width:36px;height:36px;border-radius:9px}
+  .account-name{display:none!important}
+  .sidebar{top:58px;width:min(280px,88vw);min-width:min(280px,88vw)}
+  .messages{padding:18px 10px 145px}
+  .welcome{padding:24px 16px}
+  .welcome h1{font-size:20px}
+  .welcome p{font-size:13px}
+  .composer-wrap{padding:7px 8px 9px}
+  .composer{padding:7px;border-radius:14px}
+  .composer textarea{min-height:43px;padding:9px;font-size:14px}
+  .composer-bottom{gap:5px}
+  .composer-actions{gap:5px}
+  #codingAgentButton,#workspaceButton{display:none!important}
+  #aiModeButton{font-size:0;padding:0 10px}
+  #aiModeButton::after{content:"✨ AI";font-size:13px}
+  #buildButton{font-size:0;padding:0 10px}
+  #buildButton::after{content:"🚀 Build";font-size:12px}
+  .composer-button,.send-button,.stop-button{width:38px;height:38px}
+  .account-menu{top:52px;right:8px;left:auto;width:185px}
+  #accountButton:not(.hidden){display:flex!important}
+}
+</style></style>
 </head>
 
 <body>
@@ -3690,43 +3718,52 @@ function autoResizeTextarea(){
 
 
 /* =========================================================
-   <script>
-(function(){
-"use strict";
-const run=(fn,...args)=>{try{if(typeof fn!=="function")throw Error("Action unavailable");const r=fn(...args);if(r&&typeof r.catch==="function")r.catch(x=>{console.error(x);window.showToast?.("تعذر تنفيذ العملية حالياً.");});}catch(x){console.error("AIZEN UI:",x);window.showToast?.("تعذر تنفيذ العملية حالياً.");}};
-const actions={
-"new-chat":()=>run(window.newChat),"tab-chats":()=>run(window.showSidebarTab,"chats"),
-"tab-projects":()=>run(window.showSidebarTab,"projects"),"attach":()=>run(window.triggerFileUpload),
-"ai-mode":()=>run(window.openAIModeModal),"agent":()=>run(window.openCodingAgentModal),
-"workspace":()=>run(window.openWorkspaceModal),"build":()=>run(window.openBuildTypeModal),
-"send":()=>run(window.sendMessage),"stop":()=>run(window.stopGeneration),
-"open-chat":()=>run(window.focusAizenChat),"menu":()=>run(window.toggleSidebar),
-"login":()=>run(window.openAuth),"account":()=>run(window.toggleAccountMenu)
-};
-document.addEventListener("click",ev=>{const el=ev.target.closest?.("[data-aizen-action]");if(!el)return;const key=el.getAttribute("data-aizen-action");if(!actions[key])return;ev.preventDefault();ev.stopPropagation();actions[key]();},true);
-window.focusAizenChat=function(){const input=document.getElementById("messageInput");if(!input)return;input.focus({preventScroll:false});input.scrollIntoView({behavior:"smooth",block:"center"});try{input.click();}catch{}window.autoResizeTextarea?.();};
-function ensureMobileChatButton(){if(document.getElementById("aizenMobileChatButton"))return;const b=document.createElement("button");b.id="aizenMobileChatButton";b.type="button";b.className="aizen-mobile-chat-button";b.setAttribute("data-aizen-action","open-chat");b.textContent="💬 فتح الشات";document.body.appendChild(b);}
-function boot(){document.querySelectorAll("button,[role=button]").forEach(el=>{el.style.pointerEvents="auto";el.style.touchAction="manipulation";});ensureMobileChatButton();}
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
-window.AizenUI={version:"10",ready:true,rebind:boot,call:(name,...args)=>actions[name]?.(...args)};
+   START
+========================================================= */
+(async function init(){
+  try{
+    await loadSession();
+    setStatus(currentUser ? "Aizen AI جاهز للعمل." : "سجّل الدخول لاستخدام Aizen AI.");
+  }catch(error){
+    console.error(error);
+    setStatus("تعذر تهيئة التطبيق.");
+  }
 })();
-</script>el.dataset.aizenFreshBound==="1") return;
-      el.dataset.aizenFreshBound="1";
+
+/* Fresh button bindings */
+(function(){
+  "use strict";
+  function bind(){
+    document.querySelectorAll("[data-aizen-action]").forEach(function(el){
+      if(el.dataset.aizenBound==="1") return;
+      el.dataset.aizenBound="1";
       el.style.pointerEvents="auto";
       el.style.touchAction="manipulation";
-      el.addEventListener("touchstart",()=>{}, {passive:true});
+      el.addEventListener("click",function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        const action=el.getAttribute("data-aizen-action");
+        try{
+          if(action==="new-chat") return window.newChat();
+          if(action==="tab-chats") return window.showSidebarTab("chats");
+          if(action==="tab-projects") return window.showSidebarTab("projects");
+          if(action==="attach") return window.triggerFileUpload();
+          if(action==="ai-mode") return window.openAIModeModal();
+          if(action==="agent") return window.openCodingAgentModal();
+          if(action==="workspace") return window.openWorkspaceModal();
+          if(action==="build") return window.openBuildTypeModal();
+          if(action==="send") return window.sendMessage();
+          if(action==="stop") return window.stopGeneration();
+          if(action==="menu") return window.toggleSidebar();
+          if(action==="login") return window.openAuth();
+          if(action==="account") return window.toggleAccountMenu();
+        }catch(error){ console.error("Aizen button:",error); }
+      },{passive:false});
     });
   }
-
-  document.addEventListener("DOMContentLoaded",bind);
-  bind();
-
-  window.AizenUI={
-    version:"9",
-    ready:true,
-    rebind:bind,
-    call
-  };
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bind,{once:true});
+  else bind();
+  window.AizenUI={version:"11",ready:true,rebind:bind};
 })();
 </script>
 
