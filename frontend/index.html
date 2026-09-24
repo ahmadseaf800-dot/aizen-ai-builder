@@ -2423,11 +2423,7 @@ async function sendMessage(){
 async function saveGeneratedProjectFiles(projectId, text){
   if(!projectId || !text) return 0;
   const blocks=[];
-  const re=/FILE:\s*([^
-]+)
-\s*```(?:[^
-]*)
-([\s\S]*?)```/g;
+  const re=/FILE:\s*([^\r\n]+)\r?\n\s*```(?:[^\r\n]*)\r?\n([\s\S]*?)```/g;
   let match;
   while((match=re.exec(text))!==null){
     const filePath=match[1].trim().replace(/^\/+/, "");
