@@ -87,7 +87,9 @@ button{cursor:pointer}
   font-weight:900;
 }
 
-.brand-logo span{font-size:12px;letter-spacing:-1px}.brand-ai-avatar{font-size:18px;letter-spacing:-1px;color:#fff;background:linear-gradient(135deg,#7c5cff,#4b8cff);font-weight:900}\n\n.account-name{
+.brand-logo span{font-size:12px;letter-spacing:-1px}.brand-ai-avatar{font-size:18px;letter-spacing:-1px;color:#fff;background:linear-gradient(135deg,#7c5cff,#4b8cff);font-weight:900}
+
+.account-name{
   max-width:130px;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -754,13 +756,17 @@ button{cursor:pointer}
 .build-type-icon{font-size:25px;margin-bottom:7px}.build-type-title{font-weight:700;font-size:13px}.build-type-desc{margin-top:4px;color:#858b97;font-size:11px;line-height:1.45}
 @media(max-width:520px){.build-type-grid{grid-template-columns:1fr}}
 .ai-avatar-small{width:34px;height:34px;min-width:34px;border-radius:10px;object-fit:cover;background:#171a22;border:1px solid #30343e}
-.brand-ai-small{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px;letter-spacing:-1px}\n.profile-card{width:min(520px,100%);padding:0;overflow:hidden;border:1px solid #30343e;border-radius:20px;background:linear-gradient(180deg,#171a22,#101218);box-shadow:0 25px 70px rgba(0,0,0,.55)}
+.brand-ai-small{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px;letter-spacing:-1px}
+.profile-card{width:min(520px,100%);padding:0;overflow:hidden;border:1px solid #30343e;border-radius:20px;background:linear-gradient(180deg,#171a22,#101218);box-shadow:0 25px 70px rgba(0,0,0,.55)}
 .profile-head{padding:24px 22px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #292d36}.profile-head-avatar{width:64px;height:64px;border-radius:18px;object-fit:cover;background:#181b22;border:1px solid #3b3f4b}.profile-head h3{margin:0;font-size:20px}.profile-head p{margin:5px 0 0;color:#858b97;font-size:12px}.profile-body{padding:20px 22px}.profile-label{display:block;margin:0 0 7px;color:#aeb3bf;font-size:12px}.profile-footer{padding:14px 22px 20px;display:flex;gap:8px}.profile-footer button{flex:1}.build-description{min-height:130px;resize:vertical}.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.profile-stats>div{padding:10px;border:1px solid #30343e;border-radius:10px;background:#15181f;text-align:center;font-size:12px}.profile-stats span{display:block;color:#858b97;font-size:10px;margin-top:4px}.build-button:disabled,.send-button:disabled{opacity:.5;cursor:not-allowed}
 
 :root{--accent:#6d5dfc;--user-bubble:#28224d;--user-border:#40377a}
-body.theme-black{--accent:#6d5dfc;--user-bubble:#15181f;--user-border:#282c35}\nbody.theme-white{--accent:#555;--user-bubble:#fff;--user-border:#d7dbe5}
+body.theme-black{--accent:#6d5dfc;--user-bubble:#15181f;--user-border:#282c35}
+body.theme-white{--accent:#555;--user-bubble:#fff;--user-border:#d7dbe5}
 body.theme-white .message.user .message-content{color:#111;background:var(--user-bubble);border-color:var(--user-border)}
-body.theme-blue{--accent:#2f80ff;--user-bubble:#123d78;--user-border:#2468c7}\nbody.theme-purple{--accent:#8b5cf6;--user-bubble:#35205f;--user-border:#7042c8}\nbody.theme-green{--accent:#22c55e;--user-bubble:#123f2a;--user-border:#21864b}
+body.theme-blue{--accent:#2f80ff;--user-bubble:#123d78;--user-border:#2468c7}
+body.theme-purple{--accent:#8b5cf6;--user-bubble:#35205f;--user-border:#7042c8}
+body.theme-green{--accent:#22c55e;--user-bubble:#123f2a;--user-border:#21864b}
 body.theme-blue .new-chat-button,body.theme-blue .send-button,body.theme-blue .auth-primary{background:var(--accent)}
 body.theme-blue .message.user .message-content{background:var(--user-bubble);border-color:var(--user-border)}
 .thinking-message{opacity:.82;font-style:italic;display:flex;align-items:center;gap:8px}
@@ -2250,13 +2256,20 @@ async function sendMessage(){
 
   const attachmentPrompt =
     pendingAttachments.length
-      ? "\n\n[ملفات مرفقة]\n" +
+      ? "
+
+[ملفات مرفقة]
+" +
         pendingAttachments.map(
           item =>
-            "--- FILE: " + item.name + " ---\n" +
+            "--- FILE: " + item.name + " ---
+" +
             item.content
-        ).join("\n\n") +
-        "\n[نهاية الملفات]"
+        ).join("
+
+") +
+        "
+[نهاية الملفات]"
       : "";
 
   const messageForAI = text + attachmentPrompt;
@@ -2355,11 +2368,16 @@ async function sendMessage(){
 async function saveGeneratedProjectFiles(projectId, text){
   if(!projectId || !text) return 0;
   const blocks=[];
-  const re=/FILE:\s*([^\n]+)\n\s*```(?:[^\n]*)\n([\s\S]*?)```/g;
+  const re=/FILE:\s*([^
+]+)
+\s*```(?:[^
+]*)
+([\s\S]*?)```/g;
   let match;
   while((match=re.exec(text))!==null){
     const filePath=match[1].trim().replace(/^\/+/, "");
-    const content=match[2].replace(/\n$/,"");
+    const content=match[2].replace(/
+$/,"");
     if(!filePath || filePath.includes("..") || filePath.length>240 || content.length>500000) continue;
     blocks.push({path:filePath,content,file_type:filePath.split(".").pop()||"text",size_bytes:new Blob([content]).size});
     if(blocks.length>=30) break;
@@ -2511,7 +2529,9 @@ async function requestAI(
         );
 
       const parts =
-        buffer.split(/\n\n/);
+        buffer.split(/
+
+/);
 
       buffer =
         parts.pop() || "";
@@ -2524,7 +2544,8 @@ async function requestAI(
       for(const rawEvent of events){
 
         const lines =
-          rawEvent.split("\n");
+          rawEvent.split("
+");
 
         let eventName = "";
         let dataText = "";
@@ -2798,18 +2819,28 @@ async function runBuild(type,typeLabel,description,secretToken="",projectName=""
 
   const attachmentPrompt =
     pendingAttachments.length
-      ? "\n\n[ملفات مرفقة]\n" +
+      ? "
+
+[ملفات مرفقة]
+" +
         pendingAttachments.map(
           item =>
-            "--- FILE: " + item.name + " ---\n" +
+            "--- FILE: " + item.name + " ---
+" +
             item.content
-        ).join("\n\n") +
-        "\n[نهاية الملفات]"
+        ).join("
+
+") +
+        "
+[نهاية الملفات]"
       : "";
 
   const messageForAI =
-    "[نوع المشروع: " + typeLabel + " | build_type=" + type + "]\n" +
-    "نفّذ المشروع فعلياً وأنشئ الملفات الأساسية القابلة للتشغيل.\n\n" +
+    "[نوع المشروع: " + typeLabel + " | build_type=" + type + "]
+" +
+    "نفّذ المشروع فعلياً وأنشئ الملفات الأساسية القابلة للتشغيل.
+
+" +
     text + attachmentPrompt;
 
   try{
