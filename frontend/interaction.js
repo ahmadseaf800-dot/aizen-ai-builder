@@ -24,6 +24,7 @@
       "tab-projects":"showSidebarTab",
       "attach":"triggerFileUpload",
       "agent":"openAgentModal",
+      "ai-mode":"openAIModeModal",
       "build":"openBuildTypeModal",
       "stop":"stopGeneration",
       "send":"sendMessage"
