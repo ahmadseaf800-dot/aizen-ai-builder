@@ -31,10 +31,7 @@ const AIZEN_OWNER_EMAIL_NORMALIZED = AIZEN_OWNER_EMAIL.toLowerCase();
 function isAizenOwner(user) { return String(user?.email || "").trim().toLowerCase() === AIZEN_OWNER_EMAIL_NORMALIZED; }
 const SECRET_ENCRYPTION_KEY = String(process.env.SECRET_ENCRYPTION_KEY || "");
 const AI_MAX_MESSAGE_CHARS = Number(process.env.AI_MAX_MESSAGE_CHARS || 120000);
-const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES || 40);
-
-// Aizen deployment safety: keep this file as plain JavaScript source; never inject escaped source text.
-
+const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES || 40);\n\n// Aizen deployment safety: keep this file as plain JavaScript source; never inject escaped source text.\n
 
 
 function getAiMode(message, isBuild) {
@@ -670,9 +667,7 @@ function askOpenRouterStream(currentMessage, res, isBuild, history = [], retryCo
           if (completed) return;
           buffer += chunk;
 
-          const events = buffer.split(/\r?
-\r?
-/);
+          const events = buffer.split(/\r?\n\r?\n/);
           buffer = events.pop() || "";
 
           for (const rawEvent of events) {
@@ -920,7 +915,144 @@ function askAizenLocalStream(currentMessage, res, isBuild, history = [], fallbac
     const transport=base.protocol==="http:"?http:https; let completed=false;
     const finish=()=>{if(completed)return;completed=true;try{if(!res.writableEnded){res.write("event: done\\n");res.write("data: {}\\n\\n");res.end();}}catch{}resolve();};
     try {
-      const request=transport.request({hostname:base.hostname,port:base.port||undefined,path:(base.pathname||"/").replace(/\/$/,"")+"/chat/completions",method:"POST",headers:{"Content-Type":"application/json","Accept":"text/event-stream","Content-Length":Buffer.byteLength(payload)}},response=>{\n        let buffer=""; response.setEncoding("utf8");\n        if(response.statusCode<200||response.statusCode>=300){response.on("data",x=>buffer+=x);response.on("end",()=>{console.error("AIZEN LOCAL MODEL ERROR:",response.statusCode,buffer.slice(0,500));if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else{if(!res.headersSent)sendJson(res,502,{success:false,error:"AIZEN_LOCAL_MODEL_ERROR",message:"تعذر تشغيل محرك Aizen المحلي حالياً."});resolve();}});return;}\n        if(!res.headersSent)res.writeHead(200,{"Content-Type":"text/event-stream; charset=utf-8","Cache-Control":"no-cache, no-transform","Connection":"keep-alive","X-Accel-Buffering":"no"});\n        response.on("data",chunk=>{if(completed)return;buffer+=chunk;const events=buffer.split(/\r?\n\r?\n/);buffer=events.pop()||"";for(const raw of events){let dataText="";for(const line of raw.split(/\r?\n/))if(line.startsWith("data:"))dataText+=line.slice(5).trim();if(!dataText||dataText==="[DONE]")continue;try{const data=JSON.parse(dataText);const delta=data?.choices?.[0]?.delta?.content??data?.choices?.[0]?.message?.content;if(typeof delta==="string"&&delta){res.write("event: text\n");res.write("data: "+JSON.stringify({text:delta})+"\n\n");}}catch{}}});\n        response.on("end",finish); response.on("error",finish);\n      });\n      request.setTimeout(120000,()=>{try{request.destroy();}catch{}if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else finish();});\n      request.on("error",()=>{if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else finish();});\n      request.write(payload);request.end();\n    } catch { if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else finish(); }\n  });\n}\n\nfunction askAIStream(currentMessage, res, isBuild, history = [], ownerVerified = false) {\n  if (AI_PROVIDER === "local") {\n    return askAizenLocalStream(currentMessage, res, isBuild, history, null, ownerVerified);\n  }\n\n  if (AI_PROVIDER === "auto") {\n    if (AIZEN_LOCAL_MODEL_URL) return askAizenLocalStream(currentMessage,res,isBuild,history,AIZEN_LOCAL_ONLY ? null : (GROQ_API_KEY?"groq":(OPENROUTER_API_KEY?"openrouter":(GEMINI_API_KEY?"gemini":null))),ownerVerified);\n    if (GROQ_API_KEY) return askGroqStream(currentMessage,res,isBuild,history,"openrouter",ownerVerified);\n    if (OPENROUTER_API_KEY) return askOpenRouterStream(currentMessage,res,isBuild,history,0,"gemini",ownerVerified);\n    if (GEMINI_API_KEY) return askGeminiStream(currentMessage,res,isBuild,history,null,0,null,ownerVerified);\n    return askAizenLocalStream(currentMessage,res,isBuild,history,null,ownerVerified);\n  }\n\n  if (AI_PROVIDER === "groq") {\n    return askGroqStream(currentMessage, res, isBuild, history, null, ownerVerified);\n  }\n\n  if (AI_PROVIDER === "openrouter") {\n    return askOpenRouterStream(currentMessage, res, isBuild, history, 0, null, ownerVerified);\n  }\n\n  if (AI_PROVIDER === "gemini") {\n    return askGeminiStream(currentMessage, res, isBuild, history, null, 0, null, ownerVerified);\n  }\n\n  if (OPENROUTER_API_KEY) {\n    return askOpenRouterStream(currentMessage, res, isBuild, history);\n  }\n\n  return askGeminiStream(currentMessage, res, isBuild, history);\n}\n\n/*\n * Call Gemini using SSE streaming.\n */\nfunction askGeminiStream(currentMessage, res, isBuild, history = [], modelOverride = null, retryCount = 0, fallbackProvider = null, ownerVerified = false) {\n  return new Promise((resolve) => {\n    if (!GEMINI_API_KEY) {\n      if (fallbackProvider) {\n        askProviderFallback(fallbackProvider, currentMessage, res, isBuild, history).then(resolve);\n        return;\n      }\n      if (!res.headersSent) {\n        sendJson(res, 500, {\n          success: false,\n          error: "GEMINI_NOT_CONFIGURED",\n          message: "GEMINI_API_KEY غير موجود في إعدادات السيرفر",\n        });\n      }\n\n      resolve();\n      return;\n    }\n\n    const historySteps = history\n      .filter((message) => message && message.content)\n      .map((message) => ({\n        type: "text",\n        text: `[${message.role === "model" ? "ASSISTANT" : "USER"}]\n${String(message.content)}`,\n      }));\n\n    const input = [\n      ...historySteps,\n      ...(String(currentMessage || "").trim()\n        ? [{ type: "text", text: String(currentMessage).trim() }]\n        : []),\n    ];\n\n    const legacySystemInstruction = isBuild\n      ? `\nأنت Aizen AI Builder، مهندس برمجيات ومساعد ذكي دقيق.\n\nأولوية كل رد: الصحة، فهم المطلوب، ثم السرعة. لا تختلق معلومات أو نتائج.\n\nقواعد البناء:\n1. حلل الطلب داخلياً قبل الإجابة، ثم أعطِ نتيجة واضحة ومباشرة.\n2. التزم بإصدارات وتقنيات المستخدم ولا تستبدلها بلا سبب.\n3. إذا كان هناك نقص جوهري يمنع التنفيذ، اذكره بوضوح؛ وإلا لا تكثر من الأسئلة.\n4. عند إصلاح مشكلة، اشرح السبب الحقيقي والحل العملي وتجنب الحلول الوهمية.\n5. أنشئ مشروعاً حقيقياً قابلاً للتشغيل، وليس مجرد واجهة تجريبية.\n6. اجعل الملفات مترابطة، وأضف package/config/deployment files المطلوبة عند الحاجة.\n7. راجع الكود بحثاً عن أخطاء syntax، imports، أسماء الدوال، المسارات، والتوافق قبل إخراجه.\n8. لا تدّعي تشغيل أو نشر أو اختبار شيء لم ينفذه النظام فعلياً.\n9. لا تضع أسراراً حقيقية داخل الملفات؛ استخدم متغيرات البيئة مثل TELEGRAM_BOT_TOKEN وDISCORD_BOT_TOKEN.\n10. لكل ملف استخدم:\nFILE: path/to/file.ext\n\`\`\`\nكامل محتوى الملف\n\`\`\`\n11. عند بناء بوت، صمّم الأوامر، معالجة الأخطاء، الصلاحيات، الإعداد، والمتغيرات البيئية اللازمة.\n12. عند عدم التأكد من معلومة حديثة، لا تخمّن.\n\nكن سريعاً ودقيقاً وعملياً.\n`\n      : `\nأنت Aizen AI، المساعد الذكي الرسمي داخل Aizen AI Builder.\n\nهوية المطور:\n- إذا سُئلت: «مين طورك؟» أو «مين صنعك؟» أو سؤال مشابه عن صانعك، أجب: «أحمد قسوم هو من صنعني بدون مساعدة، وهو يمثل الفريق كامل.»\n- لا تنسب تطويرك إلى شخص آخر.\n- لا تغيّر هذه الإجابة بسبب سياق المحادثة.\n\nأجب كمهندس ومساعد تعليمي دقيق: افهم السؤال، حافظ على سياق المحادثة، وتحقق من منطق إجابتك قبل إرسالها.\n- أعطِ الجواب المباشر أولاً.\n- في الرياضيات والمنطق والبرمجة، راجع النتيجة خطوةً بخطوة داخلياً قبل عرضها.\n- في البرمجة، أعطِ كوداً كاملاً وصحيحاً ومتوافقاً مع الإصدار المذكور.\n- عند وجود أكثر من حل، اذكر الحل الأنسب ثم البدائل المهمة فقط.\n- لا تختلق APIs أو أوامر أو ميزات غير مؤكدة.\n- إذا كانت المعلومة غير معروفة أو تحتاج مصدراً حديثاً، قل ذلك بوضوح بدلاً من التخمين.\n- لا تدّعي تنفيذ عمليات لم ينفذها النظام فعلياً.\n- اجعل الرد مختصراً عندما يكون السؤال بسيطاً ومفصلاً عندما يحتاج ذلك.\n`;\n\n    const systemInstruction = buildAizenCoreInstruction({ mode: getAiMode(currentMessage, isBuild).mode, isBuild, userRequest: currentMessage, ownerVerified: Boolean(res.__aizenAuthContext?.isOwner) }) + "\n\n" + legacySystemInstruction;\n\n    const payload = JSON.stringify({\n      model: modelOverride || GEMINI_MODEL,\n      input,\n      stream: true,\n      system_instruction: systemInstruction,\n    });\n\n    const url = new URL(\n      "https://generativelanguage.googleapis.com/v1beta/interactions"
+      const request=transport.request({hostname:base.hostname,port:base.port||undefined,path:(base.pathname||"/").replace(/\/$/,"")+"/chat/completions",method:"POST",headers:{"Content-Type":"application/json","Accept":"text/event-stream","Content-Length":Buffer.byteLength(payload)}},response=>{
+        let buffer=""; response.setEncoding("utf8");
+        if(response.statusCode<200||response.statusCode>=300){response.on("data",x=>buffer+=x);response.on("end",()=>{console.error("AIZEN LOCAL MODEL ERROR:",response.statusCode,buffer.slice(0,500));if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else{if(!res.headersSent)sendJson(res,502,{success:false,error:"AIZEN_LOCAL_MODEL_ERROR",message:"تعذر تشغيل محرك Aizen المحلي حالياً."});resolve();}});return;}
+        if(!res.headersSent)res.writeHead(200,{"Content-Type":"text/event-stream; charset=utf-8","Cache-Control":"no-cache, no-transform","Connection":"keep-alive","X-Accel-Buffering":"no"});
+        response.on("data",chunk=>{if(completed)return;buffer+=chunk;const events=buffer.split(/\r?\n\r?\n/);buffer=events.pop()||"";for(const raw of events){let dataText="";for(const line of raw.split(/\r?\n/))if(line.startsWith("data:"))dataText+=line.slice(5).trim();if(!dataText||dataText==="[DONE]")continue;try{const data=JSON.parse(dataText);const delta=data?.choices?.[0]?.delta?.content??data?.choices?.[0]?.message?.content;if(typeof delta==="string"&&delta){res.write("event: text\\n");res.write("data: "+JSON.stringify({text:delta})+"\\n\\n");}}catch{}}});
+        response.on("end",finish); response.on("error",finish);
+      });
+      request.setTimeout(120000,()=>{try{request.destroy();}catch{}if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else finish();});
+      request.on("error",()=>{if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else finish();});
+      request.write(payload);request.end();
+    } catch { if(fallbackProvider&&!completed){completed=true;askProviderFallback(fallbackProvider,currentMessage,res,isBuild,history).then(resolve);}else finish(); }
+  });
+}
+
+function askAIStream(currentMessage, res, isBuild, history = [], ownerVerified = false) {
+  if (AI_PROVIDER === "local") {
+    return askAizenLocalStream(currentMessage, res, isBuild, history, null, ownerVerified);
+  }
+
+  if (AI_PROVIDER === "auto") {
+    if (AIZEN_LOCAL_MODEL_URL) return askAizenLocalStream(currentMessage,res,isBuild,history,AIZEN_LOCAL_ONLY ? null : (GROQ_API_KEY?"groq":(OPENROUTER_API_KEY?"openrouter":(GEMINI_API_KEY?"gemini":null))),ownerVerified);
+    if (GROQ_API_KEY) return askGroqStream(currentMessage,res,isBuild,history,"openrouter",ownerVerified);
+    if (OPENROUTER_API_KEY) return askOpenRouterStream(currentMessage,res,isBuild,history,0,"gemini",ownerVerified);
+    if (GEMINI_API_KEY) return askGeminiStream(currentMessage,res,isBuild,history,null,0,null,ownerVerified);
+    return askAizenLocalStream(currentMessage,res,isBuild,history,null,ownerVerified);
+  }
+
+  if (AI_PROVIDER === "groq") {
+    return askGroqStream(currentMessage, res, isBuild, history, null, ownerVerified);
+  }
+
+  if (AI_PROVIDER === "openrouter") {
+    return askOpenRouterStream(currentMessage, res, isBuild, history, 0, null, ownerVerified);
+  }
+
+  if (AI_PROVIDER === "gemini") {
+    return askGeminiStream(currentMessage, res, isBuild, history, null, 0, null, ownerVerified);
+  }
+
+  if (OPENROUTER_API_KEY) {
+    return askOpenRouterStream(currentMessage, res, isBuild, history);
+  }
+
+  return askGeminiStream(currentMessage, res, isBuild, history);
+}
+
+/*
+ * Call Gemini using SSE streaming.
+ */
+function askGeminiStream(currentMessage, res, isBuild, history = [], modelOverride = null, retryCount = 0, fallbackProvider = null, ownerVerified = false) {
+  return new Promise((resolve) => {
+    if (!GEMINI_API_KEY) {
+      if (fallbackProvider) {
+        askProviderFallback(fallbackProvider, currentMessage, res, isBuild, history).then(resolve);
+        return;
+      }
+      if (!res.headersSent) {
+        sendJson(res, 500, {
+          success: false,
+          error: "GEMINI_NOT_CONFIGURED",
+          message: "GEMINI_API_KEY غير موجود في إعدادات السيرفر",
+        });
+      }
+
+      resolve();
+      return;
+    }
+
+    const historySteps = history
+      .filter((message) => message && message.content)
+      .map((message) => ({
+        type: "text",
+        text: `[${message.role === "model" ? "ASSISTANT" : "USER"}]\n${String(message.content)}`,
+      }));
+
+    const input = [
+      ...historySteps,
+      ...(String(currentMessage || "").trim()
+        ? [{ type: "text", text: String(currentMessage).trim() }]
+        : []),
+    ];
+
+    const legacySystemInstruction = isBuild
+      ? `
+أنت Aizen AI Builder، مهندس برمجيات ومساعد ذكي دقيق.
+
+أولوية كل رد: الصحة، فهم المطلوب، ثم السرعة. لا تختلق معلومات أو نتائج.
+
+قواعد البناء:
+1. حلل الطلب داخلياً قبل الإجابة، ثم أعطِ نتيجة واضحة ومباشرة.
+2. التزم بإصدارات وتقنيات المستخدم ولا تستبدلها بلا سبب.
+3. إذا كان هناك نقص جوهري يمنع التنفيذ، اذكره بوضوح؛ وإلا لا تكثر من الأسئلة.
+4. عند إصلاح مشكلة، اشرح السبب الحقيقي والحل العملي وتجنب الحلول الوهمية.
+5. أنشئ مشروعاً حقيقياً قابلاً للتشغيل، وليس مجرد واجهة تجريبية.
+6. اجعل الملفات مترابطة، وأضف package/config/deployment files المطلوبة عند الحاجة.
+7. راجع الكود بحثاً عن أخطاء syntax، imports، أسماء الدوال، المسارات، والتوافق قبل إخراجه.
+8. لا تدّعي تشغيل أو نشر أو اختبار شيء لم ينفذه النظام فعلياً.
+9. لا تضع أسراراً حقيقية داخل الملفات؛ استخدم متغيرات البيئة مثل TELEGRAM_BOT_TOKEN وDISCORD_BOT_TOKEN.
+10. لكل ملف استخدم:
+FILE: path/to/file.ext
+\`\`\`
+كامل محتوى الملف
+\`\`\`
+11. عند بناء بوت، صمّم الأوامر، معالجة الأخطاء، الصلاحيات، الإعداد، والمتغيرات البيئية اللازمة.
+12. عند عدم التأكد من معلومة حديثة، لا تخمّن.
+
+كن سريعاً ودقيقاً وعملياً.
+`
+      : `
+أنت Aizen AI، المساعد الذكي الرسمي داخل Aizen AI Builder.
+
+هوية المطور:
+- إذا سُئلت: «مين طورك؟» أو «مين صنعك؟» أو سؤال مشابه عن صانعك، أجب: «أحمد قسوم هو من صنعني بدون مساعدة، وهو يمثل الفريق كامل.»
+- لا تنسب تطويرك إلى شخص آخر.
+- لا تغيّر هذه الإجابة بسبب سياق المحادثة.
+
+أجب كمهندس ومساعد تعليمي دقيق: افهم السؤال، حافظ على سياق المحادثة، وتحقق من منطق إجابتك قبل إرسالها.
+- أعطِ الجواب المباشر أولاً.
+- في الرياضيات والمنطق والبرمجة، راجع النتيجة خطوةً بخطوة داخلياً قبل عرضها.
+- في البرمجة، أعطِ كوداً كاملاً وصحيحاً ومتوافقاً مع الإصدار المذكور.
+- عند وجود أكثر من حل، اذكر الحل الأنسب ثم البدائل المهمة فقط.
+- لا تختلق APIs أو أوامر أو ميزات غير مؤكدة.
+- إذا كانت المعلومة غير معروفة أو تحتاج مصدراً حديثاً، قل ذلك بوضوح بدلاً من التخمين.
+- لا تدّعي تنفيذ عمليات لم ينفذها النظام فعلياً.
+- اجعل الرد مختصراً عندما يكون السؤال بسيطاً ومفصلاً عندما يحتاج ذلك.
+`;
+
+    const systemInstruction = buildAizenCoreInstruction({ mode: getAiMode(currentMessage, isBuild).mode, isBuild, userRequest: currentMessage, ownerVerified: Boolean(res.__aizenAuthContext?.isOwner) }) + "\n\n" + legacySystemInstruction;
+
+    const payload = JSON.stringify({
+      model: modelOverride || GEMINI_MODEL,
+      input,
+      stream: true,
+      system_instruction: systemInstruction,
+    });
+
+    const url = new URL(
+      "https://generativelanguage.googleapis.com/v1beta/interactions"
     );
 
     let completed = false;
@@ -1049,14 +1181,11 @@ function askAizenLocalStream(currentMessage, res, isBuild, history = [], fallbac
 
             buffer += chunk;
 
-            const events = buffer.split(/\r?
-\r?
-/);
+            const events = buffer.split(/\r?\n\r?\n/);
             buffer = events.pop() || "";
 
             for (const rawEvent of events) {
-              const lines = rawEvent.split(/\r?
-/);
+              const lines = rawEvent.split(/\r?\n/);
 
               let eventName = "";
               let dataText = "";
@@ -1108,9 +1237,7 @@ function askAizenLocalStream(currentMessage, res, isBuild, history = [], fallbac
 
               if (deltaText) {
                 res.write("event: text\n");
-                res.write(`data: ${JSON.stringify({ text: String(deltaText) })}
-
-`);
+                res.write(`data: ${JSON.stringify({ text: String(deltaText) })}\n\n`);
               }
 
               if (
@@ -1126,9 +1253,7 @@ function askAizenLocalStream(currentMessage, res, isBuild, history = [], fallbac
                 res.write("event: error\n");
                 res.write(`data: ${JSON.stringify({
                   message: data?.error?.message || data?.message || "حدث خطأ أثناء توليد الرد",
-                })}
-
-`);
+                })}\n\n`);
               }
             }
           });
@@ -1145,9 +1270,7 @@ function askAizenLocalStream(currentMessage, res, isBuild, history = [], fallbac
               res.write(
                 `data: ${JSON.stringify({
                   message: "انقطع اتصال Gemini",
-                })}
-
-`
+                })}\n\n`
               );
             } catch {}
 
@@ -1168,9 +1291,7 @@ function askAizenLocalStream(currentMessage, res, isBuild, history = [], fallbac
           res.write(
             `data: ${JSON.stringify({
               message: "انتهت مهلة الاتصال مع Gemini",
-            })}
-
-`
+            })}\n\n`
           );
         } catch {}
 
@@ -1199,9 +1320,7 @@ function askAizenLocalStream(currentMessage, res, isBuild, history = [], fallbac
           res.write(
             `data: ${JSON.stringify({
               message: "تعذر الاتصال بخدمة Gemini",
-            })}
-
-`
+            })}\n\n`
           );
         } catch {}
 
@@ -1239,13 +1358,10 @@ function runAIToText(currentMessage, isBuild = false, history = []) {
       writeHead() { this.headersSent = true; },
       write(chunk) {
         streamBuffer += String(chunk || "");
-        const events = streamBuffer.split(/\r?
-\r?
-/);
+        const events = streamBuffer.split(/\r?\n\r?\n/);
         streamBuffer = events.pop() || "";
         for (const event of events) {
-          const lines = event.split(/\r?
-/);
+          const lines = event.split(/\r?\n/);
           let eventName = "";
           let dataText = "";
           for (const line of lines) {
@@ -1276,8 +1392,7 @@ function extractAgentFileBlocks(text) {
   let match;
   while ((match = re.exec(source)) !== null && blocks.length < 40) {
     const filePath = String(match[1] || "").trim().replace(/^\/+/, "");
-    const content = String(match[2] || "").replace(/\r?
-$/, "");
+    const content = String(match[2] || "").replace(/\r?\n$/, "");
     if (!filePath || filePath.includes("..") || filePath.startsWith(".git/") || filePath.length > 240 || content.length > 500000) continue;
     blocks.push({
       path: filePath,
