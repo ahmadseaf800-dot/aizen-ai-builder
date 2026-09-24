@@ -2110,7 +2110,11 @@ const server = http.createServer(async (req, res) => {
         "Cache-Control": "no-cache",
       });
 
-      res.end(content);
+      const html = content.toString("utf8");
+      const enhanced = html.includes("/interaction.js")
+        ? html
+        : html.replace(/<\/body>/i, '<script src="/interaction.js" defer></script></body>');
+      res.end(enhanced);
     });
 
     return;
