@@ -765,7 +765,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
 .settings-section{margin-top:16px;padding:12px;border:1px solid #30343e;border-radius:12px;background:#171a21}
 .theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.theme-choice{padding:11px;border:1px solid #30343e;border-radius:9px;background:#1b1e26;color:#fff}.theme-choice:hover{border-color:#6d5dfc}.theme-choice.wide{width:100%;margin-top:9px}
 /* Aizen AI command system */
-.coding-agent-button{border:1px solid #3d8cff;background:#17263d;color:#fff;border-radius:9px;padding:0 10px;height:38px;font-weight:700}.coding-agent-button:hover{border-color:#5da0ff;background:#1d3150}.coding-agent-modal .modal-box{width:min(650px,100%)}.coding-agent-status{margin-top:10px;color:#9f97ff;font-size:12px;min-height:18px}.coding-agent-result{margin-top:10px;padding:10px;border:1px solid #30343e;border-radius:9px;background:#171a21;color:#bfc5d1;font-size:12px;line-height:1.5}.coding-agent-select{width:100%;margin-bottom:10px;padding:11px;border:1px solid #30343e;border-radius:10px;background:#191c23;color:#fff}.coding-agent-text{min-height:130px;resize:vertical}
+.coding-agent-button{border:1px solid #3d8cff;background:#17263d;color:#fff;border-radius:9px;padding:0 10px;height:38px;font-weight:700}.coding-agent-button:hover{border-color:#5da0ff;background:#1d3150}.coding-agent-modal .modal-box{width:min(650px,100%)}.coding-agent-status{margin-top:10px;color:#9f97ff;font-size:12px;min-height:18px}.coding-agent-result{margin-top:10px;padding:10px;border:1px solid #30343e;border-radius:9px;background:#171a21;color:#bfc5d1;font-size:12px;line-height:1.5}.coding-agent-select{width:100%;margin-bottom:10px;padding:11px;border:1px solid #30343e;border-radius:10px;background:#191c23;color:#fff}.coding-agent-text{min-height:130px;resize:vertical}.aizen-workspace-button{border:1px solid #35b6a5;background:#152a28;color:#fff;border-radius:9px;padding:0 10px;height:38px;font-weight:700}.aizen-workspace-button:hover{border-color:#54d9c5;background:#193633}.workspace-modal .modal-box{width:min(900px,100%)}.workspace-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.workspace-toolbar button{padding:9px 12px;border:1px solid #30343e;border-radius:9px;background:#191c23;color:#fff}.workspace-files{display:grid;grid-template-columns:240px 1fr;min-height:360px;border:1px solid #30343e;border-radius:12px;overflow:hidden}.workspace-file-list{background:#15181f;overflow:auto}.workspace-file{display:block;width:100%;padding:9px 11px;border:0;border-bottom:1px solid #252934;background:transparent;color:#d9dce4;text-align:left}.workspace-file.active{background:#29233e}.workspace-editor{display:flex;flex-direction:column}.workspace-editor textarea{flex:1;min-height:360px;border:0;border-left:1px solid #30343e;border-radius:0;resize:vertical;background:#101319;color:#fff;padding:12px;font:12px/1.55 monospace}.workspace-analysis{margin-top:10px;white-space:pre-wrap;padding:10px;border:1px solid #30343e;border-radius:9px;background:#15181f;color:#bfc5d1;font-size:12px}
 .ai-mode-button{border:1px solid #30343e;background:#1b1e26;color:#fff;border-radius:9px;padding:0 10px;height:38px;font-weight:700}
 .ai-mode-button:hover{border-color:#6d5dfc}
 .ai-mode-modal .modal-box{width:min(560px,100%)}
@@ -971,6 +971,7 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
           >
             Agent
           </button>
+          <button id="workspaceButton" class="aizen-workspace-button" onclick="openWorkspaceModal()" type="button" title="مساحة المشروع">Files</button>
 
           <button
             id="buildButton"
@@ -1215,13 +1216,67 @@ body.theme-blue .message.user .message-content{background:var(--user-bubble);bor
 <button class="ai-mode-card" onclick="selectAIMode('security')"><b>🛡️ أمان</b><span>افحص المصادقة والأسرار والمدخلات والصلاحيات.</span></button>
 <button class="ai-mode-card" onclick="selectAIMode('test')"><b>🧪 اختبار</b><span>أنشئ حالات اختبار وحالات فشل وحدّية.</span></button>
 <button class="ai-mode-card" onclick="selectAIMode('assistant')"><b>✨ عادي</b><span>محادثة Aizen الذكية بدون وضع متخصص.</span></button>
-</div><div id="aiActiveMode" class="ai-active-mode"></div><div class="modal-buttons"><button onclick="closeAIModeModal()">إلغاء</button></div></div></div><div id="toast" class="toast"></div>
+</div><div id="aiActiveMode" class="ai-active-mode"></div><div class="modal-buttons"><button onclick="closeAIModeModal()">إلغاء</button></div></div></div><div id="workspaceModal" class="modal workspace-modal hidden" onclick="if(event.target===this) closeWorkspaceModal()"><div class="modal-box"><h3>🗂️ مساحة المشروع</h3><div class="auth-subtitle">ملفات المشروع، التحقق، التحليل الأمني وإدارة التعديلات.</div><select id="workspaceProject" class="coding-agent-select"></select><div class="workspace-toolbar"><button type="button" onclick="loadWorkspaceFiles()">تحديث الملفات</button><button type="button" onclick="analyzeWorkspace()">فحص المشروع</button><button type="button" onclick="saveWorkspaceFile()">حفظ الملف</button><button type="button" onclick="deleteWorkspaceFile()">حذف الملف</button></div><div class="workspace-files"><div id="workspaceFileList" class="workspace-file-list"></div><div class="workspace-editor"><textarea id="workspaceEditor" spellcheck="false" placeholder="اختر ملفاً..."></textarea></div></div><div id="workspaceAnalysis" class="workspace-analysis hidden"></div><div class="modal-buttons"><button type="button" onclick="closeWorkspaceModal()">إغلاق</button></div></div></div><div id="toast" class="toast"></div>
 
 
 <script>
 
 let aizenSelectedMode=localStorage.getItem("aizen-ai-mode")||"assistant";
 const AIZEN_MODE_LABELS={assistant:"الوضع العادي",plan:"التخطيط",review:"المراجعة",fix:"الإصلاح",explain:"الشرح",optimize:"التحسين",security:"الأمان",test:"الاختبار"};
+
+
+let workspaceFiles=[];
+let workspaceSelectedPath="";
+function renderWorkspaceProjects(){
+  const s=$("workspaceProject"); if(!s)return;
+  s.innerHTML=projects.length?projects.map(p=>'<option value="'+escapeHTML(p.id)+'">'+escapeHTML(p.name||"مشروع")+'</option>').join(""):'<option value="">لا توجد مشاريع محفوظة</option>';
+  if(currentProjectId&&projects.some(p=>p.id===currentProjectId))s.value=currentProjectId;
+}
+function openWorkspaceModal(){
+  if(!currentUser){openAuth();showToast("سجّل الدخول أولاً.");return;}
+  renderWorkspaceProjects(); $("workspaceModal")?.classList.remove("hidden"); loadWorkspaceFiles();
+}
+function closeWorkspaceModal(){$("workspaceModal")?.classList.add("hidden");}
+async function workspaceRequest(options){
+  const session=(await supabaseClient.auth.getSession()).data.session;
+  if(!session?.access_token)throw new Error("انتهت جلسة تسجيل الدخول.");
+  const response=await fetch(BACKEND_URL+"/api/workspace",{...options,headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token}});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||!data.success)throw new Error(data.message||"تعذر تنفيذ عملية مساحة العمل.");
+  return data;
+}
+async function loadWorkspaceFiles(){
+  const projectId=$("workspaceProject")?.value||currentProjectId||"";
+  if(!projectId)return;
+  try{
+    const data=await workspaceRequest({method:"GET",body:undefined,headers:undefined,url:BACKEND_URL+"/api/workspace?projectId="+encodeURIComponent(projectId)});
+  }catch(e){}
+  const session=(await supabaseClient.auth.getSession()).data.session;
+  try{
+    const response=await fetch(BACKEND_URL+"/api/workspace?projectId="+encodeURIComponent(projectId),{headers:{"Authorization":"Bearer "+session.access_token}});
+    const data=await response.json(); if(!response.ok||!data.success)throw new Error(data.message||"تعذر تحميل الملفات.");
+    workspaceFiles=data.files||[]; currentProjectId=projectId; renderWorkspaceFiles();
+  }catch(e){showToast(e.message||"تعذر تحميل ملفات المشروع.");}
+}
+function renderWorkspaceFiles(){
+  const list=$("workspaceFileList"); if(!list)return; list.replaceChildren();
+  workspaceFiles.forEach(file=>{const b=document.createElement("button");b.type="button";b.className="workspace-file"+(file.path===workspaceSelectedPath?" active":"");b.textContent=file.path;b.onclick=()=>{workspaceSelectedPath=file.path;$("workspaceEditor").value=String(file.content||"");renderWorkspaceFiles();};list.appendChild(b);});
+  if(!workspaceSelectedPath&&workspaceFiles[0]){workspaceSelectedPath=workspaceFiles[0].path;$("workspaceEditor").value=String(workspaceFiles[0].content||"");renderWorkspaceFiles();}
+}
+async function saveWorkspaceFile(){
+  const projectId=$("workspaceProject")?.value||currentProjectId||"", pathName=workspaceSelectedPath||prompt("مسار الملف الجديد (مثال: src/app.js):")||"";
+  if(!projectId||!pathName.trim()){showToast("اختر مشروعاً ومسار ملف.");return;}
+  try{await workspaceRequest({method:"POST",body:JSON.stringify({projectId,action:"write",path:pathName,content:$("workspaceEditor").value})});workspaceSelectedPath=pathName.trim().replace(/^\/+/,"");await loadWorkspaceFiles();showToast("تم حفظ الملف.");}catch(e){showToast(e.message||"تعذر حفظ الملف.");}
+}
+async function deleteWorkspaceFile(){
+  const projectId=$("workspaceProject")?.value||currentProjectId||""; if(!projectId||!workspaceSelectedPath)return;
+  if(!confirm("حذف الملف "+workspaceSelectedPath+"؟"))return;
+  try{await workspaceRequest({method:"POST",body:JSON.stringify({projectId,action:"delete",path:workspaceSelectedPath})});workspaceSelectedPath="";await loadWorkspaceFiles();showToast("تم حذف الملف.");}catch(e){showToast(e.message||"تعذر حذف الملف.");}
+}
+async function analyzeWorkspace(){
+  const projectId=$("workspaceProject")?.value||currentProjectId||""; if(!projectId)return;
+  try{const data=await workspaceRequest({method:"POST",body:JSON.stringify({projectId,action:"analyze"})});const a=data.analysis||{};$("workspaceAnalysis").classList.remove("hidden");$("workspaceAnalysis").textContent="الملفات: "+a.files+"\nJavaScript/JSON سليمة: "+(a.syntax_ok?"نعم":"لا")+"\nDependencies: "+(a.dependencies||[]).join(", ")+"\n\n"+(a.security||[]).map(x=>x.path+": "+x.findings.join(" | ")).join("\n");}catch(e){showToast(e.message||"تعذر فحص المشروع.");}
+}
 
 function renderCodingAgentProjects(){
   const select=$("codingAgentProject");
