@@ -69,6 +69,8 @@ function buildAizenCoreInstruction({ mode = "assistant", isBuild = false, userRe
     AIZEN_AGENT_CAPABILITIES,
     "قاعدة المعرفة الأساسية:",
     AIZEN_CORE_KNOWLEDGE,
+    "قاعدة معرفة إضافية:",
+    AIZEN_KNOWLEDGE_PACK.join("\n"),
     modeText,
     isBuild
       ? "هذا طلب بناء. الناتج يجب أن يكون مشروعاً حقيقياً مترابطاً وقابلاً للتطوير."
