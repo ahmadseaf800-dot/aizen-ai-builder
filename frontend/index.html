@@ -5,32 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Aizen AI Builder</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-/* Aizen fresh action layer: core controls use one delegated listener. */
-(function(){
-  const actions={
-    "attach":()=>typeof triggerFileUpload==="function"&&triggerFileUpload(),
-    "ai-mode":()=>typeof openAIModeModal==="function"&&openAIModeModal(),
-    "agent":()=>typeof openCodingAgentModal==="function"&&openCodingAgentModal(),
-    "workspace":()=>typeof openWorkspaceModal==="function"&&openWorkspaceModal(),
-    "build":()=>typeof openBuildTypeModal==="function"&&openBuildTypeModal(),
-    "stop":()=>typeof stopGeneration==="function"&&stopGeneration(),
-    "send":()=>typeof sendMessage==="function"&&sendMessage(),
-    "new-chat":()=>typeof newChat==="function"&&newChat(),
-    "tab-chats":()=>typeof showSidebarTab==="function"&&showSidebarTab("chats"),
-    "tab-projects":()=>typeof showSidebarTab==="function"&&showSidebarTab("projects")
-  };
-  document.addEventListener("click",function(event){
-    const button=event.target.closest("[data-aizen-action]");
-    if(!button||button.disabled)return;
-    const action=actions[button.dataset.aizenAction];
-    if(!action)return;
-    event.preventDefault();
-    event.stopPropagation();
-    try{action();}catch(error){console.error("AIZEN ACTION ERROR:",button.dataset.aizenAction,error);showToast("تعذر تنفيذ هذا الزر حالياً.");}
-  },true);
-})();
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 *{box-sizing:border-box}
@@ -3747,40 +3722,51 @@ loadSiteLanguage();
 <script>
 (function(){
   "use strict";
-  /* Aizen UI Bridge v7: one delegated touch/click path, no duplicate handlers. */
+  /* Aizen UI Action Layer v8: fresh delegated controls. */
   const actions={
-    sendButton:"sendMessage", stopButton:"stopGeneration", buildButton:"openBuildTypeModal",
-    aiModeButton:"openAIModeModal", codingAgentButton:"openCodingAgentModal"
+    attach:()=>window.triggerFileUpload?.(),
+    "ai-mode":()=>window.openAIModeModal?.(),
+    agent:()=>window.openCodingAgentModal?.(),
+    workspace:()=>window.openWorkspaceModal?.(),
+    build:()=>window.openBuildTypeModal?.(),
+    stop:()=>window.stopGeneration?.(),
+    send:()=>window.sendMessage?.(),
+    "new-chat":()=>window.newChat?.(),
+    "tab-chats":()=>window.showSidebarTab?.("chats"),
+    "tab-projects":()=>window.showSidebarTab?.("projects")
   };
-  function call(id){
-    const fn=window[actions[id]];
-    if(typeof fn!=="function"){
-      console.error("Aizen UI action unavailable:",id);
-      if(typeof window.showToast==="function") window.showToast("تعذر تشغيل هذا الزر. أعد تحميل الصفحة.");
-      return;
+  function invoke(button){
+    const name=button?.dataset?.aizenAction;
+    const action=actions[name];
+    if(!action || button.disabled || button.getAttribute("aria-disabled")==="true") return;
+    try{
+      const result=action();
+      if(result && typeof result.catch==="function")
+        result.catch(error=>console.error("AIZEN ACTION ERROR:",name,error));
+    }catch(error){
+      console.error("AIZEN ACTION ERROR:",name,error);
+      window.showToast?.("تعذر تنفيذ الزر حالياً.");
     }
-    try{ const out=fn(); if(out&&typeof out.catch==="function") out.catch(e=>console.error("Aizen UI action failed:",id,e)); }
-    catch(e){ console.error("Aizen UI action failed:",id,e); }
   }
-  function bind(){
-    Object.keys(actions).forEach(id=>{
-      const el=document.getElementById(id);
-      if(!el||el.dataset.aizenUiV7==="1")return;
-      el.dataset.aizenUiV7="1";
-      el.removeAttribute("onclick");
-      el.setAttribute("type","button");
-      el.style.pointerEvents="auto";
-      el.style.touchAction="manipulation";
-      el.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();call(id);},{passive:false});
+  document.addEventListener("click",function(event){
+    const button=event.target.closest("button[data-aizen-action]");
+    if(!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    invoke(button);
+  },true);
+  document.querySelectorAll("button").forEach(button=>{
+    if(!button.getAttribute("type")) button.setAttribute("type","button");
+    button.style.pointerEvents="auto";
+    button.style.touchAction="manipulation";
+  });
+  window.AizenUI={version:"8",ready:true,invoke,rebind:function(){
+    document.querySelectorAll("button").forEach(button=>{
+      if(!button.getAttribute("type")) button.setAttribute("type","button");
+      button.style.pointerEvents="auto";
+      button.style.touchAction="manipulation";
     });
-    document.querySelectorAll("button").forEach(el=>{
-      if(!el.getAttribute("type"))el.setAttribute("type","button");
-      el.style.touchAction="manipulation";
-    });
-  }
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bind,{once:true});
-  else bind();
-  window.AizenUI={version:"7",ready:true,rebind:bind};
+  }};
 })();
 </script>
 
