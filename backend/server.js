@@ -1427,129 +1427,136 @@ async function handleCodingAgent(req, res, user) {
     data = await readJsonBody(req, res, 2 * 1024 * 1024);
   } catch (error) {
     sendJson(res, error.message === "REQUEST_TOO_LARGE" ? 413 : 400, {
-      success: false,
-      error: error.message === "REQUEST_TOO_LARGE" ? "REQUEST_TOO_LARGE" : "INVALID_JSON",
-      message: "البيانات المرسلة غير صحيحة"
+      success:false,
+      error:error.message === "REQUEST_TOO_LARGE" ? "REQUEST_TOO_LARGE" : "INVALID_JSON",
+      message:"البيانات المرسلة غير صحيحة"
     });
     return;
   }
 
-  const projectId = String(data.projectId || "").trim();
-  const conversationId = String(data.conversationId || "").trim();
-  const instruction = String(data.instruction || "").trim();
-  if (!projectId || !instruction) {
-    sendJson(res, 400, { success:false, error:"AGENT_FIELDS_REQUIRED", message:"المشروع وتعليمات الوكيل مطلوبة" });
+  const projectId=String(data.projectId||"").trim();
+  const conversationId=String(data.conversationId||"").trim();
+  const instruction=String(data.instruction||"").trim();
+  if(!projectId||!instruction){
+    sendJson(res,400,{success:false,error:"AGENT_FIELDS_REQUIRED",message:"المشروع وتعليمات الوكيل مطلوبة"});
     return;
   }
 
   try {
-    const token = getBearerToken(req);
-    const projectRows = await supabaseRequest("GET",
-      "/rest/v1/projects?id=eq." + encodeURIComponent(projectId) + "&user_id=eq." + encodeURIComponent(user.id) + "&select=id,name,type,description,status&limit=1",
-      token);
-    if (!Array.isArray(projectRows) || !projectRows.length) {
-      sendJson(res, 404, {success:false,error:"PROJECT_NOT_FOUND",message:"المشروع غير موجود أو لا تملك صلاحية الوصول إليه"});
+    const token=getBearerToken(req);
+    const projectRows=await supabaseRequest(
+      "GET",
+      "/rest/v1/projects?id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id)+"&select=id,name,type,description,status&limit=1",
+      token
+    );
+    if(!Array.isArray(projectRows)||!projectRows.length){
+      sendJson(res,404,{success:false,error:"PROJECT_NOT_FOUND",message:"المشروع غير موجود أو لا تملك صلاحية الوصول إليه"});
       return;
     }
 
-    const projectFiles = await supabaseRequest("GET",
-      "/rest/v1/project_files?project_id=eq." + encodeURIComponent(projectId) + "&user_id=eq." + encodeURIComponent(user.id) + "&select=path,content,file_type,size_bytes&order=path.asc&limit=2000",
-      token);
-    const files = Array.isArray(projectFiles) ? projectFiles : [];
-    const project = projectRows[0];
-    const context = compactProjectFiles(files, 400000);
-    let conversationContext = "(لا توجد محادثة مرتبطة بالوكيل)";
-    if (conversationId) {
-      try {
-        const agentConversation = await getConversation(token, conversationId, user.id);
-        const agentMessages = await getConversationMessages(token, conversationId);
-        conversationContext = agentMessages.slice(-200).map(m => "[" + (m.role === "assistant" ? "AIZEN" : "USER") + "]\n" + String(m.content || "")).join("\n\n").slice(-120000) || "(المحادثة فارغة)";
-      } catch (conversationError) {
-        console.error("CODING AGENT CONVERSATION CONTEXT ERROR:", conversationError.message);
+    const projectFiles=await supabaseRequest(
+      "GET",
+      "/rest/v1/project_files?project_id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id)+"&select=path,content,file_type,size_bytes&order=path.asc&limit=500",
+      token
+    );
+    const files=Array.isArray(projectFiles)?projectFiles:[];
+    const project=projectRows[0];
+
+    // Keep builds fast: send only the useful project context to the model.
+    const context=compactProjectFiles(files,180000);
+    let conversationContext="(لا توجد محادثة مرتبطة بالوكيل)";
+    if(conversationId){
+      try{
+        const agentMessages=await getConversationMessages(token,conversationId);
+        conversationContext=agentMessages
+          .slice(-40)
+          .map(m=>"["+(m.role==="assistant"?"AIZEN":"USER")+"]\n"+String(m.content||""))
+          .join("\n\n")
+          .slice(-50000)||"(المحادثة فارغة)";
+      }catch(error){
+        console.error("CODING AGENT CONVERSATION CONTEXT ERROR:",error.message);
       }
     }
 
-    const firstPrompt = [
-      buildAizenCoreInstruction({ mode:"builder", isBuild:true, userRequest: instruction }),
-      "أنت Aizen Coding Agent. نفّذ: تحليل المتطلبات ثم خطة مختصرة ثم تعديل الملفات ثم مراجعة ذاتية.",
-      "لا تكسر الوظائف الموجودة. لا تحذف ملفات إلا إذا طلب المستخدم ذلك.",
-      "طلب المستخدم:", instruction,
-      "قاعدة معرفة Aizen الأساسية:", AIZEN_CORE_KNOWLEDGE,
-      "صلاحيات الوكيل ضمن هذا الطلب:", AIZEN_AGENT_CAPABILITIES,
-      "سياق المحادثة المرتبطة:", conversationContext,
-      "اسم المشروع:", project.name,
-      "النوع:", project.type || "custom",
-      "الوصف:", project.description || "",
-      "الملفات الحالية:", context || "(لا توجد ملفات محفوظة بعد)",
-      "أخرج فقط الملفات الجديدة أو المعدلة بصيغة FILE: path ثم code fence ومحتوى الملف الكامل.",
-      "إذا لا يوجد تغيير ضروري أخرج NO_CHANGES فقط. لا تضع أسراراً حقيقية. لا تدّعي تشغيل الاختبارات فعلياً.",
-      "راجع syntax وimports والمسارات والحالة والأمان قبل الإخراج."
+    const prompt=[
+      buildAizenCoreInstruction({mode:"builder",isBuild:true,userRequest:instruction}),
+      "أنت Aizen Coding Agent. ابنِ المشروع فعلياً.",
+      "نفّذ داخلياً: تحليل المتطلبات → خطة → كتابة الملفات → مراجعة نهائية.",
+      "لا تشرح الكود للمستخدم ولا تطبع كوداً خارج ملفات FILE.",
+      "أخرج فقط الملفات الجديدة أو المعدلة. كل ملف يجب أن يكون كاملاً:",
+      "FILE: path/to/file.ext ثم code fence ثم محتوى الملف.",
+      "لا تحذف ملفات موجودة إلا إذا طلب المستخدم ذلك.",
+      "حافظ على الوظائف الحالية ولا تغيّر الواجهة بلا سبب.",
+      "للمواقع: ابنِ واجهة مكتملة قابلة للاستخدام، وليست صفحة فارغة أو مجرد نموذج.",
+      "للبوتات: استخدم متغير البيئة المناسب للتوكن ولا تضع التوكن داخل الملفات.",
+      "لا تدّعي تشغيل المشروع. راجع syntax/imports/routes/state/security داخلياً قبل الإخراج.",
+      "إذا كان الطلب واضحاً لا تسأل أسئلة إضافية؛ اختر افتراضات معقولة.",
+      "لا تستخدم FILE لمسارات خارج المشروع أو تحتوي ..",
+      "طلب المستخدم:",instruction,
+      "سياق المحادثة:",conversationContext,
+      "المشروع:",project.name,
+      "نوع المشروع:",project.type||"custom",
+      "وصف المشروع:",project.description||"",
+      "الملفات الحالية:",context||"(لا توجد ملفات بعد)",
+      "قاعدة معرفة Aizen:",AIZEN_CORE_KNOWLEDGE,
+      "قدرات الوكيل:",AIZEN_AGENT_CAPABILITIES
     ].join("\n");
 
-    const firstPass = await runAIToText(firstPrompt, true, []);
-    if (!firstPass || firstPass === "NO_CHANGES") {
-      sendJson(res, 200, {success:true,changed:0,stage:"reviewed",message:"حلّل Aizen المشروع ولم يجد تغييرات ضرورية."});
+    const result=await runAIToText(prompt,true,[]);
+    if(!result||result.trim()==="NO_CHANGES"){
+      sendJson(res,200,{success:true,changed:0,stage:"analyzed_reviewed",message:"راجع Aizen الطلب والمشروع ولم يجد تغييرات ضرورية."});
       return;
     }
 
-    const proposed = extractAgentFileBlocks(firstPass);
-    if (!proposed.length) {
-      sendJson(res, 422, {success:false,error:"AGENT_NO_FILE_BLOCKS",message:"لم يُرجع الوكيل ملفات قابلة للتطبيق."});
-      return;    }
+    const finalFiles=extractAgentFileBlocks(result)
+      .filter(file=>file.path&&!file.path.includes(".."))
+      .slice(0,40);
 
-    const proposedContext = compactProjectFiles(proposed, 120000);
-    const reviewPrompt = [
-      "أنت المراجع النهائي داخل Aizen Coding Agent.",
-      "راجع التعديلات المقترحة مقارنة بطلب المستخدم والملفات الحالية.",
-      "صحح syntax/import/path/state/security/regression problems.",
-      "أعد فقط النسخة النهائية الكاملة للملفات التي يجب إنشاؤها أو تعديلها.",
-      "إذا كانت سليمة أعدها كما هي. لا تضف أسراراً حقيقية.",
-      "قاعدة معرفة Aizen الأساسية:", AIZEN_CORE_KNOWLEDGE,
-      "صلاحيات الوكيل ضمن هذا الطلب:", AIZEN_AGENT_CAPABILITIES,
-      "طلب المستخدم:", instruction,
-      "سياق المحادثة المرتبطة:", conversationContext,
-      "الملفات الحالية:", context || "(لا توجد ملفات محفوظة بعد)",
-      "التعديلات المقترحة:", proposedContext
-    ].join("\n");
-
-    const reviewed = await runAIToText(reviewPrompt, true, []);
-    const finalFiles = extractAgentFileBlocks(reviewed || firstPass);
-    if (!finalFiles.length) {
-      sendJson(res, 422, {success:false,error:"AGENT_REVIEW_NO_FILES",message:"فشلت المراجعة في إنتاج ملفات قابلة للتطبيق، ولم يتم تغيير المشروع."});
+    if(!finalFiles.length){
+      sendJson(res,422,{success:false,error:"AGENT_NO_FILE_BLOCKS",message:"لم يُرجع الوكيل ملفات قابلة للتطبيق. لم يتم تغيير المشروع."});
       return;
     }
 
-    const rows = finalFiles.map(file => ({
-      project_id: projectId,
-      user_id: user.id,
-      path: file.path,
-      content: file.content,
-      file_type: file.file_type,
-      size_bytes: file.size_bytes,
-      updated_at: new Date().toISOString()
+    const rows=finalFiles.map(file=>({
+      project_id:projectId,
+      user_id:user.id,
+      path:file.path,
+      content:file.content,
+      file_type:file.file_type,
+      size_bytes:file.size_bytes,
+      updated_at:new Date().toISOString()
     }));
 
-    const saved = await supabaseRequest("POST",
+    const saved=await supabaseRequest(
+      "POST",
       "/rest/v1/project_files?on_conflict=project_id%2Cpath",
-      token, rows, { "Prefer": "resolution=merge-duplicates,return=representation" });
+      token,
+      rows,
+      {"Prefer":"resolution=merge-duplicates,return=representation"}
+    );
 
-    await supabaseRequest("PATCH",
-      "/rest/v1/projects?id=eq." + encodeURIComponent(projectId) + "&user_id=eq." + encodeURIComponent(user.id),
-      token, {status:"ready",updated_at:new Date().toISOString()});
+    await supabaseRequest(
+      "PATCH",
+      "/rest/v1/projects?id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id),
+      token,
+      {status:"ready",updated_at:new Date().toISOString()}
+    );
 
-    sendJson(res, 200, {
+    sendJson(res,200,{
       success:true,
       changed:finalFiles.length,
       files:finalFiles.map(file=>file.path),
       stage:"analyzed_planned_edited_reviewed",
-      saved:Array.isArray(saved) ? saved.length : finalFiles.length
+      saved:Array.isArray(saved)?saved.length:finalFiles.length,
+      response_chars:result.length
     });
-  } catch (error) {
-    console.error("CODING AGENT ERROR:", error);
-    if (!res.headersSent) sendJson(res, 500, {success:false,error:"CODING_AGENT_ERROR",message:"تعذر تشغيل وكيل البرمجة. لم يتم تطبيق التعديل."});
+  }catch(error){
+    console.error("CODING AGENT ERROR:",error);
+    if(!res.headersSent){
+      sendJson(res,500,{success:false,error:"CODING_AGENT_ERROR",message:"تعذر تشغيل وكيل البرمجة. لم يتم تطبيق التعديل."});
+    }
   }
 }
-
 
 async function handleAizenFeature(req,res,user){
   let data;
@@ -1744,48 +1751,61 @@ function encryptSecret(value) {
 }
 
 async function verifyBotToken(type, value) {
-  const token = String(value || "").trim();
-  if (!token) return { valid: false, message: "التوكن مطلوب." };
+  const token=String(value||"").trim().replace(/\\s+/g,"");
+  if(!token) return {valid:false,message:"التوكن مطلوب."};
 
-  if (type === "telegram_bot") {
-    const safeToken = encodeURIComponent(token);
-    const url = new URL("https://api.telegram.org/bot" + safeToken + "/getMe");
-    const response = await httpsRequest({
-      hostname: url.hostname,
-      port: 443,
-      path: url.pathname,
-      method: "GET",
-      headers: { Accept: "application/json" }
-    }, null, 10000);
-    let data = null;
-    try { data = JSON.parse(response.body); } catch {}
-    if (response.statusCode === 200 && data?.ok === true && data?.result?.is_bot === true) {
-      return { valid: true, bot: { id: data.result.id, username: data.result.username || "", name: data.result.first_name || "" } };
+  if(type==="telegram_bot"){
+    if(!/^\\d{5,15}:[A-Za-z0-9_-]{20,}$/.test(token)){
+      return {valid:false,message:"صيغة توكن Telegram غير صحيحة. انسخ التوكن كاملاً من @BotFather مثل 123456789:AA... بدون مسافات."};
     }
-    return { valid: false, message: "هذا ليس توكن Telegram صالحاً لبوت. أنشئ التوكن من @BotFather ثم جرّبه مرة أخرى." };
+    const safeToken=encodeURIComponent(token);
+    const url=new URL("https://api.telegram.org/bot"+safeToken+"/getMe");
+    const response=await httpsRequest({
+      hostname:url.hostname,
+      port:443,
+      path:url.pathname,
+      method:"GET",
+      headers:{Accept:"application/json"}
+    },null,10000);
+
+    let data=null;
+    try{data=JSON.parse(response.body);}catch{}
+
+    if(response.statusCode===200&&data?.ok===true&&data?.result?.is_bot===true){
+      return {valid:true,bot:{id:data.result.id,username:data.result.username||"",name:data.result.first_name||""}};
+    }
+
+    const telegramDescription=String(data?.description||"").trim();
+    if(response.statusCode===401){
+      return {valid:false,message:"Telegram رفض التوكن (401). تأكد أنك نسخت التوكن الحالي من @BotFather ولم تقم بإلغائه أو إعادة توليده."};
+    }
+    return {valid:false,message:telegramDescription||("تعذر اعتماد توكن Telegram (HTTP "+response.statusCode+"). حاول مرة أخرى.")};
   }
 
-  if (type === "discord_bot") {
-    const url = new URL("https://discord.com/api/v10/users/@me");
-    const response = await httpsRequest({
-      hostname: url.hostname,
-      port: 443,
-      path: url.pathname,
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        Authorization: "Bot " + token
-      }
-    }, null, 10000);
-    let data = null;
-    try { data = JSON.parse(response.body); } catch {}
-    if (response.statusCode === 200 && data?.id) {
-      return { valid: true, bot: { id: data.id, username: data.username || "", name: data.global_name || data.username || "" } };
+  if(type==="discord_bot"){
+    const url=new URL("https://discord.com/api/v10/users/@me");
+    const response=await httpsRequest({
+      hostname:url.hostname,
+      port:443,
+      path:url.pathname,
+      method:"GET",
+      headers:{Accept:"application/json",Authorization:"Bot "+token}
+    },null,10000);
+
+    let data=null;
+    try{data=JSON.parse(response.body);}catch{}
+
+    if(response.statusCode===200&&data?.id){
+      return {valid:true,bot:{id:data.id,username:data.username||"",name:data.global_name||data.username||""}};
     }
-    return { valid: false, message: "هذا ليس توكن Discord صالحاً لبوت. أنشئ توكن البوت من Discord Developer Portal ثم جرّبه مرة أخرى." };
+
+    if(response.statusCode===401){
+      return {valid:false,message:"Discord رفض التوكن (401). تأكد أنك نسخت Bot Token من Developer Portal وليس Client ID أو Client Secret."};
+    }
+    return {valid:false,message:String(data?.message||"تعذر اعتماد توكن Discord.")};
   }
 
-  return { valid: false, message: "نوع البوت غير مدعوم." };
+  return {valid:false,message:"نوع البوت غير مدعوم."};
 }
 
 async function handleVerifyBotToken(req, res, user) {
