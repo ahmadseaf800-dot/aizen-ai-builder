@@ -265,8 +265,16 @@
   }
   async function checkOwner(){
     if(!user||typeof window.supabaseClient==="undefined")return false;
-    try{const {data}=await supabaseClient.rpc("is_owner",{p_user_id:user.id});owner=!!data}catch(e){owner=false}
+    const allowedEmail="Ahmadseaf800@gmail.com";
+    const emailAllowed=String(user.email||"").toLowerCase()===allowedEmail.toLowerCase();
+    try{
+      const {data}=await supabaseClient.rpc("is_owner",{p_user_id:user.id});
+      owner=!!data && emailAllowed;
+    }catch(e){
+      owner=false;
+    }
     const b=$("aizenOwnerBtn");if(b)b.classList.toggle("hidden",!owner);
+    const v2=$("aizenV2Owner");if(v2)v2.classList.toggle("hidden",!owner);
     return owner;
   }
   async function ownerDashboard(){
