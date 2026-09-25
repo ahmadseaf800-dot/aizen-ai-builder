@@ -3563,10 +3563,13 @@ $("messageInput")
 
       if(
         event.key === "Enter" &&
-        !event.shiftKey
+        !event.shiftKey &&
+        event.target &&
+        event.target.id === "messageInput"
       ){
 
         event.preventDefault();
+        event.stopPropagation();
 
         sendMessage();
       }
@@ -3702,7 +3705,13 @@ async function runAgent(){
       button.addEventListener("click",async event=>{
         if(button.disabled)return;
         event.preventDefault();
-        try{await action();}
+        event.stopPropagation();
+        try{
+          if(button.id==="sendButton") return await sendMessage();
+          if(button.id==="buildButton") return await openBuildTypeModal();
+          if(button.id==="stopButton") return await stopGeneration();
+          await action();
+        }
         catch(error){
           console.error("AIZEN ACTION ERROR",error);
           if(typeof showToast==="function")showToast("تعذر تنفيذ الزر حالياً.");
