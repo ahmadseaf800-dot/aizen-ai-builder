@@ -100,7 +100,7 @@ const newCreate = `async function handleCreate(req, res, user) {
   catch (error) { sendJson(res, error.message === "REQUEST_TOO_LARGE" ? 413 : 400, { success:false, error:error.message === "REQUEST_TOO_LARGE" ? "REQUEST_TOO_LARGE" : "INVALID_JSON", message:"البيانات المرسلة غير صحيحة" }); return; }
   const idea = String(data.idea || data.message || data.description || "").trim();
   const type = String(data.type || "Web").trim();
-  const name = String(data.name || "").trim().slice(0,120) || idea.split(/\\s+/).slice(0,6).join(" ") || "Aizen Project";
+  const name = String(data.name || "").trim().slice(0,120) || idea.split(/\s+/).slice(0,6).join(" ") || "Aizen Project";
   if (!idea) { sendJson(res,400,{success:false,error:"IDEA_REQUIRED",message:"فكرة المشروع مطلوبة"}); return; }
   const token = getBearerToken(req);
   try {
@@ -125,14 +125,13 @@ server = server.replace(
   'if (method === "POST" && pathname === "/api/direct-link") { const user = await requireAuth(req, res); if (!user) return; await handleDirectLink(req, res, user); return; }\n\n  if (method === "POST" && pathname === "/api/agent/plan") { const user = await requireAuth(req, res); if (!user) return; await handleAgentPlan(req, res, user); return; }\n\n  if (method === "POST" && pathname === "/api/agent/verify") { const user = await requireAuth(req, res); if (!user) return; await handleAgentVerify(req, res, user); return; }\n\n  if (method === "POST" && pathname === "/api/agent/command-check") { const user = await requireAuth(req, res); if (!user) return; await handleSafeCommandCheck(req, res, user); return; }\n\n  if (method === "POST" && pathname === "/api/owner/self-improve") { const user = await requireAuth(req, res); if (!user) return; await handleOwnerSelfImprove(req, res, user); return; }\n\n  if (method === "POST" && pathname === "/api/features") {'
 );
 
-// Fresh interaction controls: ensure dynamically-created buttons remain functional and user bubbles disappear after send.
 const interactionMarker = 'function start(){';
 const interactionPatch = `function installAizenButtonFallbacks(){
   const selectors=[
-    ["[data-aizen-action=\\"build\\"]",()=>call("openBuildTypeModal")],
-    ["[data-aizen-action=\\"send\\"]",send],
-    ["[data-aizen-action=\\"newline\\"]",()=>{ensureNewlineButton();getComposer()?.focus();}],
-    ["[data-aizen-action=\\"agent\\"]",()=>call("openAgentModal")]
+    ["[data-aizen-action=\"build\"]",()=>call("openBuildTypeModal")],
+    ["[data-aizen-action=\"send\"]",send],
+    ["[data-aizen-action=\"newline\"]",()=>{ensureNewlineButton();getComposer()?.focus();}],
+    ["[data-aizen-action=\"agent\"]",()=>call("openAgentModal")]
   ];
   for(const [selector,fn] of selectors){document.querySelectorAll(selector).forEach(el=>{if(el.dataset.aizenHardBound==="1")return;el.dataset.aizenHardBound="1";el.addEventListener("click",async e=>{if(el.disabled)return;e.preventDefault();e.stopImmediatePropagation();try{await fn();}catch(err){console.error("AIZEN HARD BUTTON",err);toast("تعذر تنفيذ الزر حالياً.");}},true);});}
 }
@@ -144,4 +143,3 @@ interaction = interaction.replace('const observer=new MutationObserver(()=>{bind
 fs.writeFileSync(serverPath, server);
 fs.writeFileSync(interactionPath, interaction);
 console.log("Aizen integration patch applied successfully.");
-EOF
