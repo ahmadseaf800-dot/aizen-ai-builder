@@ -39,7 +39,8 @@ const AIZEN_OWNER_EMAIL_NORMALIZED = AIZEN_OWNER_EMAIL.toLowerCase();
 function isAizenOwner(user) { return String(user?.email || "").trim().toLowerCase() === AIZEN_OWNER_EMAIL_NORMALIZED; }
 const SECRET_ENCRYPTION_KEY = String(process.env.SECRET_ENCRYPTION_KEY || "");
 const AI_MAX_MESSAGE_CHARS = Number(process.env.AI_MAX_MESSAGE_CHARS || 500000);
-const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES || 200);
+const AI_CONTEXT_MESSAGES = Number(process.env.AI_CONTEXT_MESSAGES || 60);
+const AI_PROVIDER_CONTEXT_CHARS = Number(process.env.AI_PROVIDER_CONTEXT_CHARS || 90000);
 
 // Aizen deployment safety: keep this file as plain JavaScript source; never inject escaped source text.
 
@@ -82,7 +83,7 @@ function buildAiSystemInstruction(message, isBuild, authContext = null) {
         "في البرمجة: لا تختلق APIs أو مكتبات أو خصائص غير مؤكدة، وفضّل حلولاً كاملة قابلة للتطبيق.",
         "عند وجود كود أو خطأ: حلل السبب، ثم قدم الإصلاح، ثم تحقق من الآثار الجانبية نظرياً.",
         "احترم خصوصية الأسرار ولا تطلب من المستخدم نشر مفاتيح أو توكنات سرية.",
-        "In normal chat, do not output code, files, or code fences unless the user explicitly asks for code. Project building is performed only through the Build action; do not silently turn normal chat into a build.",
+        "In normal chat, never emit raw source code, FILE blocks, XML, JSON tool calls, <tool_use> tags, pseudo-tools, or fake Build actions unless the user explicitly asks for code or the UI has invoked the real Build endpoint.",
         "إذا كانت المعلومة غير مؤكدة، صرّح بذلك بدلاً من اختلاقها.",
         "أسلوب الرد: ابدأ بالجواب المباشر، ثم السبب، ثم الحل. استخدم أمثلة قصيرة فقط عند الحاجة. لا تكرر السؤال ولا تملأ الرد بمعلومات لا تساعد على حل المشكلة.",
         "عند شرح خطأ برمجي: اذكر معنى الخطأ ببساطة، ثم السبب الأقرب، ثم الحل، ثم كيف نتحقق أنه انحل. لا تفترض تقنية لم يذكرها المستخدم.",
@@ -754,6 +755,29 @@ async function getConversationMessages(accessToken, conversationId) {
 /*
  * Convert DB messages into Gemini history.
  */
+function compactAiPrompt(text, maxChars = AI_PROVIDER_CONTEXT_CHARS) {
+  const source = String(text || "");
+  if (source.length <= maxChars) return source;
+  const head = Math.floor(maxChars * 0.58);
+  const tail = Math.max(1000, maxChars - head);
+  return source.slice(0, head) + "\n\n[AI CONTEXT TRIMMED FOR PROVIDER LIMITS]\n\n" + source.slice(-tail);
+}
+
+function compactAiHistory(history, maxChars = 60000, maxMessages = 40) {
+  const items = Array.isArray(history) ? history.filter((m) => m && m.content).slice(-maxMessages) : [];
+  let total = 0;
+  const kept = [];
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    const content = compactAiPrompt(String(item.content || ""), Math.min(18000, maxChars));
+    const size = content.length;
+    if (total + size > maxChars && kept.length) break;
+    kept.unshift({ ...item, content });
+    total += size;
+  }
+  return kept;
+}
+
 function buildGeminiInput(messages, currentMessage) {
   const history = [];
 
@@ -1089,12 +1113,13 @@ function askGroqStream(currentMessage, res, isBuild, history = [], fallbackProvi
       return;
     }
 
-    const messages = history.filter((m) => m && m.content).map((m) => ({
+    const safeHistory = compactAiHistory(history);
+    const messages = safeHistory.map((m) => ({
       role: m.role === "model" ? "assistant" : "user",
-      content: String(m.content),
+      content: compactAiPrompt(String(m.content)),
     }));
 
-    const text = String(currentMessage || "").trim();
+    const text = compactAiPrompt(String(currentMessage || "").trim());
     if (text) {
       const last = messages[messages.length - 1];
       if (!(last && last.role === "user" && String(last.content || "").trim() === text)) {
@@ -1102,12 +1127,13 @@ function askGroqStream(currentMessage, res, isBuild, history = [], fallbackProvi
       }
     }
 
+    const safeRequest = compactAiPrompt(String(currentMessage || "").trim());
     const payload = JSON.stringify({
       model: GROQ_MODEL,
       stream: true,
       messages: [        {
           role: "system",
-          content: buildAizenCoreInstruction({ mode: getAiMode(currentMessage, isBuild).mode, isBuild, userRequest: currentMessage, ownerVerified }),
+          content: buildAizenCoreInstruction({ mode: getAiMode(safeRequest, isBuild).mode, isBuild, userRequest: safeRequest, ownerVerified }),
         },
         ...messages,
       ],
@@ -1129,8 +1155,16 @@ function askGroqStream(currentMessage, res, isBuild, history = [], fallbackProvi
     }, payload, 120000).then((response) => {
       if (response.statusCode < 200 || response.statusCode >= 300) {
         console.error("GROQ API ERROR:", response.statusCode);
+        // 413 means the provider rejected the context size. Retry with a much smaller
+        // request before giving up; 429 is routed to another provider as well.
+        if (response.statusCode === 413 && GEMINI_API_KEY) {
+          const reducedHistory = compactAiHistory(history, 24000, 20);
+          const reducedRequest = compactAiPrompt(String(currentMessage || "").trim(), 50000);
+          askGeminiStream(reducedRequest, res, isBuild, reducedHistory, null, 0, fallbackProvider === "gemini" ? null : "gemini", ownerVerified).then(resolve);
+          return;
+        }
         if (fallbackProvider) {
-          askProviderFallback(fallbackProvider, currentMessage, res, isBuild, history).then(resolve);
+          askProviderFallback(fallbackProvider, currentMessage, res, isBuild, history, ownerVerified).then(resolve);
           return;
         }
         if (!res.headersSent) sendJson(res, 502, {
