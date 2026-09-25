@@ -216,4 +216,103 @@
     window.aizenInteractionRuntime="v6";
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
+}
+)();
+/* AIZEN MONETIZATION + OWNER + MARKETPLACE UI */
+(function(){
+  "use strict";
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+  const money=(c,cur="USD")=>(Number(c||0)/100).toFixed(2)+" "+cur;
+  let booted=false, owner=false, user=null;
+
+  function css(){
+    if($("aizen-money-style"))return;
+    const s=document.createElement("style");s.id="aizen-money-style";s.textContent=`
+      .aizen-money-bar{display:flex;gap:7px;align-items:center;margin:8px 12px;flex-wrap:wrap}
+      .aizen-money-pill,.aizen-money-btn{border:1px solid var(--aizen-border,#30343e);background:var(--aizen-surface,#15181f);color:var(--aizen-text,#fff);border-radius:9px;padding:8px 10px;font-size:11px}
+      .aizen-money-btn{cursor:pointer}.aizen-money-btn:hover{border-color:var(--aizen-accent,#6d5dfc)}
+      .aizen-money-panel{position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.76);display:flex;align-items:center;justify-content:center;padding:16px}
+      .aizen-money-box{width:min(980px,100%);max-height:88vh;overflow:auto;background:var(--aizen-surface,#101218);color:var(--aizen-text,#fff);border:1px solid var(--aizen-border,#30343e);border-radius:18px;padding:18px}
+      .aizen-money-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:15px}.aizen-money-head h2{margin:0;font-size:20px}
+      .aizen-money-close{border:0;background:transparent;color:inherit;font-size:24px;cursor:pointer}
+      .aizen-money-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.aizen-money-card{padding:12px;border:1px solid var(--aizen-border,#30343e);border-radius:12px;background:var(--aizen-card,#15181f)}.aizen-money-card b{font-size:19px;display:block}.aizen-money-card span{color:var(--aizen-muted,#858b97);font-size:10px}
+      .aizen-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.aizen-list-card{border:1px solid var(--aizen-border,#30343e);border-radius:13px;padding:13px;background:var(--aizen-card,#15181f)}.aizen-list-card h3{margin:0 0 7px;font-size:14px}.aizen-list-card p{color:var(--aizen-muted,#858b97);font-size:11px;min-height:34px}.aizen-price{font-size:17px;font-weight:800;margin:9px 0}
+      .aizen-money-input{width:100%;padding:10px;border:1px solid var(--aizen-border,#30343e);border-radius:9px;background:var(--aizen-card,#15181f);color:inherit;margin:5px 0 10px}
+      .aizen-primary{background:var(--aizen-accent,#6d5dfc)!important;color:#fff!important;border-color:var(--aizen-accent,#6d5dfc)!important}
+      @media(max-width:700px){.aizen-money-grid{grid-template-columns:1fr 1fr}.aizen-list{grid-template-columns:1fr}}
+    `;document.head.appendChild(s);
+  }
+  function panel(title,body){
+    const p=document.createElement("div");p.className="aizen-money-panel";p.innerHTML=`<div class="aizen-money-box"><div class="aizen-money-head"><h2>${title}</h2><button class="aizen-money-close">×</button></div><div class="aizen-money-body">${body}</div></div>`;
+    p.addEventListener("click",e=>{if(e.target===p||e.target.closest(".aizen-money-close"))p.remove()});document.body.appendChild(p);return p;
+  }
+  async function session(){
+    if(typeof window.supabaseClient==="undefined")return null;
+    const s=await window.supabaseClient.auth.getSession();return s?.data?.session||null;
+  }
+  async function refreshUser(){
+    user=window.currentUser||null;if(!user){const s=await session();user=s?.user||null}
+    if(!user||typeof window.supabaseClient==="undefined")return;
+    try{
+      const [{data:cred},{data:sub}]=await Promise.all([
+        supabaseClient.from("user_credits").select("balance,lifetime_earned,lifetime_spent").eq("user_id",user.id).maybeSingle(),
+        supabaseClient.from("user_subscriptions").select("status,plan_id").eq("user_id",user.id).in("status",["active","trialing"]).maybeSingle()
+      ]);
+      const pill=$("aizenCreditsPill");if(pill)pill.textContent="🪙 "+Number(cred?.balance||0)+" Credits";
+      const pro=$("aizenProPill");if(pro)pro.textContent=sub?"⭐ Pro":"Free";
+    }catch(e){console.warn("Aizen monetization refresh",e)}
+  }
+  async function checkOwner(){
+    if(!user||typeof window.supabaseClient==="undefined")return false;
+    try{const {data}=await supabaseClient.rpc("is_owner",{p_user_id:user.id});owner=!!data}catch(e){owner=false}
+    const b=$("aizenOwnerBtn");if(b)b.classList.toggle("hidden",!owner);
+    return owner;
+  }
+  async function ownerDashboard(){
+    if(!(await checkOwner()))return;
+    const p=panel("👑 لوحة المالك",'<div id="aizenOwnerContent">جاري تحميل البيانات...</div>');
+    try{
+      const {data,error}=await supabaseClient.from("owner_dashboard_summary").select("*").single();if(error)throw error;
+      const d=data||{};p.querySelector("#aizenOwnerContent").innerHTML=`
+        <div class="aizen-money-grid">
+          <div class="aizen-money-card"><b>${Number(d.total_users||0)}</b><span>المستخدمون</span></div>
+          <div class="aizen-money-card"><b>${Number(d.active_pro_users||0)}</b><span>Pro نشط</span></div>
+          <div class="aizen-money-card"><b>${money(d.paid_revenue_cents)}</b><span>المدفوعات</span></div>
+          <div class="aizen-money-card"><b>${Number(d.credits_spent||0)}</b><span>Credits مصروفة</span></div>
+          <div class="aizen-money-card"><b>${Number(d.credits_earned||0)}</b><span>Credits مكتسبة</span></div>
+          <div class="aizen-money-card"><b>${Number(d.published_listings||0)}</b><span>معروض للبيع</span></div>
+          <div class="aizen-money-card"><b>${Number(d.marketplace_sales||0)}</b><span>مبيعات السوق</span></div>
+          <div class="aizen-money-card"><b>${money(d.marketplace_revenue_cents)}</b><span>حصة Aizen من السوق</span></div>
+        </div>
+        <div style="margin-top:18px;color:var(--aizen-muted,#858b97);font-size:12px">هذه الصفحة لا تظهر إلا للمالك. يمكنك لاحقاً إضافة إدارة المستخدمين والمدفوعات والإعلانات والسحب من هنا.</div>`;
+    }catch(e){p.querySelector("#aizenOwnerContent").textContent="تعذر تحميل لوحة المالك: "+(e.message||"خطأ")}
+  }
+  async function marketplace(){
+    if(!user){window.openAuth?.();return}
+    const p=panel("🛍️ Aizen Marketplace",'<div id="aizenMarketContent">جاري تحميل المشاريع...</div>');
+    try{
+      const {data,error}=await supabaseClient.from("marketplace_listings").select("id,title,description,price_cents,currency,seller_id,status").eq("status","published").order("created_at",{ascending:false});if(error)throw error;
+      const items=data||[];
+      p.querySelector("#aizenMarketContent").innerHTML=items.length?`<div class="aizen-list">${items.map(x=>`<div class="aizen-list-card"><h3>${esc(x.title)}</h3><p>${esc(x.description||"مشروع مبني بواسطة Aizen AI Builder")}</p><div class="aizen-price">${money(x.price_cents,x.currency)}</div><button class="aizen-money-btn aizen-primary" data-buy="${esc(x.id)}">بدء الشراء</button></div>`).join("")}</div>`:'<div style="text-align:center;padding:35px;color:#858b97">لا توجد مشاريع منشورة للبيع حالياً.</div>';
+      p.querySelectorAll("[data-buy]").forEach(b=>b.onclick=async()=>{const id=b.dataset.buy;const item=items.find(x=>x.id===id);if(!item)return;try{const {error}=await supabaseClient.from("marketplace_orders").insert({listing_id:item.id,buyer_id:user.id,seller_id:item.seller_id,amount_cents:item.price_cents,platform_fee_cents:Math.round(item.price_cents*.15),seller_net_cents:item.price_cents-Math.round(item.price_cents*.15),currency:item.currency,status:"pending"});if(error)throw error;alert("تم إنشاء طلب شراء بانتظار ربط بوابة الدفع.");}catch(e){alert(e.message||"تعذر إنشاء الطلب.")}});
+    }catch(e){p.querySelector("#aizenMarketContent").textContent="تعذر تحميل السوق: "+(e.message||"خطأ")}
+  }
+  async function sellProject(){
+    if(!user){window.openAuth?.();return}
+    if(!Array.isArray(window.projects)||!window.projects.length){window.loadProjects?.();alert("أنشئ مشروعاً أولاً ثم حاول عرضه للبيع.");return}
+    const options=window.projects.filter(x=>x&&x.id).map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
+    const p=panel("💰 بيع مشروع",`<label>المشروع</label><select id="aizenSellProject" class="aizen-money-input">${options}</select><label>اسم العرض</label><input id="aizenSellTitle" class="aizen-money-input" placeholder="مثلاً: متجر إلكتروني احترافي"><label>الوصف</label><textarea id="aizenSellDesc" class="aizen-money-input" rows="4" placeholder="صف ما سيحصل عليه المشتري"></textarea><label>السعر بالدولار</label><input id="aizenSellPrice" class="aizen-money-input" type="number" min="1" step=".01" placeholder="20"><button id="aizenPublishSell" class="aizen-money-btn aizen-primary" style="width:100%">إرسال للسوق</button><div style="margin-top:8px;color:#858b97;font-size:10px">سيذهب العرض إلى المراجعة قبل نشره حسب إعدادات المنصة.</div>`);
+    p.querySelector("#aizenPublishSell").onclick=async()=>{const projectId=p.querySelector("#aizenSellProject").value,title=p.querySelector("#aizenSellTitle").value.trim(),description=p.querySelector("#aizenSellDesc").value.trim(),price=Math.round(Number(p.querySelector("#aizenSellPrice").value)*100);if(!title||!price||price<100){alert("أدخل اسم العرض وسعراً صحيحاً.");return}try{const {error}=await supabaseClient.from("marketplace_listings").insert({seller_id:user.id,project_id:projectId,title,description,price_cents:price,status:"pending_review"});if(error)throw error;alert("تم إرسال المشروع للمراجعة.");p.remove()}catch(e){alert(e.message||"تعذر إرسال العرض.")}};
+  }
+  function mount(){
+    if(booted)return;css();
+    const header=document.querySelector(".header-right");if(!header)return;
+    const bar=document.createElement("div");bar.className="aizen-money-bar";bar.innerHTML='<span id="aizenCreditsPill" class="aizen-money-pill">🪙 0 Credits</span><span id="aizenProPill" class="aizen-money-pill">Free</span><button id="aizenMarketBtn" class="aizen-money-btn">🛍️ السوق</button><button id="aizenSellBtn" class="aizen-money-btn">💰 بيع مشروعي</button><button id="aizenOwnerBtn" class="aizen-money-btn hidden">👑 لوحة المالك</button>';
+    header.parentElement?.appendChild(bar);$("aizenMarketBtn").onclick=marketplace;$("aizenSellBtn").onclick=sellProject;$("aizenOwnerBtn").onclick=ownerDashboard;booted=true;
+  }
+  async function sync(){mount();await refreshUser();await checkOwner()}
+  const timer=setInterval(()=>{if(window.currentUser){sync().catch(()=>{})}},1200);
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>sync().catch(()=>{}),{once:true});else sync().catch(()=>{});
+  window.aizenOpenOwnerDashboard=ownerDashboard;window.aizenOpenMarketplace=marketplace;
 })();
