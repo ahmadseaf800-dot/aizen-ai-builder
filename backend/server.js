@@ -2080,11 +2080,11 @@ function encryptSecret(value) {
 }
 
 async function verifyBotToken(type, value) {
-  const token=String(value||"").trim().replace(/\\s+/g,"");
+  const token=String(value||"").trim().replace(/\s+/g,"");
   if(!token) return {valid:false,message:"التوكن مطلوب."};
 
   if(type==="telegram_bot"){
-    if(!/^\\d{5,15}:[A-Za-z0-9_-]{20,}$/.test(token)){
+    if(!/^\d{5,15}:[A-Za-z0-9_-]{20,}$/.test(token)){
       return {valid:false,message:"صيغة توكن Telegram غير صحيحة. انسخ التوكن كاملاً من @BotFather مثل 123456789:AA... بدون مسافات."};
     }
     const safeToken=encodeURIComponent(token);
