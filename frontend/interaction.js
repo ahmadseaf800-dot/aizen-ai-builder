@@ -337,7 +337,7 @@
       .aizen-v2-pill,.aizen-v2-btn{border:1px solid var(--aizen-border,#30343e);background:var(--aizen-surface,#15181f);color:var(--aizen-text,#fff);border-radius:9px;padding:8px 10px;font-size:11px}
       .aizen-v2-btn{cursor:pointer}.aizen-v2-btn:hover{border-color:var(--aizen-accent,#6d5dfc)}
       .aizen-v2-primary{background:var(--aizen-accent,#6d5dfc)!important;color:#fff!important;border-color:var(--aizen-accent,#6d5dfc)!important}
-      .aizen-v2-panel{position:fixed;inset:0;z-index:10060;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:14px}
+      .aizen-v2-panel{position:fixed;inset:0;z-index:10060;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:14px;pointer-events:auto;touch-action:auto}.aizen-v2-box,.aizen-v2-box *{pointer-events:auto}.aizen-v2-btn{position:relative;z-index:2;touch-action:manipulation}
       .aizen-v2-box{width:min(1050px,100%);max-height:90vh;overflow:auto;background:var(--aizen-surface,#101218);color:var(--aizen-text,#fff);border:1px solid var(--aizen-border,#30343e);border-radius:18px;padding:18px}
       .aizen-v2-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.aizen-v2-head h2{margin:0;font-size:19px}
       .aizen-v2-close{border:0;background:transparent;color:inherit;font-size:25px;cursor:pointer}
