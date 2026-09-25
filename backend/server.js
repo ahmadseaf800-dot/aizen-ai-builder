@@ -6,6 +6,8 @@ const path = require("path");
 const { AIZEN_CORE_VERSION, AIZEN_AGENT_CAPABILITIES, AIZEN_CORE_KNOWLEDGE, AIZEN_OWNER_EMAIL, buildAizenCoreInstruction } = require("./aizen-core");
 const { makeFileRow, cleanProjectPath, analyzeFiles } = require("./aizen-workspace");
 const { listFeatures, buildPlannerPrompt, buildSecurityPrompt, buildTestPrompt, validateAgentAction } = require("./aizen-feature-engine");
+const { runMultiAgent } = require("./aizen-agent-orchestrator");
+const { getBoilerplate, buildGuardrailPrompt } = require("./aizen-boilerplates");
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -1558,6 +1560,30 @@ async function handleCodingAgent(req, res, user) {
   }
 }
 
+async function handleMultiAgentPipeline(req,res,user){
+  let data;
+  try{data=await readJsonBody(req,res,3*1024*1024);}catch(error){sendJson(res,400,{success:false,error:"INVALID_JSON",message:"البيانات المرسلة غير صحيحة"});return;}
+  const projectId=String(data.projectId||"").trim(), conversationId=String(data.conversationId||"").trim(), request=String(data.instruction||data.request||"").trim();
+  if(!projectId||!request){sendJson(res,400,{success:false,error:"AGENT_PIPELINE_FIELDS_REQUIRED",message:"المشروع والطلب مطلوبان"});return;}
+  const token=getBearerToken(req);
+  try{
+    const rows=await supabaseRequest("GET","/rest/v1/projects?id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id)+"&select=id,name,type,description,status&limit=1",token);
+    if(!Array.isArray(rows)||!rows.length){sendJson(res,404,{success:false,error:"PROJECT_NOT_FOUND",message:"المشروع غير موجود أو لا تملك صلاحية الوصول إليه"});return;}
+    const project=rows[0];
+    const projectFiles=await supabaseRequest("GET","/rest/v1/project_files?project_id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id)+"&select=path,content,file_type,size_bytes&order=path.asc&limit=500",token);
+    const files=Array.isArray(projectFiles)?projectFiles:[];
+    let conversationContext="";
+    if(conversationId){try{const messages=await getConversationMessages(token,conversationId);conversationContext=messages.slice(-50).map(m=>"["+(m.role==="assistant"?"AIZEN":"USER")+"]\n"+String(m.content||"")).join("\n\n").slice(-60000);}catch{}}
+    const result=await runMultiAgent({request,type:project.type||"custom",project,files:compactProjectFiles(files,180000),conversationContext,runAIToText,extractAgentFileBlocks,buildCoreInstruction:buildAizenCoreInstruction,knowledge:AIZEN_CORE_KNOWLEDGE,capabilities:AIZEN_AGENT_CAPABILITIES});
+    if(!result.files.length){sendJson(res,422,{success:false,error:"AGENT_PIPELINE_NO_FILES",message:"لم ينتج الوكلاء ملفات قابلة للتطبيق.",stages:result.stages,qa:result.qa});return;}
+    if(!result.contract.ok||!result.qa.approved){sendJson(res,422,{success:false,error:"AGENT_PIPELINE_QA_FAILED",message:"رفض وكيل QA تطبيق التغييرات حتى لا ينكسر المشروع.",stages:result.stages,issues:result.contract.issues.concat(result.qa.issues||[]),files:result.files.map(f=>f.path)});return;}
+    const rowsToSave=result.files.map(file=>({project_id:projectId,user_id:user.id,path:file.path,content:file.content,file_type:file.file_type,size_bytes:file.size_bytes,updated_at:new Date().toISOString()}));
+    const saved=await supabaseRequest("POST","/rest/v1/project_files?on_conflict=project_id%2Cpath",token,rowsToSave,{"Prefer":"resolution=merge-duplicates,return=representation"});
+    await supabaseRequest("PATCH","/rest/v1/projects?id=eq."+encodeURIComponent(projectId)+"&user_id=eq."+encodeURIComponent(user.id),token,{status:"ready",updated_at:new Date().toISOString()});
+    sendJson(res,200,{success:true,changed:result.files.length,files:result.files.map(f=>f.path),stages:result.stages,qa:result.qa,boilerplate:project.type||"custom",saved:Array.isArray(saved)?saved.length:result.files.length});
+  }catch(error){console.error("MULTI AGENT PIPELINE ERROR:",error);if(!res.headersSent)sendJson(res,500,{success:false,error:"AGENT_PIPELINE_ERROR",message:"تعذر تشغيل فريق Aizen AI. لم يتم تطبيق أي ملف."});}
+}
+
 async function handleAizenFeature(req,res,user){
   let data;
   try{data=await readJsonBody(req,res,512*1024);}
@@ -2049,12 +2075,12 @@ const server = http.createServer(async (req, res) => {
   }
 
   /*
-   * AI Coding Agent
+   * AI Coding Agent / Multi-Agent Pipeline
    */
   if (method === "POST" && pathname === "/api/agent") {
     const user = await requireAuth(req, res);
     if (!user) return;
-    await handleCodingAgent(req, res, user);
+    await handleMultiAgentPipeline(req, res, user);
     return;
   }
 
@@ -2084,6 +2110,18 @@ const server = http.createServer(async (req, res) => {
     if (!user) return;
 
     await handleCreate(req, res, user);
+    return;
+  }
+
+  /*
+   * Browser Live Preview engine
+   */
+  if (method === "GET" && pathname === "/aizen-preview.js") {
+    fs.readFile(path.join(__dirname, "..", "frontend", "aizen-preview.js"), (error, content) => {
+      if (error) { sendJson(res,500,{success:false,error:"PREVIEW_SCRIPT_NOT_FOUND"}); return; }
+      res.writeHead(200,{"Content-Type":"application/javascript; charset=utf-8","Cache-Control":"no-cache"});
+      res.end(content);
+    });
     return;
   }
 
@@ -2128,12 +2166,13 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, {
         "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "no-cache",
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "credentialless",
       });
 
       const html = content.toString("utf8");
-      const enhanced = html.includes("/interaction.js")
-        ? html
-        : html.replace(/<\/body>/i, '<script src="/interaction.js" defer></script></body>');
+      let enhanced = html.includes("/interaction.js") ? html : html.replace(/<\/body>/i, '<script src="/interaction.js" defer></script></body>');
+      if(!enhanced.includes("/aizen-preview.js")) enhanced=enhanced.replace(/<\/body>/i,'<script src="/aizen-preview.js" defer></script></body>');
       res.end(enhanced);
     });
 
