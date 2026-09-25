@@ -1,0 +1,34 @@
+name: Aizen Platform Upgrade
+on:
+  push:
+    paths:
+      - 'scripts/upgrade-agent-platform.js'
+      - 'backend/aizen-agent-orchestrator.js'
+      - 'backend/aizen-boilerplates.js'
+      - 'frontend/aizen-preview.js'
+permissions:
+  contents: write
+jobs:
+  upgrade:
+    if: ${{ !contains(github.event.head_commit.message, '[aizen-upgrade]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Patch server
+        run: node scripts/upgrade-agent-platform.js
+      - name: Validate JavaScript
+        run: |
+          node --check backend/server.js
+          node --check backend/aizen-agent-orchestrator.js
+          node --check backend/aizen-boilerplates.js
+          node --check frontend/aizen-preview.js
+      - name: Commit generated integration
+        run: |
+          git config user.name 'Aizen Upgrade Bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/server.js frontend/aizen-preview.js backend/aizen-agent-orchestrator.js backend/aizen-boilerplates.js scripts/upgrade-agent-platform.js .github/workflows/aizen-platform-upgrade.yml
+          git diff --cached --quiet || git commit -m '[aizen-upgrade] Integrate multi-agent pipeline and live preview'
+          git push
