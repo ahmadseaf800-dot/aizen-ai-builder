@@ -14,6 +14,12 @@ const PORT = Number(process.env.PORT || 3000);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SUPABASE_URL = String(process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY || "";
+const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET || "";
+const NOWPAYMENTS_PAY_CURRENCY = String(process.env.NOWPAYMENTS_PAY_CURRENCY || "usdterc20").toLowerCase();
+const PAYMENT_WEBHOOK_URL = String(process.env.PAYMENT_WEBHOOK_URL || "https://aizen-ai-builder.onrender.com/api/payment/webhook");
+
 const APP_ORIGIN = process.env.APP_ORIGIN || "*";
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
@@ -133,6 +139,269 @@ function setCors(res) {
   );
 
   res.setHeader("Access-Control-Expose-Headers", "Content-Type");
+}
+
+function readRawBody(req, maxBytes = 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    let size = 0;
+    let rejected = false;
+    req.setEncoding("utf8");
+    req.on("data", (chunk) => {
+      if (rejected) return;
+      size += Buffer.byteLength(chunk, "utf8");
+      if (size > maxBytes) {
+        rejected = true;
+        reject(new Error("REQUEST_TOO_LARGE"));
+        try { req.destroy(); } catch {}
+        return;
+      }
+      body += chunk;
+    });
+    req.on("end", () => {
+      if (!rejected) resolve(body);
+    });
+    req.on("error", (error) => {
+      if (!rejected) {
+        rejected = true;
+        reject(error);
+      }
+    });
+  });
+}
+
+function timingSafeHexEqual(expectedHex, actualHex) {
+  try {
+    const a = Buffer.from(String(expectedHex || ""), "hex");
+    const b = Buffer.from(String(actualHex || ""), "hex");
+    return a.length > 0 && a.length === b.length && crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+function sortForNowPayments(value) {
+  if (Array.isArray(value)) return value.map(sortForNowPayments);
+  if (value && typeof value === "object") {
+    return Object.keys(value).sort().reduce((out, key) => {
+      out[key] = sortForNowPayments(value[key]);
+      return out;
+    }, {});
+  }
+  return value;
+}
+
+function verifyNowPaymentsSignature(rawBody, signature) {
+  if (!NOWPAYMENTS_IPN_SECRET || !signature) return false;
+  let parsed;
+  try { parsed = JSON.parse(rawBody); } catch { return false; }
+  const canonical = JSON.stringify(sortForNowPayments(parsed));
+  const expected = crypto.createHmac("sha512", NOWPAYMENTS_IPN_SECRET).update(canonical).digest("hex");
+  return timingSafeHexEqual(expected, signature);
+}
+
+async function supabaseServiceRequest(method, endpoint, body = null, extraHeaders = {}) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_NOT_CONFIGURED");
+  const url = new URL(`${SUPABASE_URL}${endpoint}`);
+  const headers = {
+    apikey: SUPABASE_SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    Accept: "application/json",
+    ...extraHeaders,
+  };
+  if (body !== null) headers["Content-Type"] = "application/json";
+  const response = await httpsRequest({
+    hostname: url.hostname,
+    port: 443,
+    path: url.pathname + url.search,
+    method,
+    headers,
+  }, body === null ? null : JSON.stringify(body), 20000);
+  let data = null;
+  if (response.body) {
+    try { data = JSON.parse(response.body); } catch { data = response.body; }
+  }
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    const error = new Error("SUPABASE_SERVICE_REQUEST_FAILED");
+    error.statusCode = response.statusCode;
+    error.data = data;
+    throw error;
+  }
+  return data;
+}
+
+async function handlePaymentProducts(req, res, user) {
+  try {
+    const data = await supabaseServiceRequest(
+      "GET",
+      "/rest/v1/payment_products?is_active=eq.true&select=id,code,name,description,kind,price_cents,currency,credits,plan_id,sort_order&order=sort_order.asc,price_cents.asc"
+    );
+    sendJson(res, 200, { success: true, products: Array.isArray(data) ? data : [] });
+  } catch (error) {
+    console.error("PAYMENT PRODUCTS ERROR:", error);
+    sendJson(res, 500, { success: false, error: "PAYMENT_PRODUCTS_FAILED", message: "تعذر تحميل منتجات الدفع." });
+  }
+}
+
+async function handleCreateCryptoPayment(req, res, user) {
+  if (!NOWPAYMENTS_API_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+    sendJson(res, 503, { success:false, error:"PAYMENT_NOT_CONFIGURED", message:"بوابة الدفع غير مهيأة على الخادم بعد." });
+    return;
+  }
+
+  let data;
+  try { data = await readJsonBody(req, res, 64 * 1024); }
+  catch { sendJson(res, 400, {success:false,error:"INVALID_JSON",message:"البيانات المرسلة غير صحيحة"}); return; }
+
+  const productCode = String(data.product_code || data.productCode || "").trim();
+  if (!productCode || !/^[a-z0-9_:-]{1,80}$/i.test(productCode)) {
+    sendJson(res, 400, {success:false,error:"PRODUCT_REQUIRED",message:"اختر منتجاً صحيحاً."});
+    return;
+  }
+
+  try {
+    const products = await supabaseServiceRequest(
+      "GET",
+      `/rest/v1/payment_products?code=eq.${encodeURIComponent(productCode)}&is_active=eq.true&select=id,code,name,description,kind,price_cents,currency,credits,plan_id,metadata&limit=1`
+    );
+    const product = Array.isArray(products) ? products[0] : null;
+    if (!product) {
+      sendJson(res, 404, {success:false,error:"PRODUCT_NOT_FOUND",message:"المنتج غير موجود أو غير متاح."});
+      return;
+    }
+
+    const txId = crypto.randomUUID();
+    const priceAmount = Number(product.price_cents) / 100;
+    const providerPayload = {
+      price_amount: priceAmount,
+      price_currency: String(product.currency || "USD").toLowerCase(),
+      pay_currency: NOWPAYMENTS_PAY_CURRENCY,
+      ipn_callback_url: PAYMENT_WEBHOOK_URL,
+      order_id: txId,
+      order_description: `Aizen AI Builder - ${String(product.name).slice(0, 120)}`,
+    };
+
+    const apiUrl = new URL("https://api.nowpayments.io/v1/payment");
+    const providerResponse = await httpsRequest({
+      hostname: apiUrl.hostname,
+      port: 443,
+      path: apiUrl.pathname,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "x-api-key": NOWPAYMENTS_API_KEY,
+      },
+    }, JSON.stringify(providerPayload), 20000);
+
+    let providerData = null;
+    try { providerData = JSON.parse(providerResponse.body); } catch {}
+    if (providerResponse.statusCode < 200 || providerResponse.statusCode >= 300 || !providerData?.payment_id) {
+      console.error("NOWPAYMENTS CREATE ERROR:", providerResponse.statusCode, providerResponse.body);
+      sendJson(res, 502, {success:false,error:"PAYMENT_PROVIDER_ERROR",message:"تعذر إنشاء عملية الدفع حالياً."});
+      return;
+    }
+
+    const metadata = {
+      kind: product.kind,
+      product_code: product.code,
+      credits: Number(product.credits || 0),
+      plan_id: product.plan_id || null,
+      pay_currency: NOWPAYMENTS_PAY_CURRENCY,
+      provider_payment: providerData,
+    };
+
+    const inserted = await supabaseServiceRequest(
+      "POST",
+      "/rest/v1/payment_transactions",
+      {
+        id: txId,
+        user_id: user.id,
+        plan_id: product.plan_id || null,
+        provider: "nowpayments",
+        provider_payment_id: String(providerData.payment_id),
+        amount_cents: Number(product.price_cents),
+        currency: String(product.currency || "USD").toUpperCase(),
+        status: String(providerData.payment_status || "waiting"),
+        product_code: product.code,
+        metadata,
+      },
+      {"Prefer":"return=representation"}
+    );
+
+    const saved = Array.isArray(inserted) ? inserted[0] : null;
+    sendJson(res, 200, {
+      success:true,
+      payment:{
+        id: saved?.id || txId,
+        provider_payment_id: String(providerData.payment_id),
+        status: String(providerData.payment_status || "waiting"),
+        pay_address: providerData.pay_address || null,
+        pay_amount: providerData.pay_amount || null,
+        pay_currency: providerData.pay_currency || NOWPAYMENTS_PAY_CURRENCY,
+        order_id: providerData.order_id || txId,
+        invoice_url: providerData.invoice_url || null,
+        price_amount: priceAmount,
+        price_currency: String(product.currency || "USD").toUpperCase(),
+      },
+      product:{
+        code: product.code,
+        name: product.name,
+        kind: product.kind,
+        credits: Number(product.credits || 0)
+      }
+    });
+  } catch (error) {
+    console.error("CREATE CRYPTO PAYMENT ERROR:", error);
+    sendJson(res, 500, {success:false,error:"PAYMENT_CREATE_FAILED",message:"تعذر إنشاء عملية الدفع."});
+  }
+}
+
+async function handleNowPaymentsWebhook(req, res) {
+  if (!NOWPAYMENTS_IPN_SECRET || !SUPABASE_SERVICE_ROLE_KEY) {
+    sendJson(res, 503, {success:false,error:"PAYMENT_WEBHOOK_NOT_CONFIGURED"});
+    return;
+  }
+
+  let rawBody;
+  try { rawBody = await readRawBody(req, 1024 * 1024); }
+  catch (error) {
+    sendJson(res, 413, {success:false,error:"REQUEST_TOO_LARGE"});
+    return;
+  }
+
+  const signature = req.headers["x-nowpayments-sig"] || req.headers["x-nowpayments-signature"] || "";
+  if (!verifyNowPaymentsSignature(rawBody, signature)) {
+    sendJson(res, 401, {success:false,error:"INVALID_WEBHOOK_SIGNATURE"});
+    return;
+  }
+
+  let payload;
+  try { payload = JSON.parse(rawBody); }
+  catch { sendJson(res, 400, {success:false,error:"INVALID_JSON"}); return; }
+
+  const providerPaymentId = String(payload.payment_id || "").trim();
+  const status = String(payload.payment_status || "").trim().toLowerCase();
+  if (!providerPaymentId || !status) {
+    sendJson(res, 400, {success:false,error:"INVALID_WEBHOOK_PAYLOAD"});
+    return;
+  }
+
+  try {
+    const result = await supabaseServiceRequest(
+      "POST",
+      "/rest/v1/rpc/fulfill_crypto_payment",
+      {
+        p_provider_payment_id: providerPaymentId,
+        p_provider_status: status,
+        p_provider_payload: payload
+      }
+    );
+    sendJson(res, 200, {success:true, result});
+  } catch (error) {
+    console.error("PAYMENT WEBHOOK FULFILL ERROR:", error.statusCode, error.data || error.message);
+    sendJson(res, 500, {success:false,error:"PAYMENT_FULFILL_FAILED"});
+  }
 }
 
 function getBearerToken(req) {
@@ -2000,6 +2269,8 @@ const server = http.createServer(async (req, res) => {
       openrouter_configured: Boolean(
         OPENROUTER_API_KEY
       ),
+      payments_configured: Boolean(NOWPAYMENTS_API_KEY && SUPABASE_SERVICE_ROLE_KEY),
+      payment_webhook_configured: Boolean(NOWPAYMENTS_IPN_SECRET && SUPABASE_SERVICE_ROLE_KEY),
       groq_configured: Boolean(
         GROQ_API_KEY
       ),
