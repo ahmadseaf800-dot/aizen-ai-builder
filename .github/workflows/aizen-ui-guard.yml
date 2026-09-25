@@ -1,0 +1,46 @@
+name: Aizen UI Guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate frontend action wiring
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('frontend/index.html','utf8');
+          const required=[
+            ['message input','messageInput'],
+            ['send action','sendMessage'],
+            ['build action','buildProject'],
+            ['new chat','newChat'],
+            ['settings','openSettings']
+          ];
+          const missing=required.filter(([name,token])=>!html.includes(token));
+          if(missing.length){
+            console.error('Aizen UI guard failed:',missing.map(x=>x[0]).join(', '));
+            process.exit(1);
+          }
+          const onclicks=[...html.matchAll(/onclick\s*=\s*["']([^"']+)["']/gi)].map(m=>m[1]);
+          const functionNames=new Set([...html.matchAll(/(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m=>m[1]));
+          const externalSafe=['triggerFileUpload','closeAIModeModal','selectAIMode','openAIModeModal'];
+          const broken=[];
+          for(const raw of onclicks){
+            const name=raw.trim().match(/^([A-Za-z_$][\w$]*)\s*\(/)?.[1];
+            if(name && !functionNames.has(name) && !externalSafe.includes(name)) broken.push(name);
+          }
+          if(broken.length){
+            console.error('Possibly unbound UI handlers:',[...new Set(broken)].join(', '));
+            process.exit(1);
+          }
+          console.log('Aizen UI guard passed:', onclicks.length, 'inline actions checked');
+          NODE
+      - name: Validate backend syntax
+        run: node --check backend/server.js
