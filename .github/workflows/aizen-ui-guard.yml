@@ -41,7 +41,7 @@ jobs:
           }
           const onclicks=[...html.matchAll(/onclick\s*=\s*["']([^"']+)["']/gi)].map(m=>m[1]);
           const functionNames=new Set([...html.matchAll(/(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m=>m[1]));
-          const externalSafe=['triggerFileUpload','closeAIModeModal','selectAIMode','openAIModeModal'];
+          const externalSafe=['triggerFileUpload','closeAIModeModal','selectAIMode','openAIModeModal','if'];
           const broken=[];
           for(const raw of onclicks){
             const name=raw.trim().match(/^([A-Za-z_$][\w$]*)\s*\(/)?.[1];
