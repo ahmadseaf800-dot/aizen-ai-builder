@@ -333,7 +333,7 @@
   function style(){
     if($("aizen-money-v2-style"))return;
     const s=document.createElement("style");s.id="aizen-money-v2-style";s.textContent=`
-      .aizen-v2-bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:8px 12px}
+      .aizen-v2-bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:8px 12px;position:relative;z-index:40;width:calc(100% - 24px);pointer-events:auto;touch-action:manipulation}.aizen-v2-bar *{pointer-events:auto;touch-action:manipulation}
       .aizen-v2-pill,.aizen-v2-btn{border:1px solid var(--aizen-border,#30343e);background:var(--aizen-surface,#15181f);color:var(--aizen-text,#fff);border-radius:9px;padding:8px 10px;font-size:11px}
       .aizen-v2-btn{cursor:pointer}.aizen-v2-btn:hover{border-color:var(--aizen-accent,#6d5dfc)}
       .aizen-v2-primary{background:var(--aizen-accent,#6d5dfc)!important;color:#fff!important;border-color:var(--aizen-accent,#6d5dfc)!important}
