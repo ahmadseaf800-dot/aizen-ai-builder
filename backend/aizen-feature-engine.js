@@ -1,8 +1,9 @@
 /**
  * Aizen Platform Feature Engine
- * Shared contracts for the full Aizen Builder roadmap.
- * This file contains real, reusable server-side behavior; UI controls must
- * call these contracts instead of creating decorative buttons.
+ * Ordered contracts for the Aizen Builder roadmap.
+ * A feature is marked active only when its backend contract exists; foundation
+ * means the supporting primitives exist but the complete product surface is
+ * not yet verified end-to-end.
  */
 const FEATURES = Object.freeze([
   ["coding_agent","AI Coding Agent"],
@@ -11,17 +12,17 @@ const FEATURES = Object.freeze([
   ["testing","Testing Engine"],
   ["preview","Live Preview"],
   ["terminal","Terminal"],
-  ["dependencies","Dependency Manager"],
   ["github","GitHub Integration"],
   ["versions","Version History / Rollback"],
   ["memory","Project Memory"],
-  ["planner","AI Project Planner"],
   ["router","Smart AI Router"],
   ["security","AI Security Scanner"],
   ["screenshot_to_site","Screenshot to Website"],
   ["voice","Voice Coding"],
-  ["deploy","One-Click Deploy"]
-].map(([id,name])=>Object.freeze({id,name})));
+  ["deploy","One-Click Deploy"],
+  ["agents","AI Agents"],
+  ["autonomous_builder","Autonomous Builder"]
+].map(([id,name],index)=>Object.freeze({order:index+1,id,name})));
 
 const FEATURE_STATUS = Object.freeze({
   coding_agent:"active",
@@ -30,16 +31,16 @@ const FEATURE_STATUS = Object.freeze({
   testing:"foundation",
   preview:"foundation",
   terminal:"foundation",
-  dependencies:"foundation",
   github:"foundation",
   versions:"active",
   memory:"foundation",
-  planner:"active",
   router:"active",
   security:"active",
   screenshot_to_site:"foundation",
   voice:"foundation",
-  deploy:"foundation"
+  deploy:"foundation",
+  agents:"foundation",
+  autonomous_builder:"foundation"
 });
 
 function listFeatures(){
@@ -93,8 +94,13 @@ function compactMemory(items,maxChars=50000){
 }
 
 function validateAgentAction(action){
-  const allowed=new Set(["plan","review","edit","test","security","repair","analyze"]);
+  const allowed=new Set(["plan","review","edit","test","security","repair","analyze","preview","terminal","deploy","github","version","memory","route","agent","autonomous"]);
   return allowed.has(String(action||"").toLowerCase());
 }
 
-module.exports={FEATURES,FEATURE_STATUS,listFeatures,buildPlannerPrompt,buildSecurityPrompt,buildTestPrompt,compactMemory,validateAgentAction};
+function getNextRoadmapStage(completed=[]){
+  const done=new Set(Array.isArray(completed)?completed.map(String):[]);
+  return FEATURES.find(feature=>!done.has(feature.id))||null;
+}
+
+module.exports={FEATURES,FEATURE_STATUS,listFeatures,buildPlannerPrompt,buildSecurityPrompt,buildTestPrompt,compactMemory,validateAgentAction,getNextRoadmapStage};
