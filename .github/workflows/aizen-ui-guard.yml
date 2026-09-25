@@ -6,11 +6,22 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   guard:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Integrate Aizen platform upgrades
+        run: node scripts/integrate-aizen.js
       - name: Validate frontend action wiring
         run: |
           node <<'NODE'
@@ -42,5 +53,22 @@ jobs:
           }
           console.log('Aizen UI guard passed:', onclicks.length, 'inline actions checked');
           NODE
-      - name: Validate backend syntax
-        run: node --check backend/server.js
+      - name: Validate backend and agent syntax
+        run: |
+          set -e
+          node --check backend/server.js
+          node --check backend/aizen-core.js
+          node --check backend/aizen-agent-engine.js
+          node --check backend/aizen-link-resolver.js
+          node --check frontend/interaction.js
+      - name: Commit integrated changes
+        run: |
+          if git diff --quiet; then
+            echo 'No integration changes required.'
+            exit 0
+          fi
+          git config user.name 'aizen-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/server.js frontend/interaction.js backend/aizen-agent-engine.js backend/aizen-link-resolver.js scripts/integrate-aizen.js
+          git commit -m 'Integrate Aizen agent pipeline and resilient builder controls'
+          git push
