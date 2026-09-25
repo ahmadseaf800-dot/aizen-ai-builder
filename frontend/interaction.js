@@ -583,9 +583,19 @@
   async function sync(){
     mount();const u=await currentUser();if(!u)return;
     await refreshBar();
-    const {data:own}=await sb().rpc("is_owner",{p_user_id:u.id});const b=$("aizenV2Owner");if(b)b.style.display=own?"inline-block":"none";
+    const emailAllowed=String(u.email||"").trim().toLowerCase()==="ahmadseaf800@gmail.com";
+    let own=false;
+    try{
+      const {data,error}=await sb().rpc("is_owner",{p_user_id:u.id});
+      own=!error && data===true && emailAllowed;
+    }catch(e){own=false}
+    const b=$("aizenV2Owner");if(b)b.style.display=own?"inline-block":"none";
   }
-  const start=()=>{style();sync().catch(e=>console.warn("Aizen monetization v2",e))};
+  const start=()=>{
+    style();
+    sync().catch(e=>console.warn("Aizen monetization v2",e));
+    setInterval(()=>sync().catch(()=>{}),1200);
+  };
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
   window.aizenOpenOwnerDashboard=ownerDashboard;window.aizenOpenMarketplace=marketplace;
 })();
