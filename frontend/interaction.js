@@ -308,7 +308,7 @@
   function mount(){
     if(booted)return;css();
     const header=document.querySelector(".header-right");if(!header)return;
-    const bar=document.createElement("div");bar.className="aizen-money-bar";bar.innerHTML='<span class="aizen-money-pill">📢 الخدمة مدعومة بالإعلانات</span><button id="aizenOwnerBtn" class="aizen-money-btn hidden">👑 لوحة المالك</button>';
+    const bar=document.createElement("div");bar.className="aizen-money-bar";bar.innerHTML='<button id="aizenOwnerBtn" class="aizen-money-btn hidden">👑 لوحة المالك</button>';
     header.parentElement?.appendChild(bar);$("aizenOwnerBtn").onclick=ownerDashboard;booted=true;
   }
   async function sync(){mount();await refreshUser();await checkOwner()}
@@ -567,9 +567,9 @@
     document.querySelectorAll(".aizen-money-bar").forEach(x=>x.remove());
     const header=document.querySelector(".header-right")||document.querySelector(".header");
     if(!header)return;
-    const bar=document.createElement("div");bar.className="aizen-v2-bar";bar.innerHTML='<span id="aizenV2Credits" class="aizen-v2-pill">🪙 0 Credits</span><span id="aizenV2Plan" class="aizen-v2-pill">Free</span><span class="aizen-v2-pill">📢 الخدمة مدعومة بالإعلانات</span><button id="aizenV2Market" class="aizen-v2-btn">🛍️ السوق</button><button id="aizenV2Sell" class="aizen-v2-btn">💰 بيع مشروعي</button><button id="aizenV2Owner" class="aizen-v2-btn" style="display:none">👑 لوحة المالك</button>';
+    const bar=document.createElement("div");bar.className="aizen-v2-bar";bar.innerHTML='<span id="aizenV2Credits" class="aizen-v2-pill">🪙 0 Credits</span><span id="aizenV2Plan" class="aizen-v2-pill">Free</span><button id="aizenV2Owner" class="aizen-v2-btn" style="display:none">👑 لوحة المالك</button>';
     header.parentElement?.appendChild(bar);
-    $("aizenV2Market").onclick=marketplace;$("aizenV2Sell").onclick=sellProject;$("aizenV2Owner").onclick=ownerDashboard;
+    $("aizenV2Owner").onclick=ownerDashboard;
     v2Mounted=true;
   }
   async function sync(){
