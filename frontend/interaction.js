@@ -308,8 +308,8 @@
   function mount(){
     if(booted)return;css();
     const header=document.querySelector(".header-right");if(!header)return;
-    const bar=document.createElement("div");bar.className="aizen-money-bar";bar.innerHTML='<span id="aizenCreditsPill" class="aizen-money-pill">🪙 0 Credits</span><span id="aizenProPill" class="aizen-money-pill">Free</span><button id="aizenMarketBtn" class="aizen-money-btn">🛍️ السوق</button><button id="aizenSellBtn" class="aizen-money-btn">💰 بيع مشروعي</button><button id="aizenOwnerBtn" class="aizen-money-btn hidden">👑 لوحة المالك</button>';
-    header.parentElement?.appendChild(bar);$("aizenMarketBtn").onclick=marketplace;$("aizenSellBtn").onclick=sellProject;$("aizenOwnerBtn").onclick=ownerDashboard;booted=true;
+    const bar=document.createElement("div");bar.className="aizen-money-bar";bar.innerHTML='<span class="aizen-money-pill">📢 الخدمة مدعومة بالإعلانات</span><button id="aizenOwnerBtn" class="aizen-money-btn hidden">👑 لوحة المالك</button>';
+    header.parentElement?.appendChild(bar);$("aizenOwnerBtn").onclick=ownerDashboard;booted=true;
   }
   async function sync(){mount();await refreshUser();await checkOwner()}
   const timer=setInterval(()=>{if(window.currentUser){sync().catch(()=>{})}},1200);
@@ -397,10 +397,6 @@
       sb().from("user_credits").select("balance").eq("user_id",u.id).maybeSingle(),
       sb().rpc("is_pro_user",{p_user_id:u.id})
     ]);
-    const a=$("aizenV2Credits"),p=$("aizenV2Plan");
-    const pro=Boolean(isPro===true);
-    if(a)a.textContent="🪙 "+Number(c?.balance||0)+" Credits";
-    if(p)p.textContent=pro?"⭐ Pro":"Free";
     await loadAdsense();
   }
   async function startCryptoPayment(productCode){
