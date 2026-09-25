@@ -1,0 +1,26 @@
+services:
+  aizen-model:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - aizen_ollama:/root/.ollama
+    # Pull a model once after startup, for example:
+    # docker compose -f docker-compose.aizen-local.yml exec aizen-model ollama pull qwen2.5-coder:7b
+
+  aizen-builder:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - aizen-model
+    environment:
+      PORT: "3000"
+      AIZEN_LOCAL_MODEL_URL: "http://aizen-model:11434"
+      AIZEN_LOCAL_MODEL_NAME: "qwen2.5-coder:7b"
+      AIZEN_LOCAL_ONLY: "true"
+    ports:
+      - "3000:3000"
+
+volumes:
+  aizen_ollama:
