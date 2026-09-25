@@ -1,4 +1,4 @@
-/* Aizen Fresh Interaction Layer v2 */
+/* Aizen Fresh Interaction Layer v3 */
 (function(){
 "use strict";
 const MODE_KEY="aizen-ai-mode";
@@ -12,9 +12,34 @@ function toggleAccount(){const m=byId("accountMenu");if(!m)return;const opening=
 function currentMode(){const v=localStorage.getItem(MODE_KEY)||"assistant";return MODES.some(x=>x[0]===v)?v:"assistant";}
 function applyMode(mode){const v=MODES.some(x=>x[0]===mode)?mode:"assistant";localStorage.setItem(MODE_KEY,v);const b=byId("aiModeButton");if(b)b.textContent=v==="assistant"?"AI":"AI • "+(MODES.find(x=>x[0]===v)?.[1]||"");}
 function openModePicker(){let modal=byId("aizenFreshModeModal");if(!modal){modal=document.createElement("div");modal.id="aizenFreshModeModal";modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center;padding:18px;z-index:10000";modal.innerHTML='<div role="dialog" aria-modal="true" style="width:min(430px,100%);background:#15181f;border:1px solid #30343e;border-radius:16px;padding:16px;color:#fff"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b>وضع Aizen AI</b><button type="button" data-aizen-close-mode aria-label="إغلاق" style="border:0;background:transparent;color:#aaa;font-size:22px">×</button></div><div data-aizen-mode-grid style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div></div>';document.body.appendChild(modal);modal.addEventListener("click",e=>{if(e.target===modal||e.target.closest("[data-aizen-close-mode]")){modal.remove();return;}const item=e.target.closest("[data-aizen-mode]");if(item){applyMode(item.dataset.aizenMode);modal.remove();}});}modal.querySelector("[data-aizen-mode-grid]").innerHTML=MODES.map(([v,l])=>'<button type="button" data-aizen-mode="'+v+'" style="padding:11px;border:1px solid #30343e;border-radius:10px;background:#1b1e26;color:#fff;cursor:pointer">'+l+'</button>').join("");modal.style.display="flex";}
-async function send(){const input=byId("messageInput");const original=String(input?.value||"");if(!original.trim()){await call("sendMessage");return;}const mode=currentMode();if(mode!=="assistant"){input.value="/"+mode+" "+original;try{await call("sendMessage");}finally{input.value=original;}return;}await call("sendMessage");}
-const ACTIONS=Object.freeze({"toggle-sidebar":toggleSidebar,"open-auth":()=>call("openAuth"),"toggle-account":toggleAccount,"new-chat":()=>call("newChat"),"tab-chats":()=>call("showSidebarTab","chats"),"tab-projects":()=>call("showSidebarTab","projects"),"attach":()=>call("triggerFileUpload"),"agent":()=>call("openAgentModal"),"ai-mode":openModePicker,"build":()=>call("openBuildTypeModal"),"stop":()=>call("stopGeneration"),"send":send});
-function bind(){document.querySelectorAll("[data-aizen-action]").forEach(el=>{if(el.dataset.aizenFreshBound==="1")return;const action=ACTIONS[el.dataset.aizenAction];if(typeof action!=="function")return;el.dataset.aizenFreshBound="1";el.addEventListener("click",async e=>{if(el.disabled)return;e.preventDefault();e.stopImmediatePropagation();try{await action();}catch(err){console.error("AIZEN FRESH CONTROL ERROR",err);toast("تعذر تنفيذ الزر حالياً.");}},{capture:true});});}
+function getComposer(){return byId("messageInput")||document.querySelector("textarea[name=message],textarea[data-message-input],textarea");}
+function ensureNewlineButton(){
+  const input=getComposer();
+  if(!input||document.getElementById("aizenNewlineButton"))return;
+  const button=document.createElement("button");
+  button.id="aizenNewlineButton";button.type="button";button.className="composer-button";button.title="سطر جديد";button.setAttribute("aria-label","سطر جديد");button.textContent="↵";
+  button.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();const start=input.selectionStart??input.value.length;const end=input.selectionEnd??start;input.value=input.value.slice(0,start)+"\n"+input.value.slice(end);input.selectionStart=input.selectionEnd=start+1;input.dispatchEvent(new Event("input",{bubbles:true}));input.focus();});
+  const form=input.closest("form");const parent=input.parentElement;
+  if(form)form.insertBefore(button,form.querySelector("button[type=submit]")||null);else if(parent)parent.appendChild(button);
+}
+async function send(){
+  const input=getComposer();
+  const original=String(input?.value||"");
+  if(!original.trim()){await call("sendMessage");return;}
+  const mode=currentMode();
+  try{
+    if(mode!=="assistant")input.value="/"+mode+" "+original;
+    await call("sendMessage");
+  }finally{
+    /* The sent text is already rendered in the conversation; keep the composer empty. */
+    if(input){input.value="";input.dispatchEvent(new Event("input",{bubbles:true}));}
+  }
+}
+const ACTIONS=Object.freeze({"toggle-sidebar":toggleSidebar,"open-auth":()=>call("openAuth"),"toggle-account":toggleAccount,"new-chat":()=>call("newChat"),"tab-chats":()=>call("showSidebarTab","chats"),"tab-projects":()=>call("showSidebarTab","projects"),"attach":()=>call("triggerFileUpload"),"agent":()=>call("openAgentModal"),"ai-mode":openModePicker,"build":()=>call("openBuildTypeModal"),"stop":()=>call("stopGeneration"),"send":send,"newline":()=>{ensureNewlineButton();getComposer()?.focus();}});
+function bind(){
+  document.querySelectorAll("[data-aizen-action]").forEach(el=>{if(el.dataset.aizenFreshBound==="1")return;const action=ACTIONS[el.dataset.aizenAction];if(typeof action!=="function")return;el.dataset.aizenFreshBound="1";el.addEventListener("click",async e=>{if(el.disabled)return;e.preventDefault();e.stopImmediatePropagation();try{await action();}catch(err){console.error("AIZEN FRESH CONTROL ERROR",err);toast("تعذر تنفيذ الزر حالياً.");}},{capture:true});});
+  ensureNewlineButton();
+}
 function start(){applyMode(currentMode());bind();new MutationObserver(bind).observe(document.body,{subtree:true,childList:true});window.aizenRebindControls=bind;}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 })();
