@@ -3,13 +3,13 @@
   "use strict";
   const state={container:null,iframe:null,panel:null};
   const getToken=async()=>{
-    const candidates=[window.supabase,window.sb,window.AIZEN_SUPABASE];
+    const candidates=[window.AIZEN_SUPABASE,window.sb,window.supabase];
     for(const client of candidates){
       try{const s=await client?.auth?.getSession?.();const token=s?.data?.session?.access_token;if(token)return token;}catch{}
     }
     return null;
   };
-  const getProjectId=()=>window.currentProjectId||localStorage.getItem("aizen-current-project-id")||localStorage.getItem("currentProjectId")||document.querySelector("[data-project-id]")?.dataset?.projectId||"";
+  const getProjectId=()=>window.currentProjectId||new URLSearchParams(window.location.search).get("preview")||localStorage.getItem("aizen-current-project-id")||localStorage.getItem("currentProjectId")||document.querySelector("[data-project-id]")?.dataset?.projectId||"";
   const esc=s=>String(s??"").replace(/[&<>\"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;"}[c]));
   function ensurePanel(){if(state.panel)return state.panel;const p=document.createElement("div");p.id="aizenLivePreview";p.style.cssText="position:fixed;inset:5vh 4vw 5vh 4vw;background:#0b0d12;border:1px solid #343945;border-radius:18px;z-index:20000;display:none;box-shadow:0 25px 80px #000b;overflow:hidden";p.innerHTML='<div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid #292d36;color:#fff"><b>⚡ Live Preview</b><span data-preview-status style="font-size:12px;color:#9da3af">جاهز</span><button data-preview-reload type="button" style="margin-inline-start:auto">↻</button><button data-preview-close type="button">×</button></div><iframe title="Aizen Live Preview" data-preview-frame style="width:100%;height:calc(100% - 52px);border:0;background:#fff"></iframe>';document.body.appendChild(p);p.querySelector("[data-preview-close]").onclick=()=>p.style.display="none";p.querySelector("[data-preview-reload]").onclick=()=>window.aizenLivePreview?.();state.panel=p;state.iframe=p.querySelector("[data-preview-frame]");return p;}
   function status(t){const n=state.panel?.querySelector("[data-preview-status]");if(n)n.textContent=t;}
