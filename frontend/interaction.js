@@ -374,8 +374,6 @@
   }
   async function loadAdsense(){
     const cfg=await loadAdsenseConfig();if(!cfg?.enabled||!cfg.publisher_id)return;
-    const user=await currentUser();const isPro=await proStatus(user);
-    if(cfg.free_users_only&&isPro)return;
     if(!cfg.top_slot)return;
     let host=document.getElementById("aizenAdSenseTop");
     if(!host){
@@ -403,7 +401,6 @@
     const pro=Boolean(isPro===true);
     if(a)a.textContent="🪙 "+Number(c?.balance||0)+" Credits";
     if(p)p.textContent=pro?"⭐ Pro":"Free";
-    const proBtn=$("aizenV2Pro");if(proBtn)proBtn.textContent=pro?"⭐ Pro فعال":"⭐ ترقية إلى Pro";
     await loadAdsense();
   }
   async function startCryptoPayment(productCode){
@@ -574,9 +571,9 @@
     document.querySelectorAll(".aizen-money-bar").forEach(x=>x.remove());
     const header=document.querySelector(".header-right")||document.querySelector(".header");
     if(!header)return;
-    const bar=document.createElement("div");bar.className="aizen-v2-bar";bar.innerHTML='<span id="aizenV2Credits" class="aizen-v2-pill">🪙 0 Credits</span><span id="aizenV2Plan" class="aizen-v2-pill">Free</span><button id="aizenV2Pro" class="aizen-v2-btn">⭐ ترقية إلى Pro</button><button id="aizenV2Market" class="aizen-v2-btn">🛍️ السوق</button><button id="aizenV2Sell" class="aizen-v2-btn">💰 بيع مشروعي</button><button id="aizenV2Owner" class="aizen-v2-btn" style="display:none">👑 لوحة المالك</button>';
+    const bar=document.createElement("div");bar.className="aizen-v2-bar";bar.innerHTML='<span id="aizenV2Credits" class="aizen-v2-pill">🪙 0 Credits</span><span id="aizenV2Plan" class="aizen-v2-pill">Free</span><span class="aizen-v2-pill">📢 الخدمة مدعومة بالإعلانات</span><button id="aizenV2Market" class="aizen-v2-btn">🛍️ السوق</button><button id="aizenV2Sell" class="aizen-v2-btn">💰 بيع مشروعي</button><button id="aizenV2Owner" class="aizen-v2-btn" style="display:none">👑 لوحة المالك</button>';
     header.parentElement?.appendChild(bar);
-    $("aizenV2Pro").onclick=showPlans;$("aizenV2Market").onclick=marketplace;$("aizenV2Sell").onclick=sellProject;$("aizenV2Owner").onclick=ownerDashboard;
+    $("aizenV2Market").onclick=marketplace;$("aizenV2Sell").onclick=sellProject;$("aizenV2Owner").onclick=ownerDashboard;
     v2Mounted=true;
   }
   async function sync(){
