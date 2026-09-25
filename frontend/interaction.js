@@ -364,8 +364,8 @@
   }
   async function proStatus(user){
     if(!user||!sb())return false;
-    const {data}=await sb().from("user_subscriptions").select("status").eq("user_id",user.id).in("status",["active","trialing"]).maybeSingle();
-    return !!data;
+    const {data,error}=await sb().rpc("is_pro_user",{p_user_id:user.id});
+    return !error && data===true;
   }
   async function loadAdsenseConfig(){
     if(!sb())return null;
@@ -395,20 +395,96 @@
   }
   async function refreshBar(){
     const u=await currentUser();if(!u||!sb())return;
-    const [{data:c},{data:s}]=await Promise.all([
+    const [{data:c},{data:isPro}]=await Promise.all([
       sb().from("user_credits").select("balance").eq("user_id",u.id).maybeSingle(),
-      sb().from("user_subscriptions").select("status,plan_id").eq("user_id",u.id).in("status",["active","trialing"]).maybeSingle()
+      sb().rpc("is_pro_user",{p_user_id:u.id})
     ]);
-    const a=$("aizenV2Credits"),p=$("aizenV2Plan");if(a)a.textContent="🪙 "+Number(c?.balance||0)+" Credits";if(p)p.textContent=s?"⭐ Pro":"Free";
-    const proBtn=$("aizenV2Pro");if(proBtn)proBtn.textContent=s?"⭐ Pro فعال":"⭐ ترقية إلى Pro";
+    const a=$("aizenV2Credits"),p=$("aizenV2Plan");
+    const pro=Boolean(isPro===true);
+    if(a)a.textContent="🪙 "+Number(c?.balance||0)+" Credits";
+    if(p)p.textContent=pro?"⭐ Pro":"Free";
+    const proBtn=$("aizenV2Pro");if(proBtn)proBtn.textContent=pro?"⭐ Pro فعال":"⭐ ترقية إلى Pro";
     await loadAdsense();
   }
+  async function startCryptoPayment(productCode){
+    const u=await currentUser();if(!u){window.openAuth?.();return}
+    const session=await sb().auth.getSession();
+    const token=session?.data?.session?.access_token;
+    if(!token){alert("انتهت جلسة الدخول. سجل الدخول من جديد.");return}
+    try{
+      const response=await fetch("/api/payment/create",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+        body:JSON.stringify({product_code:productCode})
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok||!data.success)throw new Error(data.message||"تعذر إنشاء عملية الدفع.");
+      const pay=data.payment||{};
+      const p=panel("💳 إكمال الدفع",`
+        <div style="padding:8px 0">
+          <p><b>${esc(data.product?.name||"المنتج")}</b></p>
+          <p>المبلغ: <b>${money(pay.price_amount*100,pay.price_currency)}</b></p>
+          <p>العملة المطلوبة: <b>${esc(pay.pay_currency||"-")}</b></p>
+          ${pay.invoice_url?`<a href="${esc(pay.invoice_url)}" target="_blank" rel="noopener" class="aizen-v2-btn aizen-v2-primary" style="display:inline-block;text-decoration:none;margin:8px 0">فتح صفحة الدفع</a>`:""}
+          ${pay.pay_address?`<label>عنوان الدفع</label><div style="word-break:break-all;padding:10px;border:1px solid var(--aizen-border,#30343e);border-radius:9px;margin:5px 0">${esc(pay.pay_address)}</div><button id="aizenCopyPay" class="aizen-v2-btn">نسخ العنوان</button>`:""}
+          ${pay.pay_amount?`<p>أرسل بالضبط: <b>${esc(String(pay.pay_amount))} ${esc(pay.pay_currency||"")}</b></p>`:""}
+          <p id="aizenPaymentState" style="color:var(--aizen-muted,#858b97)">بانتظار تأكيد الدفع…</p>
+        </div>
+      `);
+      const copy=p.querySelector("#aizenCopyPay");
+      if(copy)copy.onclick=async()=>{try{await navigator.clipboard.writeText(String(pay.pay_address||""));copy.textContent="تم النسخ ✓"}catch{alert("انسخ العنوان يدوياً.")}};
+      const state=p.querySelector("#aizenPaymentState");
+      const poll=async()=>{
+        try{
+          const r=await fetch("/api/payment/status?payment_id="+encodeURIComponent(pay.provider_payment_id),{headers:{Authorization:"Bearer "+token}});
+          const s=await r.json();
+          const status=String(s?.payment?.status||"").toLowerCase();
+          if(status==="paid"){
+            if(state)state.textContent="تم الدفع وتفعيل المنتج بنجاح ✓";
+            await refreshBar();
+            setTimeout(()=>p.remove(),1800);
+            return true;
+          }
+          if(["failed","expired","refunded"].includes(status)){
+            if(state)state.textContent="حالة الدفع: "+status;
+            return true;
+          }
+        }catch{}
+        return false;
+      };
+      let stopped=false;
+      const timer=setInterval(async()=>{if(stopped)return;const done=await poll();if(done){stopped=true;clearInterval(timer)}},5000);
+      setTimeout(()=>{stopped=true;clearInterval(timer)},15*60*1000);
+    }catch(e){alert(e.message||"تعذر بدء الدفع.")}
+  }
+
   async function showPlans(){
     const u=await currentUser();if(!u){window.openAuth?.();return}
-    const {data:plans,error}=await sb().from("monetization_plans").select("id,name,price_cents,currency,monthly_credits,show_ads,priority_builds,description").eq("is_active",true).order("price_cents");
-    if(error){alert(error.message);return}
-    const p=panel("⭐ Free / Pro",`<div class="aizen-v2-list">${(plans||[]).map(x=>`<div class="aizen-v2-item"><h3>${esc(x.name)}</h3><p>${esc(x.description||"")}</p><strong>${money(x.price_cents,x.currency)} / شهر</strong><div style="margin:8px 0;font-size:11px">🪙 ${Number(x.monthly_credits||0)} Credits<br>📢 ${x.show_ads?"إعلانات":"بدون إعلانات"}<br>⚡ ${x.priority_builds?"أولوية بناء":"عادي"}</div><button class="aizen-v2-btn aizen-v2-primary" data-plan="${esc(x.id)}">${x.price_cents?"شراء/ترقية":"الخطة الحالية"}</button></div>`).join("")}</div><p style="font-size:11px;color:var(--aizen-muted,#858b97);margin-top:14px">الدفع الحقيقي لا يُعتبر ناجحاً من الواجهة وحدها؛ يجب ربط بوابة دفع وWebhook قبل تفعيل الاشتراك تلقائياً.</p>`);
-    p.querySelectorAll("[data-plan]").forEach(b=>b.onclick=()=>alert("الخطة جاهزة في Supabase، لكن بوابة الدفع الخارجية لم تُربط بعد. لن يتم خصم أي مبلغ أو تفعيل Pro من هذا الزر."));
+    try{
+      const session=await sb().auth.getSession();
+      const token=session?.data?.session?.access_token;
+      const response=await fetch("/api/payment/products",{headers:{Authorization:"Bearer "+token}});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok||!data.success)throw new Error(data.message||"تعذر تحميل منتجات الدفع.");
+      const products=Array.isArray(data.products)?data.products:[];
+      const p=panel("⭐ Free / Pro + Credits",`
+        <div class="aizen-v2-list">
+          ${products.map(x=>`
+            <div class="aizen-v2-item">
+              <h3>${esc(x.name)}</h3>
+              <p>${esc(x.description||"")}</p>
+              <strong>${money(x.price_cents,x.currency)}</strong>
+              <div style="margin:8px 0;font-size:11px">
+                ${x.kind==="credits"?"🪙 "+Number(x.credits||0)+" Credits":"⭐ Pro لمدة شهر"}
+              </div>
+              <button class="aizen-v2-btn aizen-v2-primary" data-pay-product="${esc(x.code)}">الدفع بالعملات الرقمية</button>
+            </div>
+          `).join("")}
+        </div>
+        <p style="font-size:11px;color:var(--aizen-muted,#858b97);margin-top:14px">بعد تأكيد بوابة الدفع يتم تفعيل Credits أو Pro تلقائياً وتسجيل العملية في سجل المدفوعات.</p>
+      `);
+      p.querySelectorAll("[data-pay-product]").forEach(b=>b.onclick=()=>startCryptoPayment(b.dataset.payProduct));
+    }catch(e){alert(e.message||"تعذر تحميل منتجات الدفع.")}
   }
   async function marketplace(){
     const u=await currentUser();if(!u){window.openAuth?.();return}
