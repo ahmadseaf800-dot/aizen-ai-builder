@@ -357,6 +357,40 @@ async function handleCreateCryptoPayment(req, res, user) {
   }
 }
 
+async function handlePaymentStatus(req, res, user) {
+  const query = new URL(req.url || "/", "http://localhost").searchParams;
+  const paymentId = String(query.get("payment_id") || "").trim();
+  if (!paymentId) {
+    sendJson(res, 400, {success:false,error:"PAYMENT_ID_REQUIRED"});
+    return;
+  }
+  try {
+    const rows = await supabaseServiceRequest(
+      "GET",
+      `/rest/v1/payment_transactions?provider=eq.nowpayments&provider_payment_id=eq.${encodeURIComponent(paymentId)}&user_id=eq.${encodeURIComponent(user.id)}&select=id,status,paid_at,amount_cents,currency,product_code,metadata,created_at,updated_at&limit=1`
+    );
+    const row = Array.isArray(rows) ? rows[0] : null;
+    if (!row) {
+      sendJson(res, 404, {success:false,error:"PAYMENT_NOT_FOUND"});
+      return;
+    }
+    sendJson(res, 200, {
+      success:true,
+      payment:{
+        id:row.id,
+        status:row.status,
+        paid_at:row.paid_at || null,
+        amount_cents:row.amount_cents,
+        currency:row.currency,
+        product_code:row.product_code
+      }
+    });
+  } catch (error) {
+    console.error("PAYMENT STATUS ERROR:", error);
+    sendJson(res, 500, {success:false,error:"PAYMENT_STATUS_FAILED"});
+  }
+}
+
 async function handleNowPaymentsWebhook(req, res) {
   if (!NOWPAYMENTS_IPN_SECRET || !SUPABASE_SERVICE_ROLE_KEY) {
     sendJson(res, 503, {success:false,error:"PAYMENT_WEBHOOK_NOT_CONFIGURED"});
