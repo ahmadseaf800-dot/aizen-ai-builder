@@ -36,20 +36,17 @@ const handler=`async function handleMultiAgentPipeline(req,res,user){
 `;
 s=s.replace(handlerAnchor,handler+handlerAnchor);
 }
-const routeAnchor='  /*\n   * AI Coding Agent\n   */\n  if (method === "POST" && pathname === "/api/agent") {';
-if(!s.includes(routeAnchor))throw new Error('agent route anchor not found');
-s=s.replace(routeAnchor,'  /*\n   * AI Coding Agent / Multi-Agent Pipeline\n   */\n  if (method === "POST" && pathname === "/api/agent") {');
-s=s.replace('    await handleCodingAgent(req, res, user);\n    return;\n  }','    await handleMultiAgentPipeline(req, res, user);\n    return;\n  }',1);
+const routeNeedle='if (method === "POST" && pathname === "/api/agent") {';
+if(!s.includes(routeNeedle))throw new Error('agent route anchor not found');
+if(!s.includes('await handleMultiAgentPipeline(req, res, user);'))s=s.replace('await handleCodingAgent(req, res, user);','await handleMultiAgentPipeline(req, res, user);');
 const interactionAnchor='  /*\n   * Independent frontend interaction layer\n   */';
 if(!s.includes(interactionAnchor))throw new Error('interaction anchor not found');
 const previewRoute=`  /*\n   * Browser Live Preview engine\n   */\n  if (method === "GET" && pathname === "/aizen-preview.js") {\n    fs.readFile(path.join(__dirname, "..", "frontend", "aizen-preview.js"), (error, content) => {\n      if (error) { sendJson(res,500,{success:false,error:"PREVIEW_SCRIPT_NOT_FOUND"}); return; }\n      res.writeHead(200,{"Content-Type":"application/javascript; charset=utf-8","Cache-Control":"no-cache"});\n      res.end(content);\n    });\n    return;\n  }\n\n`;
 if(!s.includes('/aizen-preview.js'))s=s.replace(interactionAnchor,previewRoute+interactionAnchor);
 s=s.replace('res.writeHead(200, {\n        "Content-Type": "text/html; charset=utf-8",\n        "Cache-Control": "no-cache",\n      });','res.writeHead(200, {\n        "Content-Type": "text/html; charset=utf-8",\n        "Cache-Control": "no-cache",\n        "Cross-Origin-Opener-Policy": "same-origin",\n        "Cross-Origin-Embedder-Policy": "credentialless",\n      });');
-const oldPrefix='const enhanced = html.includes("/interaction.js")';
-if(s.includes(oldPrefix)&&!s.includes('html.includes("/aizen-preview.js")')){
-  const oldBlock=`const enhanced = html.includes("/interaction.js")\n        ? html\n        : html.replace(/<\\/body>/i, '<script src="/interaction.js" defer></script></body>');`;
+const oldBlock=`const enhanced = html.includes("/interaction.js")\n        ? html\n        : html.replace(/<\\/body>/i, '<script src="/interaction.js" defer></script></body>');`;
+if(s.includes(oldBlock)&&!s.includes('aizen-preview.js')){
   const newBlock=`let enhanced = html.includes("/interaction.js") ? html : html.replace(/<\\/body>/i, '<script src="/interaction.js" defer></script></body>');\n      if(!enhanced.includes("/aizen-preview.js")) enhanced=enhanced.replace(/<\\/body>/i,'<script src="/aizen-preview.js" defer></script></body>');`;
-  if(!s.includes(oldBlock))throw new Error('frontend injection block not found');
   s=s.replace(oldBlock,newBlock);
 }
 fs.writeFileSync(serverPath,s);
