@@ -1302,6 +1302,8 @@ const supabaseClient =
     SUPABASE_ANON_KEY
   );
 
+window.AIZEN_SUPABASE = supabaseClient;
+
 
 /* =========================================================
    STATE
@@ -2175,8 +2177,12 @@ function addMessageToUI(role,content){
   return div;
 }
 
-function formatAizenResponse(value){
+function formatAizenResponse(value,allowCode=false){
   let text=String(value??"").replace(/\r\n?/g,"\n").trim();
+  if(!allowCode){
+    const fence=String.fromCharCode(96).repeat(3);
+    text=text.replace(new RegExp(fence+"[^\\n]*\\n[\\s\\S]*?"+fence,"g"),"تم تجهيز النتيجة بدون عرض الكود. إذا أردت الكود اطلبه مني بشكل مباشر.");
+  }
   if(!text) return "";
   const blocks=[];
   const fence=String.fromCharCode(96).repeat(3);
@@ -2688,8 +2694,9 @@ async function requestAI(
           fullText +=
             String(delta);
 
+          const codeRequested=/\b(code|source\s*code|script)\b|كود|أكواد|شفرة|سكريبت|كودات/i.test(String(currentMessage||""));
           contentElement.innerHTML =
-            formatAizenResponse(fullText);
+            formatAizenResponse(fullText,codeRequested);
 
           scrollMessages();
         }
@@ -2701,8 +2708,9 @@ async function requestAI(
       fullText =
         "لم يصل رد من Aizen.";
 
+      const codeRequested=/\b(code|source\s*code|script)\b|كود|أكواد|شفرة|سكريبت|كودات/i.test(String(currentMessage||""));
       contentElement.innerHTML =
-        formatAizenResponse(fullText);
+        formatAizenResponse(fullText,codeRequested);
     }
 
     if(isBuild && currentProjectId){
@@ -3080,7 +3088,16 @@ async function runBuild(type,typeLabel,description,secretToken="",projectName=""
     if(localProject) localProject.status="ready";
     renderProjects();
     await loadConversations();
-    setStatus("اكتمل البناء الفعلي: "+buildData.changed+" ملف.");
+    const previewUrl=getProjectPreviewUrl(createdProject.id);
+    await supabaseClient.from("projects").update({deployment_url:previewUrl,metadata:{...(createdProject.metadata||{}),preview_url:previewUrl}}).eq("id",createdProject.id).eq("user_id",currentUser.id);
+    createdProject.deployment_url=previewUrl;
+    createdProject.metadata={...(createdProject.metadata||{}),preview_url:previewUrl};
+    const readyProject=projects.find(p=>p.id===createdProject.id);
+    if(readyProject){readyProject.deployment_url=previewUrl;readyProject.metadata=createdProject.metadata;}
+    renderProjects();
+    showProjectPreviewLink(createdProject.id);
+    setStatus("اكتمل البناء الفعلي: "+buildData.changed+" ملف. المعاينة جاهزة.");
+    setTimeout(()=>openProjectPreview(createdProject.id),300);
 
   }catch(error){
 
@@ -3091,6 +3108,36 @@ async function runBuild(type,typeLabel,description,secretToken="",projectName=""
       "تعذر بدء البناء."
     );
   }
+}
+
+function getProjectPreviewUrl(projectId){
+  if(!projectId) return "";
+  return window.location.origin + "/?preview=" + encodeURIComponent(projectId);
+}
+
+function showProjectPreviewLink(projectId){
+  const url=getProjectPreviewUrl(projectId);
+  if(!url) return;
+  let box=document.getElementById("aizenBuildResultActions");
+  if(!box){
+    box=document.createElement("div");
+    box.id="aizenBuildResultActions";
+    box.style.cssText="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px auto;max-width:900px";
+    const status=$("status");
+    status?.parentElement?.appendChild(box);
+  }
+  box.innerHTML='<a href="'+escapeHTML(url)+'" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;padding:9px 13px;border:1px solid #5148a0;border-radius:9px;background:#28224d;color:#fff;text-decoration:none;font-weight:700">⚡ فتح الموقع</a>';
+}
+
+async function openProjectPreview(projectId=currentProjectId){
+  if(!projectId){showToast("لا يوجد مشروع للمعاينة.");return;}
+  currentProjectId=projectId;
+  if(window.aizenLivePreview){
+    await window.aizenLivePreview();
+    return;
+  }
+  showToast("جاري تجهيز المعاينة…");
+  setTimeout(()=>window.aizenLivePreview?.(),250);
 }
 
 function stopGeneration(){
@@ -3180,6 +3227,13 @@ function renderProjects(){
             onclick="openProject('${project.id}')"
           >
             فتح
+          </button>
+
+          <button
+            onclick="openProjectPreview('${project.id}')"
+            ${project.status!=="ready" ? "disabled" : ""}
+          >
+            ⚡ الموقع
           </button>
 
           <button
@@ -3778,6 +3832,12 @@ loadSiteLanguage();
         ? "Aizen AI جاهز للعمل."
         : "سجّل الدخول لاستخدام Aizen AI."
     );
+
+    const previewProjectId=new URLSearchParams(window.location.search).get("preview");
+    if(previewProjectId && currentUser){
+      currentProjectId=previewProjectId;
+      setTimeout(()=>window.aizenLivePreview?.(),350);
+    }
 
   }catch(error){
 
