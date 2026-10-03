@@ -1995,6 +1995,78 @@ async function handleWorkspace(req,res,user){
  *   build: true
  * }
  */
+async function handleDashboardAI(req, res) {
+  const expectedSecret = String(process.env.AIZEN_DASHBOARD_SECRET || "").trim();
+  const providedSecret = String(req.headers["x-aizen-dashboard-secret"] || "").trim();
+  if (!expectedSecret || !providedSecret || expectedSecret.length !== providedSecret.length ||
+      !crypto.timingSafeEqual(Buffer.from(expectedSecret), Buffer.from(providedSecret))) {
+    sendJson(res, 401, { success:false, error:"DASHBOARD_AI_UNAUTHORIZED", message:"Dashboard AI authentication failed." });
+    return;
+  }
+  let data;
+  try { data = await readJsonBody(req, res, 512 * 1024); }
+  catch (error) {
+    sendJson(res, error.message === "REQUEST_TOO_LARGE" ? 413 : 400, {
+      success:false, error:error.message === "REQUEST_TOO_LARGE" ? "REQUEST_TOO_LARGE" : "INVALID_JSON",
+      message:"البيانات المرسلة غير صحيحة"
+    });
+    return;
+  }
+  const message = String(data.message || "").trim();
+  if (!message) { sendJson(res,400,{success:false,error:"MESSAGE_REQUIRED",message:"الرسالة مطلوبة"}); return; }
+  const snapshot = data.snapshot && typeof data.snapshot === "object" ? data.snapshot : {};
+  const allowedActions = [
+    "none","server_start","server_stop","server_restart",
+    "minecraft_op","minecraft_deop","minecraft_ban","minecraft_tempban",
+    "minecraft_pardon","minecraft_kick","minecraft_role_add","minecraft_role_remove"
+  ];
+  const prompt = [
+    buildAizenCoreInstruction({mode:"server_admin",isBuild:false,userRequest:message,ownerVerified:true}),
+    "أنت الآن AIZEN AI — Server Management Agent داخل AizenSMP-Dashboard.",
+    "استخدم Aizen Core ومحرك Aizen AI الحقيقي. لا تستخدم parser قائم على regex ولا تتظاهر بامتلاك بيانات غير موجودة.",
+    "حلّل الطلب بالعربية أو الإنجليزية ثم أخرج JSON صالحاً فقط، بدون Markdown وبدون شرح خارج JSON.",
+    "إذا كان الطلب سؤالاً معلوماتياً، action=none ويجب أن تعتمد الإجابة فقط على SNAPSHOT.",
+    "إذا كان الطلب تنفيذياً، لا تنفذه بنفسك؛ حدد العملية الآمنة التي سيطبقها Dashboard بعد التحقق.",
+    "العمليات المسموحة فقط: " + allowedActions.join(", "),
+    "لأوامر Minecraft استخدم الحقول المنفصلة ولا تضع command خاماً: target, duration, reason, role.",
+    "إذا لم تجد اللاعب أو المعلومة في SNAPSHOT، لا تخمن. أعد action=none واذكر أن البيانات غير كافية.",
+    "للأسئلة عن الباند استخدم الأحداث الفعلية فقط، ولا تدّعي Anti-Cheat detection غير الموجود في البيانات.",
+    "server_start لا تستخدمه إذا كان هناك workflow فعّال. server_stop لا تستخدمه إذا لم يوجد workflow فعّال. server_restart يسمح بإعادة التشغيل.",
+    "لا تخترع رتبة. استخدم role موجودة فعلياً في SNAPSHOT فقط.",
+    "الصيغة الإلزامية: {reply,action,target,duration,reason,role,targetServer,broadcast}.",
+    "SNAPSHOT:", JSON.stringify(snapshot).slice(0,180000),
+    "USER REQUEST:", message.slice(0,12000)
+  ].join("\n\n");
+  try {
+    const raw = await runAIToText(prompt, false, []);
+    let parsed = null;
+    try { parsed = JSON.parse(String(raw || "").trim()); } catch {}
+    if (!parsed || typeof parsed !== "object") {
+      sendJson(res,200,{success:true,reply:"لم أستطع تحويل الطلب إلى عملية آمنة مؤكدة. لم يتم تنفيذ أي شيء.",action:"none"});
+      return;
+    }
+    const action = String(parsed.action || "none").trim().toLowerCase();
+    if (!allowedActions.includes(action)) {
+      sendJson(res,200,{success:true,reply:"العملية المطلوبة غير مدعومة أو غير آمنة، لذلك لم يتم تنفيذها.",action:"none"});
+      return;
+    }
+    sendJson(res,200,{
+      success:true,
+      reply:String(parsed.reply || "تم تحليل الطلب."),
+      action,
+      target:String(parsed.target || "").trim().slice(0,100),
+      duration:String(parsed.duration || "").trim().slice(0,40),
+      reason:String(parsed.reason || "").trim().slice(0,300),
+      role:String(parsed.role || "").trim().slice(0,80),
+      targetServer:String(parsed.targetServer || "").trim().slice(0,40),
+      broadcast:Boolean(parsed.broadcast)
+    });
+  } catch (error) {
+    console.error("DASHBOARD AI ERROR:",error.message);
+    sendJson(res,502,{success:false,error:"DASHBOARD_AI_FAILED",message:"تعذر تشغيل AIZEN AI حالياً. لم يتم تنفيذ أي عملية."});
+  }
+}
+
 async function handleChat(req, res, user) {
   const ownerVerified = isAizenOwner(user);
   res.__aizenAuthContext = { isOwner: ownerVerified, nonce: crypto.randomBytes(24).toString("hex") };
@@ -2398,6 +2470,15 @@ const server = http.createServer(async (req, res) => {
     const user = await requireAuth(req, res);
     if (!user) return;
     await handleWorkspace(req, res, user);
+    return;
+  }
+
+  /*
+   * AizenSMP Dashboard AI bridge.
+   * Authenticated only by the private server-to-server secret.
+   */
+  if (method === "POST" && pathname === "/api/dashboard-ai") {
+    await handleDashboardAI(req, res);
     return;
   }
 
