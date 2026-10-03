@@ -21,6 +21,8 @@ const NOWPAYMENTS_PAY_CURRENCY = String(process.env.NOWPAYMENTS_PAY_CURRENCY || 
 const PAYMENT_WEBHOOK_URL = String(process.env.PAYMENT_WEBHOOK_URL || "https://aizen-ai-builder.onrender.com/api/payment/webhook");
 
 const APP_ORIGIN = process.env.APP_ORIGIN || "*";
+const AIZEN_DASHBOARD_SECRET = String(process.env.AIZEN_DASHBOARD_SECRET || "").trim();
+
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash";
